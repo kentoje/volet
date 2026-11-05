@@ -14,7 +14,7 @@
 </script>
 
 <DropZone {list} class="min-h-2">
-  <ul class="flex flex-col gap-px">
+  <ul class="flex flex-col gap-0.5">
     {#each entries as entry, index (entryKey(entry))}
       <SortableEntry {entry} {list} {index}>
         {#snippet children(handle)}

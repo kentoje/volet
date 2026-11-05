@@ -26,10 +26,13 @@
   <SpaceHeader {space} />
   <PinnedSection {space} />
   <SectionDivider action={clear} />
-  <TemporaryTabs {space} />
-  <ListActionButton label="New tab" onclick={() => sidebar.newTab()}>
-    {#snippet icon()}
-      <Plus size={15} strokeWidth={2} />
-    {/snippet}
-  </ListActionButton>
+  <!-- "New tab" sits one row gap below the last tab, like any other row. -->
+  <div class="flex flex-col gap-0.5">
+    <TemporaryTabs {space} />
+    <ListActionButton label="New tab" onclick={() => sidebar.newTab()}>
+      {#snippet icon()}
+        <Plus size={15} strokeWidth={2} />
+      {/snippet}
+    </ListActionButton>
+  </div>
 </div>

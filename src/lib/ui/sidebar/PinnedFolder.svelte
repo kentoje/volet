@@ -45,8 +45,9 @@
     ondblclick={() => rename.start(folder.id)}
   />
 </ContextMenu>
+<!-- The same 2px row gap separates the folder from its contents. -->
 {#if open}
-  <div transition:slide={{ duration }}>
+  <div class="pt-0.5" transition:slide={{ duration }}>
     <PinnedList parentId={folder.id} nodes={folder.children} depth={depth + 1}>
       {#snippet empty()}
         <p class="py-1.5 pl-[calc(36px+var(--depth)*16px)] text-[12px] text-ink-muted" style:--depth={depth}>
@@ -55,8 +56,10 @@
       {/snippet}
     </PinnedList>
   </div>
-{:else}
-  {#each visible as pin (pin.id)}
-    <PinRow {pin} depth={depth + 1} />
-  {/each}
+{:else if visible.length}
+  <div class="flex flex-col gap-0.5 pt-0.5">
+    {#each visible as pin (pin.id)}
+      <PinRow {pin} depth={depth + 1} />
+    {/each}
+  </div>
 {/if}
