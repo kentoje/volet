@@ -41,6 +41,17 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Reads are local, writes are central.** Each side panel derives its state from Chrome's events. Every change is a `Command` (see `engine/commands.ts`) sent to the service worker, which runs commands one at a time through a serial queue and retries calls Chrome rejects while the user drags a tab.
 - **Bookmarks are the source of truth**: the `Spaces` folder holds `Favorites` and one folder per Space; pins are bookmarks. Session-only links (tab to pin, group to Space, active Space per window) live in `chrome.storage.session` and are rebuilt after restarts.
 - **Pure logic is kept pure** (`derive.ts`, `snapshot.ts`, `colors.ts`, importers, search ranking) so it can be unit tested without Chrome.
+- **Entry points** (`src/entrypoints/`): `background.ts` (the engine), `sidepanel/` (the sidebar), `palette.ts`
+  (unlisted script injected into the current page by the palette shortcut, rendered in a shadow root),
+  `options/` (settings) and `import/` (Arc import).
+- **Drag and drop**: lists render from `DragState`'s draft while dragging (`ui/sidebar/drag/`); the rules and the
+  drop-to-action mapping are pure (`model/dnd.ts`). dnd-kit's DOM-moving sorting is off so Svelte owns the DOM.
+  Row buttons are the drag handles; give action buttons and inputs `data-no-drag`.
+- **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
+  `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
+- **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
+  (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
+  Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
 
 ## Coding guidelines
 
@@ -63,6 +74,10 @@ Engine specifics:
 
 - Every Chrome write goes through the engine queue. Call Chrome tab APIs that can hit the drag lock through `retry()`.
 - Read a tab's URL with `tabUrl()`: Chrome leaves `tab.url` empty until the first navigation commits.
+- When a command removes a tab and its binding, close the tab first, then unbind: never let a closing tab show up as
+  a temporary tab in between.
+- Settings and purely visual state (collapsed folders) are written directly from the UI's state modules; everything
+  that touches tabs, groups or bookmarks is a command.
 - Reconcile must stay idempotent: running it twice changes nothing.
 
 ## Tests
@@ -70,6 +85,9 @@ Engine specifics:
 - Unit tests (`*.test.ts`, Vitest) next to pure modules.
 - End-to-end tests (`tests/e2e/*.spec.ts`, Playwright) load `.output/chrome-mv3` into Chromium, open the panel page in its own window (`sidepanel.html?windowId=<id>`), and assert on Chrome's real state from the service worker.
 - New behavior in the engine gets an e2e test; new pure logic gets a unit test.
+- `tests/e2e/resilience.spec.ts` covers multiple windows and a real browser restart (same profile, session restored).
+- The palette's in-page overlay can't be triggered from Playwright (shortcuts are browser-level gestures); the panel
+  palette exercises the same components and worker messages.
 
 ## Writing style
 
