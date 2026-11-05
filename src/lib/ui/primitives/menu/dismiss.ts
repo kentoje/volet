@@ -1,21 +1,24 @@
 import type { Attachment } from 'svelte/attachments';
 import { on } from 'svelte/events';
 
+/**
+ * Menus in a side panel that may not have focus.
+ *
+ * A left-click in the panel gives it focus, a right-click doesn't (on macOS), and no API
+ * hands focus to a side panel. So a menu opened from the web page with a right-click lives
+ * in an unfocused panel: it gets no focus events and never sees a click back in the page.
+ */
+
 /** How long the pointer may stay out of an unfocused panel before an open menu closes. */
 export const LEAVE_GRACE_MS = 300;
 
 /**
- * Attach to a menu while it is open: it closes when the user goes to the web page.
- *
- * A click in the page only reaches the panel as a blur, and only if the panel had focus.
- * Opening a menu with a right-click doesn't give the panel focus (on macOS), so the menu
- * asks for it. If the panel still doesn't have it, the pointer leaving the panel is the
- * only sign left: the menu closes unless the pointer comes back within a moment.
+ * Attach to an open menu: it closes when the user goes to the web page. A click there
+ * blurs the panel when it has focus; without focus, the pointer leaving the panel is the
+ * only sign, so the menu closes unless the pointer comes back within a moment.
  */
 export function dismissOutsidePanel(close: () => void): Attachment {
   return () => {
-    // Allowed here: the right-click that opened the menu counts as a user gesture.
-    if (!document.hasFocus()) window.focus();
     let timer: ReturnType<typeof setTimeout> | undefined;
     const stay = () => clearTimeout(timer);
     const listeners = [
@@ -34,3 +37,20 @@ export function dismissOutsidePanel(close: () => void): Attachment {
     };
   };
 }
+
+/**
+ * Attach to an open menu: while the panel has no focus, mark the document with
+ * `data-unfocused`. Menu items highlight through focus (Bits UI focuses the hovered item),
+ * which an unfocused panel never gets, so they highlight on hover instead (see
+ * MENU_ITEM_CLASS). Once the panel has focus, focus drives it again, keyboard included.
+ */
+export const highlightWithoutFocus: Attachment = () => {
+  const root = document.documentElement;
+  const mark = () => root.toggleAttribute('data-unfocused', !document.hasFocus());
+  mark();
+  const listeners = [on(window, 'focus', mark), on(window, 'blur', mark)];
+  return () => {
+    for (const remove of listeners) remove();
+    root.removeAttribute('data-unfocused');
+  };
+};

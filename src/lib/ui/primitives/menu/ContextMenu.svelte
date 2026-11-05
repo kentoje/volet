@@ -3,7 +3,7 @@
   import type { Snippet } from 'svelte';
   import type { MenuItem } from '@/lib/model/menu';
   import { OVERLAY_ROOT } from '../overlay';
-  import { dismissOutsidePanel } from './dismiss';
+  import { dismissOutsidePanel, highlightWithoutFocus } from './dismiss';
   import MenuItems from './MenuItems.svelte';
   import { MENU_PLACEMENT } from './placement';
 
@@ -16,7 +16,7 @@
   let { items, children }: Props = $props();
   let open = $state(false);
 
-  /** A click in the page is invisible here: close when the panel loses focus, or the pointer leaves it. */
+  /** A click in the page is invisible here: close when the panel loses focus, or the pointer leaves it (see dismiss.ts). */
   const dismiss = dismissOutsidePanel(() => (open = false));
 </script>
 
@@ -30,7 +30,7 @@
     <ContextMenu.Content class="menu-surface" data-no-drag {...MENU_PLACEMENT}>
       {#snippet child({ wrapperProps, props })}
         <div {...wrapperProps}>
-          <div {...props} {@attach dismiss}>
+          <div {...props} {@attach dismiss} {@attach highlightWithoutFocus}>
             {#if open}
               <MenuItems items={items()} />
             {/if}

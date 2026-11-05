@@ -112,6 +112,28 @@ test('a menu closes when the pointer leaves an unfocused panel, unless it comes 
   await expect(menu).toHaveCount(0);
 });
 
+test('menu items highlight on hover even when the panel has no focus', async ({ panel }) => {
+  await visiblePage(panel).getByRole('heading').click({ button: 'right' });
+  const rename = menuItem(panel, 'Rename Space');
+  await expect(rename).toBeVisible();
+  // As after a right-click from the web page: the panel has no focus, and focusing the
+  // hovered item (what Bits UI does to highlight it) has no effect.
+  await panel.evaluate(() => {
+    document.hasFocus = () => false;
+    HTMLElement.prototype.focus = () => undefined;
+    window.dispatchEvent(new Event('focus')); // any focus change re-checks hasFocus
+  });
+  await expect(panel.locator('html')).toHaveAttribute('data-unfocused');
+  await rename.hover();
+  await expect(rename).not.toHaveAttribute('data-highlighted');
+  const hovered = await rename.evaluate((node) => getComputedStyle(node).backgroundColor);
+  const other = await menuItem(panel, 'New folder').evaluate((node) => getComputedStyle(node).backgroundColor);
+  expect(hovered).not.toBe(other);
+
+  await panel.keyboard.press('Escape');
+  await expect(panel.locator('html')).not.toHaveAttribute('data-unfocused');
+});
+
 test('hovering a Space dot shows its name', async ({ panel }) => {
   await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home' }).hover();
   await expect(panel.locator('[data-tooltip-content]')).toHaveText('Home');
