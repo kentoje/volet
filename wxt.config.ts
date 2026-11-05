@@ -5,6 +5,11 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
+  // A fixed port: the dev build loaded in Chrome hard-codes it, so it must not change between runs.
+  dev: { server: { port: 3311, strictPort: true } },
+  // `pnpm dev` opens a fresh Chrome profile with the extension loaded.
+  // `pnpm dev:own` skips that: load .output/chrome-mv3-dev once in your own profile instead.
+  webExt: { disabled: process.env.OWN_PROFILE === '1' },
   vite: () => ({
     plugins: [tailwindcss()],
   }),

@@ -61,11 +61,21 @@ Then open `chrome://extensions`, enable Developer mode, click "Load unpacked" an
 
 ```bash
 pnpm proto      # sidebar UI as a plain web page on fake data (fast visual iteration)
-pnpm dev        # extension dev mode with live reload
+pnpm dev        # dev mode: opens a fresh Chrome profile with the extension, live reload
+pnpm dev:own    # same dev server, no browser: load .output/chrome-mv3-dev in your own profile
 pnpm check      # svelte-check + TypeScript
 pnpm test       # unit tests (Vitest)
 pnpm test:e2e   # builds, then drives real Chromium with the extension loaded (Playwright)
 ```
+
+### Developing in your own Chrome profile
+
+1. `pnpm dev:own`
+2. In `chrome://extensions` (Developer mode on), "Load unpacked" → `.output/chrome-mv3-dev` (once).
+3. Keep `pnpm dev:own` running: the side panel updates as you edit; background and palette changes reload the
+   extension (or press <kbd>Alt</kbd>+<kbd>R</kbd>). Without the dev server, the dev build's pages stay blank.
+
+Don't enable the dev build and a production build in the same profile at the same time: both would manage your tabs.
 
 Architecture, coding guidelines and the Svelte MCP setup are in [AGENTS.md](AGENTS.md).
 

@@ -7,6 +7,7 @@
   "license": "GPL-3.0-or-later",
   "scripts": {
     "dev": "wxt",
+    "dev:own": "OWN_PROFILE=1 wxt",
     "proto": "vite --config vite.proto.config.ts",
     "build": "wxt build",
     "zip": "wxt zip",

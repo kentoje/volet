@@ -6,7 +6,8 @@ Arc-like vertical tab Spaces for Chrome: a side panel extension built with WXT, 
 
 ```bash
 pnpm proto          # sidebar UI as a plain web page on fake data (fast visual iteration)
-pnpm dev            # extension dev mode with live reload
+pnpm dev            # extension dev mode: launches a fresh Chrome profile, live reload
+pnpm dev:own        # same, without launching Chrome (load .output/chrome-mv3-dev in your own profile)
 pnpm build          # production build in .output/chrome-mv3
 pnpm check          # svelte-check + TypeScript
 pnpm test           # unit tests (Vitest)
