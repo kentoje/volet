@@ -30,7 +30,8 @@ const row = (panel: Page, name: string) => visiblePage(panel).getByRole('button'
 test('reordering temporary tabs reorders them in Chrome', async ({ worker, windowId, panel }) => {
   await openTabs(worker, windowId, ['Alpha', 'Beta', 'Gamma']);
   await expect(row(panel, 'Gamma')).toBeVisible();
-  await drag(panel, row(panel, 'Gamma'), row(panel, 'Alpha'));
+  // The upper half of a row means "before it".
+  await drag(panel, row(panel, 'Gamma'), row(panel, 'Alpha'), { offsetY: -8 });
   await expect
     .poll(async () => (await stripState(worker, windowId)).map((tab) => tab.url.match(/<title>(\w+)/)?.[1]).filter(Boolean))
     .toEqual(['Gamma', 'Alpha', 'Beta']);
@@ -86,4 +87,60 @@ test('dropping a tab on a Space dot moves it to that Space', async ({ worker, wi
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)
     .toBe('Space 2');
   await expect(row(panel, 'Traveler')).toHaveCount(0);
+});
+
+/** Pin data: URL tabs in Home, in order, once their titles have loaded. */
+async function pinned(worker: Worker, windowId: number, panel: Page, titles: string[]) {
+  const homeId = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+  });
+  for (const title of titles) {
+    const tabId = await worker.evaluate(
+      async ({ id, title }) => (await chrome.tabs.create({ windowId: id, url: `data:text/html,<title>${title}</title>` })).id!,
+      { id: windowId, title },
+    );
+    await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe(title);
+    await panel.evaluate((cmd) => chrome.runtime.sendMessage({ type: 'command', command: cmd }), {
+      type: 'pinTab',
+      windowId,
+      tabId,
+      parentId: homeId,
+    });
+  }
+}
+
+const homePins = async (worker: Worker) =>
+  (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => c.title);
+
+test('a tab can be dropped as the last pin', async ({ worker, windowId, panel }) => {
+  await pinned(worker, windowId, panel, ['First', 'Second']);
+  await openTabs(worker, windowId, ['Newcomer']);
+  await expect(row(panel, 'Newcomer')).toBeVisible();
+  // The lower half of the last pin means "after it".
+  await drag(panel, row(panel, 'Newcomer'), row(panel, 'Second'), { offsetY: 10 });
+  await expect.poll(() => homePins(worker)).toEqual(['First', 'Second', 'Newcomer']);
+});
+
+test('a pin can be moved to the end of the pinned list', async ({ worker, windowId, panel }) => {
+  await pinned(worker, windowId, panel, ['Alpha', 'Beta', 'Gamma']);
+  await expect(row(panel, 'Gamma')).toBeVisible();
+  await drag(panel, row(panel, 'Alpha'), row(panel, 'Gamma'), { offsetY: 10 });
+  await expect.poll(() => homePins(worker)).toEqual(['Beta', 'Gamma', 'Alpha']);
+});
+
+test('the pin shortcut pins the current tab, and unpins it the second time', async ({ worker, windowId, panel }) => {
+  // chrome.commands can't be pressed from a test; send what the shortcut sends.
+  const tabId = await worker.evaluate(
+    async (id) => (await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Toggled</title>' })).id!,
+    windowId,
+  );
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Toggled');
+  const toggle = () =>
+    panel.evaluate((cmd) => chrome.runtime.sendMessage({ type: 'command', command: cmd }), { type: 'togglePin', windowId, tabId });
+  await toggle();
+  await expect.poll(() => homePins(worker)).toEqual(['Toggled']);
+  await toggle();
+  await expect.poll(() => homePins(worker)).toEqual([]);
+  expect((await stripState(worker, windowId)).find((tab) => tab.id === tabId)?.group).toBe('Home'); // still open
 });

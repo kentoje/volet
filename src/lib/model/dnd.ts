@@ -75,6 +75,25 @@ export function locate(lists: Lists, entry: Entry): { list: ListId; index: numbe
   return undefined;
 }
 
+/**
+ * Where the dragged entry goes when the pointer is over `target`: just before it, or just
+ * after it (`after`, the pointer is past the target's middle). The index is counted
+ * without the dragged entry, as `moveEntry` expects.
+ */
+export function placeAround(
+  lists: Lists,
+  active: Entry,
+  target: Entry,
+  after: boolean,
+): { list: ListId; index: number } | undefined {
+  if (sameEntry(active, target)) return undefined;
+  const at = locate(lists, target);
+  if (!at) return undefined;
+  const others = lists[at.list]!.filter((entry) => !sameEntry(entry, active));
+  const index = others.findIndex((entry) => sameEntry(entry, target));
+  return { list: at.list, index: after ? index + 1 : index };
+}
+
 /** Move an entry to `index` in `list` (index counted after removing it from where it was). */
 export function moveEntry(lists: Lists, entry: Entry, list: ListId, index: number): Lists {
   const from = locate(lists, entry);

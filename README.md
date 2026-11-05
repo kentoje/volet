@@ -35,7 +35,7 @@ sync and survives reinstalling. Space colors and settings sync through Chrome to
 | Open the sidebar | <kbd>Alt</kbd>+<kbd>S</kbd> |
 | Search tabs, pins and archived tabs | <kbd>Alt</kbd>+<kbd>T</kbd> |
 | Next / previous Space | not set |
-| Pin or unpin the current tab | not set |
+| Pin or unpin the current tab | <kbd>Alt</kbd>+<kbd>P</kbd> |
 
 Change them in `chrome://extensions/shortcuts` (Settings has a link).
 

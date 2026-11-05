@@ -18,7 +18,7 @@
   {#if entries.length}
     <ul class="grid grid-cols-4 gap-1.5 @md:grid-cols-6" aria-label="Favorites">
       {#each entries as entry, index (entryKey(entry))}
-        <SortableEntry {entry} list={FAVORITES_LIST} {index}>
+        <SortableEntry {entry} list={FAVORITES_LIST} {index} axis="x">
           {#snippet children(handle)}
             <EntryTile {entry} {handle} />
           {/snippet}

@@ -33,7 +33,7 @@ export default defineConfig({
       'open-palette': { suggested_key: { default: 'Alt+T' }, description: 'Search tabs, pins and archived tabs' },
       'next-space': { description: 'Switch to the next Space' },
       'previous-space': { description: 'Switch to the previous Space' },
-      'toggle-pin': { description: 'Pin or unpin the current tab' },
+      'toggle-pin': { suggested_key: { default: 'Alt+P' }, description: 'Pin or unpin the current tab' },
     },
   },
 });

@@ -14,14 +14,16 @@
     depth?: number;
     /** `li` for row lists, `div` inside grids that already provide list items. */
     tag?: 'li' | 'div';
+    /** How entries are laid out: decides whether "after" means below or to the right. */
+    axis?: 'x' | 'y';
     /** Receives the attachment for the drag handle: put it on the row's main button. */
     children: Snippet<[Attachment<HTMLElement>]>;
   }
 
-  let { entry, list, index, depth = 0, tag = 'li', children }: Props = $props();
+  let { entry, list, index, depth = 0, tag = 'li', axis = 'y', children }: Props = $props();
 
   const drag = getDrag();
-  const data = $derived<DragData>({ kind: 'entry', entry });
+  const data = $derived<DragData>({ kind: 'entry', entry, axis });
 
   const sortable = createSortable({
     get id() {

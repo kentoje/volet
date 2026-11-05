@@ -10,6 +10,7 @@ import {
   dropOnSpace,
   locate,
   moveEntry,
+  placeAround,
   sameEntry,
 } from '@/lib/model/dnd';
 import type { SidebarStore, SpaceId } from '@/lib/model/types';
@@ -17,7 +18,8 @@ import { createLookup } from '@/lib/state/lookup';
 
 /** What the pointer is over during a drag. */
 export type DropTarget =
-  | { kind: 'entry'; entry: Entry }
+  /** `after`: the pointer is past the entry's middle, so the dragged one goes after it. */
+  | { kind: 'entry'; entry: Entry; after: boolean }
   | { kind: 'list'; list: ListId }
   | { kind: 'space'; spaceId: SpaceId };
 
@@ -74,10 +76,7 @@ export class DragState {
   }
 
   #placeFor(draft: Lists, active: Entry, target: DropTarget): { list: ListId; index: number } | undefined {
-    if (target.kind === 'entry') {
-      // Over another entry: take its place (the list shifts around the dragged one).
-      return sameEntry(target.entry, active) ? undefined : locate(draft, target.entry);
-    }
+    if (target.kind === 'entry') return placeAround(draft, active, target.entry, target.after);
     if (target.kind === 'list') {
       // Over a list's empty area: go to its end.
       const others = (draft[target.list] ?? []).filter((entry) => !sameEntry(entry, active));

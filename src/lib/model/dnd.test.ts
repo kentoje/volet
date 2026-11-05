@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type DndLookup, buildLists, canEnter, dropAction, dropOnSpace, moveEntry } from './dnd';
+import { type DndLookup, buildLists, canEnter, dropAction, dropOnSpace, moveEntry, placeAround } from './dnd';
 import type { Favorite, PinnedNode, Space } from './types';
 
 const nodes: PinnedNode[] = [
@@ -54,6 +54,27 @@ describe('moveEntry', () => {
     const moved = moveEntry(lists, { kind: 'tab', id: 1 }, 'pins:docs', 0);
     expect(moved['temp:s1']!.map((e) => e.id)).toEqual([2, 3]);
     expect(moved['pins:docs']![0]).toEqual({ kind: 'tab', id: 1 });
+  });
+});
+
+describe('placeAround', () => {
+  const lists = buildLists(spaces, favorites);
+  const tab = (id: number) => ({ kind: 'tab', id }) as const;
+
+  it('goes before or after the hovered entry depending on the pointer', () => {
+    expect(placeAround(lists, tab(4), { kind: 'node', id: 'docs' }, false)).toEqual({ list: 'pins:s1', index: 1 });
+    expect(placeAround(lists, tab(4), { kind: 'node', id: 'docs' }, true)).toEqual({ list: 'pins:s1', index: 2 });
+  });
+
+  it('can reach the end of a list, which "take its place" alone never could', () => {
+    const place = placeAround(lists, tab(1), tab(3), true)!;
+    expect(moveEntry(lists, tab(1), place.list, place.index)['temp:s1']!.map((e) => e.id)).toEqual([2, 3, 1]);
+  });
+
+  it('counts positions without the dragged entry when moving within a list', () => {
+    expect(placeAround(lists, tab(1), tab(2), false)).toEqual({ list: 'temp:s1', index: 0 });
+    expect(placeAround(lists, tab(1), tab(2), true)).toEqual({ list: 'temp:s1', index: 1 });
+    expect(placeAround(lists, tab(1), tab(1), true)).toBeUndefined();
   });
 });
 

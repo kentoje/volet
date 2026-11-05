@@ -7,7 +7,8 @@ export const [getDrag, setDrag] = createContext<DragState>();
 
 /** What each draggable and drop target carries, so drag events can be translated. */
 export type DragData =
-  | { kind: 'entry'; entry: import('@/lib/model/dnd').Entry }
+  /** `axis`: rows stack vertically; favorites tiles sit side by side. */
+  | { kind: 'entry'; entry: import('@/lib/model/dnd').Entry; axis: 'x' | 'y' }
   | { kind: 'list'; list: import('@/lib/model/dnd').ListId }
   | { kind: 'space'; spaceId: string };
 
