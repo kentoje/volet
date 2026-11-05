@@ -90,6 +90,28 @@ test('a menu closes when the panel loses focus (a click in the page)', async ({ 
   await expect(panel.getByRole('menu')).toHaveCount(0);
 });
 
+test('a menu closes when the pointer leaves an unfocused panel, unless it comes back', async ({ panel }) => {
+  const menu = panel.getByRole('menu');
+  // A right-click doesn't focus the panel (macOS), so a click in the page would never blur it.
+  const unfocus = () => panel.evaluate(() => (document.hasFocus = () => false));
+  const leave = () =>
+    panel.evaluate(() =>
+      document.body.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: null })),
+    );
+
+  await visiblePage(panel).getByRole('heading').click({ button: 'right' });
+  await expect(menu).toBeVisible();
+  await unfocus();
+  await leave();
+  // Back over the panel before the grace period ends: it stays.
+  await panel.evaluate(() => document.body.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })));
+  await panel.waitForTimeout(500);
+  await expect(menu).toBeVisible();
+
+  await leave();
+  await expect(menu).toHaveCount(0);
+});
+
 test('hovering a Space dot shows its name', async ({ panel }) => {
   await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home' }).hover();
   await expect(panel.locator('[data-tooltip-content]')).toHaveText('Home');

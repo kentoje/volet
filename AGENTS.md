@@ -55,7 +55,9 @@ Three layers, each with a single job. Dependencies point downward only.
   `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`, `submenuSide`): menus open below the
   pointer so they can slide sideways and flip up to stay inside the panel; submenus open right, left, or below.
-  Menus close when the panel loses focus (a click in the page).
+  Menus close on a click in the page through `primitives/menu/dismiss.ts`: the panel only sees it as a blur, and
+  only if it had focus (a right-click doesn't give it focus on macOS), so an open menu asks for focus and, failing
+  that, closes when the pointer leaves the panel.
 - **Tooltips**: wrap a trigger in `primitives/tooltip/Tooltip.svelte` instead of a native `title` (`IconButton` does it
   for you). They show right away, close as soon as the pointer leaves the trigger, and fade in and out
   (`.tooltip-surface` in `app.css`); one `Tooltip.Provider` sits in `Sidebar.svelte`. Wrap neighboring triggers in a
