@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Space } from '@/lib/model/types';
 import {
   deleteNode,
+  fillNewFolder,
   folderContains,
   moveItem,
   moveNode,
@@ -62,6 +63,16 @@ describe('tree operations', () => {
     const folder = next[0]!.pinned[1]!;
     expect(folder.kind === 'folder' && folder.children).toEqual([]);
     expect(favorites).toEqual([{ id: 'p2', title: 'B', url: 'https://b', tabId: 8 }]);
+  });
+
+  it('fills a new folder with pins and tabs, in order', () => {
+    const folder = { kind: 'folder' as const, id: 'new', title: 'New folder', children: [] };
+    const pinOf = (tabId: number) => ({ kind: 'pin' as const, id: `pin-${tabId}`, title: 'T', url: 'https://t', tabId });
+    const next = fillNewFolder(spaces(), folder, 's1', 0, [{ kind: 'tab', id: 2 }, { kind: 'node', id: 'p1' }], pinOf);
+    expect(next[0]!.tabIds).toEqual([1]);
+    const created = next[0]!.pinned[0]!;
+    expect(created.kind === 'folder' && created.children.map((n) => n.id)).toEqual(['pin-2', 'p1']);
+    expect(next[0]!.pinned.map((n) => n.id)).toEqual(['new', 'f1']);
   });
 
   it('moves list items to a final index', () => {

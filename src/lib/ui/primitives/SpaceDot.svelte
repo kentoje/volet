@@ -28,9 +28,10 @@
     onclick,
   })}
 >
+  <!-- Not a pointer target: pointer events (and tooltips) belong to the button. -->
   <span
     class={[
-      'block rounded-full transition-[width,height,box-shadow] duration-200',
+      'pointer-events-none block rounded-full transition-[width,height,box-shadow] duration-200',
       active ? 'size-2.5 shadow-[0_0_0_3px_var(--pill)]' : 'size-[7px] opacity-80 group-hover/dot:opacity-100',
     ]}
     style:background="oklch(var(--dot-l) var(--dot-c) {hue})"

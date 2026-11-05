@@ -54,9 +54,16 @@ Three layers, each with a single job. Dependencies point downward only.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`, `submenuSide`): menus open below the
   pointer so they can slide sideways and flip up to stay inside the panel; submenus open right, left, or below.
   Menus close when the panel loses focus (a click in the page).
-- **Tooltips**: wrap a trigger in `primitives/Tooltip.svelte` instead of a native `title` (`IconButton` does it for
-  you). They show right away and fade in and out (`.tooltip-surface` in `app.css`); one `Tooltip.Provider` sits in
-  `Sidebar.svelte`.
+- **Tooltips**: wrap a trigger in `primitives/tooltip/Tooltip.svelte` instead of a native `title` (`IconButton` does it
+  for you). They show right away, close as soon as the pointer leaves the trigger, and fade in and out
+  (`.tooltip-surface` in `app.css`); one `Tooltip.Provider` sits in `Sidebar.svelte`. Wrap neighboring triggers in a
+  `TooltipGroup` (the Space dots, a row's buttons) and they share one tooltip that glides between them; keep those
+  triggers touching (no gap, inner icons `pointer-events-none`) or the tooltip closes in between.
+- **Selection**: `ui/sidebar/selection/selection.svelte.ts` holds the selected rows of the active Space (Shift and
+  Cmd/Ctrl+click, Chrome's tab strip model). Rows ask it first on click (`selection.click`), menus switch to the
+  selection's menu through `rowMenu`, and a drag that starts on a selected row carries the whole selection
+  (`DragState.group`, landed in order by the pure `groupDrop`). Page order and placement rules are pure
+  (`model/selection.ts`).
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
   (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).

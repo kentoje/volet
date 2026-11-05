@@ -3,19 +3,21 @@
   import { prefersReducedMotion } from 'svelte/motion';
   import { slide } from 'svelte/transition';
   import { activePinsIn } from '@/lib/model/pinned';
-  import type { Folder } from '@/lib/model/types';
+  import type { Folder, SpaceItem } from '@/lib/model/types';
   import FolderRow from '../primitives/FolderRow.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
   import RenameField from '../primitives/RenameField.svelte';
   import { folderMenu } from './menus/folder-menu';
   import { getMenuContext } from './menus/menu-context';
+  import { rowMenu } from './menus/selection-menu';
   import PinnedList from './PinnedList.svelte';
   import PinRow from './PinRow.svelte';
 
   let { folder, depth = 0, handle }: { folder: Folder; depth?: number; handle?: Attachment<HTMLElement> } = $props();
 
   const menus = getMenuContext();
-  const { store: sidebar, rename } = menus;
+  const { store: sidebar, rename, selection } = menus;
+  const entry = $derived<SpaceItem>({ kind: 'node', id: folder.id });
   const open = $derived(!sidebar.collapsedFolders.has(folder.id));
   const duration = $derived(prefersReducedMotion.current ? 0 : 160);
   /** Arc behavior: a collapsed folder still shows the tab you're on. */
@@ -34,14 +36,17 @@
   />
 {/snippet}
 
-<ContextMenu items={() => folderMenu(folder, menus)}>
+<ContextMenu items={() => rowMenu(entry, menus, () => folderMenu(folder, menus))}>
   <FolderRow
     title={folder.title}
     {open}
+    selected={selection.has(entry)}
     {depth}
     {handle}
     editor={rename.is(folder.id) ? editor : undefined}
-    ontoggle={() => sidebar.toggleFolder(folder.id)}
+    ontoggle={(event) => {
+      if (!selection.click(entry, event)) sidebar.toggleFolder(folder.id);
+    }}
     ondblclick={() => rename.start(folder.id)}
   />
 </ContextMenu>

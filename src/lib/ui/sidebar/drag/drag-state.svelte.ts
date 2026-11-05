@@ -6,15 +6,17 @@ import {
   type Lists,
   buildLists,
   canEnter,
-  dropAction,
   dropOnSpace,
+  groupDrop,
   locate,
   moveEntry,
   placeAround,
   sameEntry,
+  withoutEntry,
 } from '@/lib/model/dnd';
 import type { SidebarStore, SpaceId } from '@/lib/model/types';
 import { createLookup } from '@/lib/state/lookup';
+import type { Selection } from '../selection/selection.svelte';
 
 /** How long a dragged entry must hover another Space's dot before switching to that Space. */
 const SPACE_DWELL_MS = 450;
@@ -28,24 +30,31 @@ export type DropTarget =
 
 /**
  * Drag-and-drop state. While dragging, lists render from a draft that is
- * reordered live; on drop the draft becomes one store action, and the draft is
+ * reordered live; on drop the draft becomes store actions, and the draft is
  * kept until the store shows the result, so nothing jumps back.
+ *
+ * Dragging one of several selected rows drags them all: the others leave the
+ * lists while the dragged row carries them (shown as a stack), and they land
+ * together, in page order, where it is dropped.
  */
 export class DragState {
   /** The lists as they look mid-drag; undefined when not dragging. */
   draft = $state.raw<Lists | undefined>();
   active = $state.raw<Entry | undefined>();
+  /** Everything the drag carries, in page order (just the active entry, or the selection). */
+  group = $state.raw<Entry[]>([]);
 
   /** Called after hovering a dot switched Space: the drop zones moved and need re-measuring. */
   onSpaceSwitched: (() => void) | undefined;
 
   #store: SidebarStore;
+  #selection: Selection;
   #lookup: DndLookup;
-  #origin: { list: ListId; index: number } | undefined;
   #dwell: { spaceId: string; timer: ReturnType<typeof setTimeout> } | undefined;
 
-  constructor(store: SidebarStore) {
+  constructor(store: SidebarStore, selection: Selection) {
     this.#store = store;
+    this.#selection = selection;
     this.#lookup = createLookup(store);
   }
 
@@ -59,9 +68,13 @@ export class DragState {
   }
 
   start(entry: Entry): void {
-    this.draft = buildLists(this.#store.spaces, this.#store.favorites);
+    const selected = this.#selection.inGroup(entry) ? this.#selection.group() : [];
+    // Inside a selected folder, the row would move with the folder: drag it on its own then.
+    this.group = selected.some((other) => sameEntry(other, entry)) ? selected : [entry];
+    if (!this.#selection.has(entry)) this.#selection.clear();
+    const lists = buildLists(this.#store.spaces, this.#store.favorites);
+    this.draft = this.group.reduce((draft, other) => (sameEntry(other, entry) ? draft : withoutEntry(draft, other)), lists);
     this.active = entry;
-    this.#origin = locate(this.draft, entry);
   }
 
   over(target: DropTarget): void {
@@ -69,7 +82,7 @@ export class DragState {
     if (!draft || !active) return;
     this.#hoverSpace(target.kind === 'space' ? target.spaceId : undefined);
     const place = this.#placeFor(draft, active, target);
-    if (!place || !canEnter(active, place.list, this.#lookup)) return;
+    if (!place || !this.group.every((entry) => canEnter(entry, place.list, this.#lookup))) return;
     const current = locate(draft, active);
     if (current?.list === place.list && current.index === place.index) return;
     this.draft = moveEntry(draft, active, place.list, place.index);
@@ -93,11 +106,12 @@ export class DragState {
 
   async end(options: { canceled: boolean; target?: DropTarget }): Promise<void> {
     this.#hoverSpace(undefined);
-    const action = options.canceled ? undefined : this.#actionFor(options.target);
-    if (action) await this.#perform(action);
+    const actions = options.canceled ? [] : this.#actionsFor(options.target);
+    if (actions.length && this.group.length > 1) this.#selection.clear();
+    for (const action of actions) await this.#perform(action);
     this.draft = undefined;
     this.active = undefined;
-    this.#origin = undefined;
+    this.group = [];
   }
 
   #placeFor(draft: Lists, active: Entry, target: DropTarget): { list: ListId; index: number } | undefined {
@@ -110,13 +124,17 @@ export class DragState {
     return undefined;
   }
 
-  #actionFor(target: DropTarget | undefined): DropAction | undefined {
-    const { draft, active } = this;
-    if (!draft || !active) return undefined;
-    if (target?.kind === 'space') return dropOnSpace(active, target.spaceId, this.#lookup);
+  #actionsFor(target: DropTarget | undefined): DropAction[] {
+    const { draft, active, group } = this;
+    if (!draft || !active) return [];
+    if (target?.kind === 'space') return group.flatMap((entry) => dropOnSpace(entry, target.spaceId, this.#lookup) ?? []);
     const at = locate(draft, active);
-    if (!at || (at.list === this.#origin?.list && at.index === this.#origin.index)) return undefined;
-    return dropAction(active, at.list, at.index, this.#lookup);
+    if (!at) return [];
+    const list = draft[at.list]!;
+    // Show the group where it lands right away; the store catches up behind the draft.
+    this.draft = { ...draft, [at.list]: [...list.slice(0, at.index), ...group, ...list.slice(at.index + 1)] };
+    const lists = buildLists(this.#store.spaces, this.#store.favorites);
+    return groupDrop(lists, group, at.list, list[at.index - 1], this.#lookup);
   }
 
   #perform(action: DropAction) {

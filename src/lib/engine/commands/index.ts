@@ -2,6 +2,7 @@ import type { Command } from '../protocol';
 import { archiveHandlers } from './archive';
 import { bookmarkHandlers } from './bookmarks';
 import { favoriteHandlers } from './favorites';
+import { folderHandlers } from './folders';
 import { importHandlers } from './import';
 import { pageHandlers } from './pages';
 import { pinHandlers } from './pins';
@@ -14,6 +15,7 @@ const handlers: Handlers = {
   ...tabHandlers,
   ...pinHandlers,
   ...bookmarkHandlers,
+  ...folderHandlers,
   ...favoriteHandlers,
   ...spaceHandlers,
   ...archiveHandlers,

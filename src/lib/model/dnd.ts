@@ -1,7 +1,7 @@
-import type { Favorite, PinnedNode, Space, SpaceId, TabId } from './types';
+import type { Favorite, PinnedNode, Space, SpaceId, SpaceItem, TabId } from './types';
 
 /** Something that can be dragged: a temporary tab, a pin or folder (bookmark node), or a favorite. */
-export type Entry = { kind: 'tab'; id: TabId } | { kind: 'node'; id: string } | { kind: 'favorite'; id: string };
+export type Entry = SpaceItem | { kind: 'favorite'; id: string };
 
 /** A list entries can be dropped into: a Space's temporary tabs, a folder's pins, or the favorites. */
 export type ListId = `temp:${SpaceId}` | `pins:${string}` | 'favorites';
@@ -94,6 +94,12 @@ export function placeAround(
   return { list: at.list, index: after ? index + 1 : index };
 }
 
+/** The lists without `entry`. */
+export function withoutEntry(lists: Lists, entry: Entry): Lists {
+  const at = locate(lists, entry);
+  return at ? { ...lists, [at.list]: lists[at.list]!.filter((_, i) => i !== at.index) } : lists;
+}
+
 /** Move an entry to `index` in `list` (index counted after removing it from where it was). */
 export function moveEntry(lists: Lists, entry: Entry, list: ListId, index: number): Lists {
   const from = locate(lists, entry);
@@ -131,6 +137,35 @@ export function dropAction(entry: Entry, list: ListId, index: number, lookup: Dn
       if (entry.kind === 'node') return { type: 'moveNode', id: entry.id, parentId: id, index };
       return tabId !== undefined ? { type: 'pinTab', tabId, parentId: id, index } : undefined;
   }
+}
+
+/**
+ * The store calls that drop `group` into `list`, in order, right after `after` (at the start
+ * when undefined). Each call's index accounts for the moves before it, so the group lands
+ * together even when some of it starts in that list. Entries already in place are skipped.
+ */
+export function groupDrop(
+  lists: Lists,
+  group: Entry[],
+  list: ListId,
+  after: Entry | undefined,
+  lookup: DndLookup,
+): DropAction[] {
+  const actions: DropAction[] = [];
+  let current = lists;
+  let previous = after;
+  for (const entry of group) {
+    const others = (current[list] ?? []).filter((other) => !sameEntry(other, entry));
+    const index = previous ? others.findIndex((other) => sameEntry(other, previous!)) + 1 : 0;
+    const from = locate(current, entry);
+    if (from?.list !== list || from.index !== index) {
+      const action = dropAction(entry, list, index, lookup);
+      if (action) actions.push(action);
+    }
+    current = moveEntry(current, entry, list, index);
+    previous = entry;
+  }
+  return actions;
 }
 
 /** Dropping on a Space's dot in the switcher: move the entry to the end of that Space. */

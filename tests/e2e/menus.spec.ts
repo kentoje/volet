@@ -93,3 +93,67 @@ test('hovering a Space dot shows its name', async ({ panel }) => {
   await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home' }).hover();
   await expect(panel.locator('[data-tooltip-content]')).toHaveText('Home');
 });
+
+/** Record every tooltip mount and state change in the panel from now on. */
+const watchTooltips = (panel: Page) =>
+  panel.evaluate(() => {
+    const log: string[] = ((window as unknown as { tooltipLog: string[] }).tooltipLog = []);
+    new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === 'childList' && m.addedNodes.length) log.push('mounted');
+        if (m.type === 'attributes') log.push((m.target as HTMLElement).dataset.state ?? '');
+      }
+    }).observe(document.querySelector('[data-overlay-root]')!, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-state'],
+    });
+  });
+const tooltipLog = (panel: Page) => panel.evaluate(() => (window as unknown as { tooltipLog: string[] }).tooltipLog);
+
+test('the Space dots share one tooltip, which moves to the hovered dot', async ({ panel }) => {
+  await panel.getByRole('button', { name: 'New Space' }).click();
+  const dots = panel.getByRole('navigation', { name: 'Spaces' }).locator('li button');
+  await expect(dots).toHaveCount(2);
+  // (The New Space button's own tooltip may still be fading out.)
+  const tooltip = panel.locator('[data-tooltip-content]:not([data-state="closed"])');
+
+  await dots.nth(0).hover();
+  await expect(tooltip).toHaveText('Home');
+  await watchTooltips(panel);
+  await dots.nth(1).hover();
+  await expect(tooltip).toHaveText((await dots.nth(1).getAttribute('aria-label'))!);
+  await expect(tooltip).toHaveCount(1);
+  // It never closed or remounted on the way: the same tooltip moved.
+  expect(await tooltipLog(panel)).toEqual([]);
+});
+
+test("a row's buttons share one tooltip, gone as soon as the pointer leaves them", async ({ worker, windowId, panel }) => {
+  const tabId = await worker.evaluate(
+    async (id) => (await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Report</title>' })).id!,
+    windowId,
+  );
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Report');
+  const homeId = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+  });
+  await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
+  const tooltip = panel.locator('[data-tooltip-content]');
+  const pinRow = visiblePage(panel).locator('li', { has: panel.getByRole('button', { name: 'Report', exact: true }) });
+
+  await pinRow.hover();
+  await pinRow.getByRole('button', { name: 'Unpin' }).hover();
+  await expect(tooltip).toHaveText('Unpin (it moves to the tabs below)');
+  await watchTooltips(panel);
+  const close = pinRow.getByRole('button', { name: 'Close tab' });
+  await close.hover();
+  await expect(tooltip).toHaveText('Close tab (it stays pinned)');
+  expect(await tooltipLog(panel)).toEqual([]);
+
+  // Up toward the row above, through where the tooltip sits: it is already gone.
+  const box = (await close.boundingBox())!;
+  await panel.mouse.move(box.x + box.width / 2, box.y - 14);
+  await expect(tooltip).toHaveCount(0);
+});

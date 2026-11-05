@@ -6,8 +6,11 @@
   interface Props {
     title: string;
     open: boolean;
+    /** Part of a multi-row selection. */
+    selected?: boolean;
     depth?: number;
-    ontoggle: () => void;
+    /** A click on the row (the event tells whether a modifier key was held). */
+    ontoggle: (event: MouseEvent) => void;
     ondblclick?: () => void;
     /** Attached to the button (e.g. to make it a drag handle). */
     handle?: Attachment<HTMLElement>;
@@ -15,10 +18,12 @@
     editor?: Snippet;
   }
 
-  let { title, open, depth = 0, ontoggle, ondblclick, handle, editor }: Props = $props();
+  let { title, open, selected = false, depth = 0, ontoggle, ondblclick, handle, editor }: Props = $props();
 
-  const rowClass =
-    'flex h-[34px] w-full items-center gap-2.5 rounded-[10px] pr-3 pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] transition-colors duration-100 hover:bg-hover';
+  const rowClass = $derived([
+    'flex h-[34px] w-full items-center gap-2.5 rounded-[10px] pr-3 pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] transition-colors duration-100',
+    selected ? 'bg-selected' : 'hover:bg-hover',
+  ]);
 </script>
 
 {#snippet icon()}
@@ -41,6 +46,7 @@
     type="button"
     class={rowClass}
     style:--depth={depth}
+    data-selected={selected || undefined}
     aria-expanded={open}
     onclick={ontoggle}
     {ondblclick}

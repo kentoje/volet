@@ -5,17 +5,19 @@ import type { SidebarStore, SpaceId } from '@/lib/model/types';
 import type { ConfirmState } from '../editing/confirm-state.svelte';
 import { getConfirm, getRename } from '../editing/context';
 import type { RenameState } from '../editing/rename-state.svelte';
+import { getSelection, type Selection } from '../selection/selection.svelte';
 
 /** What menu builders can act on. */
 export interface MenuContext {
   store: SidebarStore;
   rename: RenameState;
   confirm: ConfirmState;
+  selection: Selection;
 }
 
 /** Call during component setup (it reads contexts). */
 export function getMenuContext(): MenuContext {
-  return { store: getSidebar(), rename: getRename(), confirm: getConfirm() };
+  return { store: getSidebar(), rename: getRename(), confirm: getConfirm(), selection: getSelection() };
 }
 
 /** "Move to Space" submenu listing every other Space. */

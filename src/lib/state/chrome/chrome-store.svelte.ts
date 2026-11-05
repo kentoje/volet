@@ -1,7 +1,7 @@
 import { EMPTY_STATE, derive, type SidebarState } from '@/lib/engine/derive';
 import type { Command } from '@/lib/engine/protocol';
 import { collapsedItem } from '@/lib/engine/storage';
-import type { Favorite, LiveTab, SidebarStore, Space, SpaceId, TabId } from '@/lib/model/types';
+import type { Favorite, Folder, LiveTab, SidebarStore, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
 import * as tree from '../tree';
 import { watchWindow } from './chrome-events';
 import { sayHello, sendCommand } from './command-client';
@@ -181,6 +181,19 @@ export class ChromeSidebarStore implements SidebarStore {
 
   async createFolder(parentId: string) {
     await this.#run({ type: 'createFolder', parentId, index: 0, title: NEW_FOLDER_TITLE });
+  }
+
+  async createFolderWith(items: SpaceItem[], parentId: string, index?: number) {
+    const title = NEW_FOLDER_TITLE;
+    const id = await this.#run({ type: 'createFolderWith', windowId: this.windowId, parentId, index, title, items }, () => {
+      const folder: Folder = { kind: 'folder', id: 'pending-folder', title, children: [] };
+      for (const item of items) if (item.kind === 'tab') this.#releaseTab(item.id);
+      this.spaces = tree.fillNewFolder(this.spaces, folder, parentId, index, items, (tabId) => {
+        const tab = this.tabs.get(tabId);
+        return tab && { kind: 'pin', id: `pending-${tabId}`, title: tab.title, url: tab.url, tabId };
+      });
+    });
+    return typeof id === 'string' ? id : undefined;
   }
 
   async toggleFolder(folderId: string) {

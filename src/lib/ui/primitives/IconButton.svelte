@@ -1,7 +1,7 @@
 <script lang="ts">
   import { mergeProps } from 'bits-ui';
   import type { Snippet } from 'svelte';
-  import Tooltip from './Tooltip.svelte';
+  import Tooltip from './tooltip/Tooltip.svelte';
 
   interface Props {
     label: string;
@@ -22,7 +22,8 @@
       type="button"
       {...mergeProps(props, {
         class: [
-          'grid size-6 place-items-center rounded-[7px] text-ink-muted transition-opacity duration-100 hover:bg-hover hover:text-ink',
+          // Icons don't take the pointer: the button does, so a shared tooltip sees it go button to button.
+          'grid size-6 place-items-center rounded-[7px] text-ink-muted transition-opacity duration-100 hover:bg-hover hover:text-ink *:pointer-events-none',
           reveal && 'opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100',
         ],
         'aria-label': label,

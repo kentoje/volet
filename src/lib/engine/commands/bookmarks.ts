@@ -62,8 +62,4 @@ export const bookmarkHandlers = {
   async renameBookmark({ id, title }) {
     await browser.bookmarks.update(id, { title });
   },
-
-  async createFolder({ parentId, index, title }) {
-    return (await browser.bookmarks.create({ parentId, index, title })).id;
-  },
 } satisfies Partial<Handlers>;

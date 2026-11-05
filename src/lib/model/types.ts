@@ -42,6 +42,9 @@ export interface Space {
   tabIds: TabId[];
 }
 
+/** Something listed on a Space's page: a temporary tab, or a pin or folder. */
+export type SpaceItem = { kind: 'tab'; id: TabId } | { kind: 'node'; id: string };
+
 /** A favorite: shared across all Spaces, shown in the grid at the top. */
 export interface Favorite {
   id: string;
@@ -52,6 +55,9 @@ export interface Favorite {
 
 /** An action's result: resolves once the store shows the change (immediately for synchronous stores). */
 export type Done = void | Promise<void>;
+
+/** An action that creates something: resolves to its id (undefined if it couldn't be created). */
+export type Created = string | undefined | Promise<string | undefined>;
 
 /** Everything the sidebar renders and can do. Implemented by the Chrome store and the fake store. */
 export interface SidebarStore {
@@ -89,6 +95,11 @@ export interface SidebarStore {
   /** Delete a pin or folder; open tabs stay as temporary tabs. */
   deleteNode(id: string): Done;
   createFolder(parentId: string): Done;
+  /**
+   * Create a folder at `index` in a Space or folder and put `items` in it, in order: pins and
+   * folders move in, tabs are pinned in. Resolves to the new folder's id.
+   */
+  createFolderWith(items: SpaceItem[], parentId: string, index?: number): Created;
   toggleFolder(folderId: string): Done;
 
   // Favorites

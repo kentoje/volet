@@ -5,6 +5,7 @@
   import type { Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import { type Entry, type ListId, entryKey } from '@/lib/model/dnd';
+  import DragStack from '../../primitives/DragStack.svelte';
   import { type DragData, getDrag, priority, sensors } from './context';
 
   interface Props {
@@ -51,10 +52,14 @@
   const handle: Attachment<HTMLElement> = (node) => sortable.attachHandle(node);
 </script>
 
+<!-- The copy left in the list is ghosted; the row under the pointer (data-dnd-dragging) is not. -->
 <svelte:element
   this={tag}
-  class={['transition-opacity', drag.isActive(entry) && 'opacity-35']}
+  class={['relative isolate transition-opacity', drag.isActive(entry) && 'opacity-35 data-dnd-dragging:opacity-100']}
   {@attach sortable.attach}
 >
   {@render children(handle)}
+  {#if drag.isActive(entry) && drag.group.length > 1}
+    <DragStack count={drag.group.length} />
+  {/if}
 </svelte:element>

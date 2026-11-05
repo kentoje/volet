@@ -1,4 +1,4 @@
-import type { Favorite, Pin, PinnedNode, Space, SpaceId, TabId } from '@/lib/model/types';
+import type { Favorite, Folder, Pin, PinnedNode, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
 
 /**
  * Pure, immutable operations on the sidebar's content. The Chrome store uses them
@@ -136,6 +136,30 @@ export function insertNode(spaces: Space[], node: PinnedNode, parentId: string, 
 export function moveNode(spaces: Space[], id: string, parentId: string, index?: number): Space[] {
   const { spaces: without, removed } = removeNode(spaces, id);
   return removed ? insertNode(without, removed, parentId, index) : spaces;
+}
+
+/**
+ * Insert `folder` (empty) at `index` in a Space or folder, then put `items` in it in order:
+ * pins and folders move in, tabs become the pins `pinOf` makes for them.
+ */
+export function fillNewFolder(
+  spaces: Space[],
+  folder: Folder,
+  parentId: string,
+  index: number | undefined,
+  items: SpaceItem[],
+  pinOf: (tabId: TabId) => Pin | undefined,
+): Space[] {
+  let next = insertNode(spaces, folder, parentId, index);
+  for (const item of items) {
+    if (item.kind === 'node') {
+      next = moveNode(next, item.id, folder.id);
+    } else {
+      const pin = pinOf(item.id);
+      if (pin) next = pinTemporary(next, pin, folder.id);
+    }
+  }
+  return next;
 }
 
 /** Delete a pin or folder. Tabs that were open in its pins stay, as temporary tabs. */

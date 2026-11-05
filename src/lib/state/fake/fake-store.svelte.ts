@@ -1,5 +1,5 @@
 import { nextHue } from '@/lib/engine/colors';
-import type { Favorite, Folder, LiveTab, SidebarStore, Space, SpaceId, TabId } from '@/lib/model/types';
+import type { Favorite, Folder, LiveTab, SidebarStore, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
 import * as tree from '../tree';
 import { seedCollapsed, seedFavorites, seedSpaces, seedTabMap } from './seed';
 
@@ -127,6 +127,16 @@ export class FakeSidebarStore implements SidebarStore {
   createFolder(parentId: string) {
     const folder: Folder = { kind: 'folder', id: `folder-${this.#nextId++}`, title: 'New folder', children: [] };
     this.spaces = tree.insertNode(this.spaces, folder, parentId, 0);
+  }
+
+  createFolderWith(items: SpaceItem[], parentId: string, index?: number) {
+    const folder: Folder = { kind: 'folder', id: `folder-${this.#nextId++}`, title: 'New folder', children: [] };
+    for (const item of items) if (item.kind === 'tab') this.#release(item.id);
+    this.spaces = tree.fillNewFolder(this.spaces, folder, parentId, index, items, (tabId) => {
+      const tab = this.tabs.get(tabId);
+      return tab && { kind: 'pin', id: `pin-${this.#nextId++}`, title: tab.title, url: tab.url, tabId };
+    });
+    return folder.id;
   }
 
   toggleFolder(folderId: string) {

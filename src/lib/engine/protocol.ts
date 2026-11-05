@@ -1,3 +1,4 @@
+import type { SpaceItem } from '../model/types';
 import type { ImportedSidebar } from '../import/types';
 import type { PaletteItem } from './palette/types';
 
@@ -27,6 +28,8 @@ export type Command =
   | { type: 'renameBookmark'; id: string; title: string }
   | { type: 'deleteBookmark'; windowId: number; id: string }
   | { type: 'createFolder'; parentId: string; index?: number; title: string }
+  /** Create a folder and put items in it, in order (pins and folders move in, tabs are pinned). */
+  | { type: 'createFolderWith'; windowId: number; parentId: string; index?: number; title: string; items: SpaceItem[] }
   | { type: 'openFavorite'; windowId: number; favoriteId: string }
   | { type: 'addFavorite'; windowId: number; tabId: number; index?: number }
   /** Turn a pin into a favorite (its bookmark moves to Favorites, its open tab follows). */

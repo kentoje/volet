@@ -3,6 +3,7 @@
   import { DragDropProvider } from '@dnd-kit/svelte';
   import type { Snippet } from 'svelte';
   import type { SidebarStore } from '@/lib/model/types';
+  import { getSelection } from '../selection/selection.svelte';
   import { type DragData, sensors, setDrag } from './context';
   import { type DropTarget, DragState } from './drag-state.svelte';
   import { PAGE_SLIDE_MS } from '../../primitives/motion';
@@ -11,7 +12,7 @@
 
   // The store is created once at mount and never replaced.
   // svelte-ignore state_referenced_locally
-  const drag = setDrag(new DragState(store));
+  const drag = setDrag(new DragState(store, getSelection()));
 
   /** dnd-kit measures drop zones once; after a Space switch the pages slid, so measure again. */
   let manager: DragDropManager | undefined;

@@ -10,6 +10,7 @@
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-hover: var(--hover);
+  --color-selected: var(--selected);
   --color-pill: var(--pill);
   --color-tile: var(--tile);
   --color-rule: var(--rule);

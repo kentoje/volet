@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type DndLookup, buildLists, canEnter, dropAction, dropOnSpace, moveEntry, placeAround } from './dnd';
+import { type DndLookup, buildLists, canEnter, dropAction, dropOnSpace, groupDrop, moveEntry, placeAround, tempList } from './dnd';
 import type { Favorite, PinnedNode, Space } from './types';
 
 const nodes: PinnedNode[] = [
@@ -112,5 +112,31 @@ describe('dropAction', () => {
     expect(dropOnSpace({ kind: 'tab', id: 1 }, 's2', lookup)).toEqual({ type: 'moveTab', tabId: 1, spaceId: 's2' });
     expect(dropOnSpace({ kind: 'node', id: 'docs' }, 's2', lookup)).toEqual({ type: 'moveNode', id: 'docs', parentId: 's2' });
     expect(dropOnSpace({ kind: 'favorite', id: 'f2' }, 's2', lookup)).toBeUndefined();
+  });
+});
+
+describe('groupDrop', () => {
+  const tab = (id: number) => ({ kind: 'tab' as const, id });
+
+  it('lands the group together, in order, even when it starts around the target', () => {
+    // [1, 2, 3, 4, 5], drop 2 and 4 after 5: they end up [1, 3, 5, 2, 4].
+    const lists = buildLists([{ id: 's', name: 'S', hue: 0, pinned: [], tabIds: [1, 2, 3, 4, 5] }], []);
+    expect(groupDrop(lists, [tab(2), tab(4)], tempList('s'), tab(5), lookup)).toEqual([
+      { type: 'moveTab', tabId: 2, spaceId: 's', index: 4 },
+      { type: 'moveTab', tabId: 4, spaceId: 's', index: 4 },
+    ]);
+  });
+
+  it('skips entries already in place', () => {
+    expect(groupDrop(buildLists(spaces, favorites), [tab(1), tab(3)], tempList('s1'), tab(2), lookup)).toEqual([
+      { type: 'moveTab', tabId: 1, spaceId: 's1', index: 1 },
+    ]);
+  });
+
+  it('pins tabs one after the other, from the start of a list', () => {
+    expect(groupDrop(buildLists(spaces, favorites), [tab(2), tab(3)], 'pins:s1', undefined, lookup)).toEqual([
+      { type: 'pinTab', tabId: 2, parentId: 's1', index: 0 },
+      { type: 'pinTab', tabId: 3, parentId: 's1', index: 1 },
+    ]);
   });
 });

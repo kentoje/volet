@@ -4,7 +4,8 @@
   import IconButton from '../primitives/IconButton.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
   import SpaceDot from '../primitives/SpaceDot.svelte';
-  import Tooltip from '../primitives/Tooltip.svelte';
+  import Tooltip from '../primitives/tooltip/Tooltip.svelte';
+  import TooltipGroup from '../primitives/tooltip/TooltipGroup.svelte';
   import SpaceDropTarget from './drag/SpaceDropTarget.svelte';
   import { getMenuContext } from './menus/menu-context';
   import { spaceMenu } from './menus/space-menu';
@@ -23,30 +24,34 @@
       </IconButton>
     </div>
   {/if}
-  <ul class="flex flex-1 items-center justify-center gap-0.5">
-    {#each sidebar.spaces as space (space.id)}
-      <li>
-        <SpaceDropTarget spaceId={space.id}>
-          {#snippet children(highlighted)}
-            <ContextMenu items={() => spaceMenu(space, menus)}>
-              <Tooltip label={space.name}>
-                {#snippet trigger(props)}
-                  <SpaceDot
-                    {...props}
-                    name={space.name}
-                    hue={space.hue}
-                    active={space.id === sidebar.activeSpaceId}
-                    {highlighted}
-                    onclick={() => sidebar.switchSpace(space.id)}
-                  />
-                {/snippet}
-              </Tooltip>
-            </ContextMenu>
-          {/snippet}
-        </SpaceDropTarget>
-      </li>
-    {/each}
-  </ul>
+  <!-- One tooltip for all the dots: it glides to the hovered one. The dots touch (no gap)
+       so the pointer goes straight from one to the next and the tooltip never closes between. -->
+  <TooltipGroup>
+    <ul class="flex flex-1 items-center justify-center">
+      {#each sidebar.spaces as space (space.id)}
+        <li>
+          <SpaceDropTarget spaceId={space.id}>
+            {#snippet children(highlighted)}
+              <ContextMenu items={() => spaceMenu(space, menus)}>
+                <Tooltip label={space.name}>
+                  {#snippet trigger(props)}
+                    <SpaceDot
+                      {...props}
+                      name={space.name}
+                      hue={space.hue}
+                      active={space.id === sidebar.activeSpaceId}
+                      {highlighted}
+                      onclick={() => sidebar.switchSpace(space.id)}
+                    />
+                  {/snippet}
+                </Tooltip>
+              </ContextMenu>
+            {/snippet}
+          </SpaceDropTarget>
+        </li>
+      {/each}
+    </ul>
+  </TooltipGroup>
   <div class="absolute right-2.5">
     <IconButton label="New Space" onclick={() => sidebar.createSpace()}>
       <Plus size={16} strokeWidth={2} />

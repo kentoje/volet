@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Attachment } from 'svelte/attachments';
   import { CornerUpLeft, PinOff, X } from '@lucide/svelte';
-  import type { Pin } from '@/lib/model/types';
+  import type { Pin, SpaceItem } from '@/lib/model/types';
   import { sameUrl, shortUrl } from '@/lib/model/url';
   import { spaceOfNode } from '@/lib/state/tree';
   import IconButton from '../primitives/IconButton.svelte';
@@ -10,11 +10,13 @@
   import TabRow from '../primitives/TabRow.svelte';
   import { getMenuContext } from './menus/menu-context';
   import { pinMenu } from './menus/pin-menu';
+  import { rowMenu } from './menus/selection-menu';
 
   let { pin, depth = 0, handle }: { pin: Pin; depth?: number; handle?: Attachment<HTMLElement> } = $props();
 
   const menus = getMenuContext();
-  const { store: sidebar, rename } = menus;
+  const { store: sidebar, rename, selection } = menus;
+  const entry = $derived<SpaceItem>({ kind: 'node', id: pin.id });
   const space = $derived(spaceOfNode(sidebar.spaces, pin.id));
   const tab = $derived(pin.tabId !== undefined ? sidebar.tabs.get(pin.tabId) : undefined);
   /** The pin's tab has left its home URL: show where it is now, and offer a way back. */
@@ -43,13 +45,14 @@
   />
 {/snippet}
 
-<ContextMenu items={() => pinMenu(pin, away, menus)}>
+<ContextMenu items={() => rowMenu(entry, menus, () => pinMenu(pin, away, menus))}>
   <TabRow
     title={away ? tab!.title : pin.title}
     url={tab?.url ?? pin.url}
     icon={tab?.favIconUrl}
     prefix={away ? '/' : undefined}
     active={tab !== undefined && tab.id === sidebar.activeTabId}
+    selected={selection.has(entry)}
     unloaded={tab === undefined}
     loading={tab?.status === 'loading'}
     {depth}
@@ -57,7 +60,9 @@
     buttons={{ shown: 0, onHover: tab ? 2 : 1 }}
     leading={away ? backButton : undefined}
     editor={rename.is(pin.id) ? editor : undefined}
-    onactivate={() => sidebar.openPin(pin.id)}
+    onactivate={(event) => {
+      if (!selection.click(entry, event)) sidebar.openPin(pin.id);
+    }}
     ondblclick={() => rename.start(pin.id)}
   >
     {#snippet trailing()}

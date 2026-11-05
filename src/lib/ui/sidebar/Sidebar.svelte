@@ -13,6 +13,7 @@
   import FavoritesGrid from './FavoritesGrid.svelte';
   import { PanelPaletteState, setPanelPalette } from './palette/panel-palette-state.svelte';
   import PanelPalette from './palette/PanelPalette.svelte';
+  import { Selection, setSelection } from './selection/selection.svelte';
   import SpacePage from './SpacePage.svelte';
   import SpaceSwitcher from './SpaceSwitcher.svelte';
   import { SpaceSwipe } from './space-swipe.svelte';
@@ -33,6 +34,7 @@
   const sidebar = setSidebar(store);
   setRename(new RenameState());
   setConfirm(new ConfirmState());
+  const selection = setSelection(new Selection(sidebar));
   // svelte-ignore state_referenced_locally
   const panelPalette = setPanelPalette(palette ? new PanelPaletteState() : undefined);
 
@@ -49,6 +51,8 @@
   const tint = new SpaceTint({ spaces: () => sidebar.spaces, activeIndex: () => activeIndex, swipe });
 </script>
 
+<svelte:window onkeydown={(event) => event.key === 'Escape' && selection.clear()} />
+
 <div
   class="sidebar @container relative flex h-full flex-col overflow-hidden select-none"
   data-scheme={scheme ?? (prefersDark.current ? 'dark' : 'light')}
@@ -57,8 +61,9 @@
   bind:clientWidth={swipe.width}
   {@attach swipe.attach}
 >
-  <!-- Tooltips appear right away (they fade in and out, see .tooltip-surface). -->
-  <Tooltip.Provider delayDuration={0}>
+  <!-- Tooltips appear right away and close as soon as the pointer leaves their trigger, so they
+       never stand in the way (they fade in and out, see .tooltip-surface). -->
+  <Tooltip.Provider delayDuration={0} disableHoverableContent>
     <DragLayer store={sidebar}>
       <FavoritesGrid />
       <Pager

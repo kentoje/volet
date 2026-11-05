@@ -54,6 +54,11 @@
     animation: tooltip-fade-out 100ms ease-in forwards;
   }
 
+  /* A shared tooltip (TooltipGroup) glides between its triggers. */
+  [data-bits-floating-content-wrapper][data-glide] {
+    transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
   .menu-surface {
     z-index: 60;
     min-width: 210px;
@@ -87,6 +92,10 @@
 
   .tooltip-surface {
     animation: none !important;
+  }
+
+  [data-bits-floating-content-wrapper][data-glide] {
+    transition: none;
   }
 }
 
