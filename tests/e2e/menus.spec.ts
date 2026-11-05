@@ -82,6 +82,55 @@ test('menus stay inside a narrow panel, even from its corner', async ({ panel })
   expect(box.y + box.height).toBeLessThanOrEqual(500);
 });
 
+test('a submenu expands in place, without covering the items below it', async ({ worker, windowId, panel }) => {
+  await panel.setViewportSize({ width: 300, height: 600 });
+  await panel.getByRole('button', { name: 'New Space' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('button', { name: 'Home', exact: true }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+  const tabId = await worker.evaluate(
+    async (id) => (await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Report</title>' })).id!,
+    windowId,
+  );
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Report');
+  await visiblePage(panel).getByRole('button', { name: 'Report', exact: true }).click({ button: 'right' });
+
+  const move = menuItem(panel, 'Move to Space');
+  const close = menuItem(panel, 'Close tab');
+  const closeBefore = (await close.boundingBox())!;
+  await move.click();
+  await expect(move).toHaveAttribute('aria-expanded', 'true');
+  const target = menuItem(panel, 'Space 2');
+  await expect(target).toBeVisible();
+  // Its items sit between "Move to Space" and the items after it, which moved down and stay visible.
+  const [moveBox, targetBox] = [(await move.boundingBox())!, (await target.boundingBox())!];
+  await expect.poll(async () => (await close.boundingBox())!.y).toBeGreaterThan(closeBefore.y);
+  const closeAfter = (await close.boundingBox())!;
+  expect(targetBox.y).toBeGreaterThanOrEqual(moveBox.y + moveBox.height);
+  expect(closeAfter.y).toBeGreaterThanOrEqual(targetBox.y + targetBox.height);
+
+  await target.click();
+  await expect.poll(async () => (await stripState(worker, windowId)).find((tab) => tab.id === tabId)?.group).toBe('Space 2');
+});
+
+test('a submenu opens and closes with the arrow keys', async ({ panel }) => {
+  await panel.getByRole('button', { name: 'New Space' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home', exact: true }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+  // A Space's menu has no submenu, a folder's or a tab's does: use the New tab row's tab.
+  await visiblePage(panel).getByRole('button', { name: 'about:blank' }).click({ button: 'right' });
+  const move = menuItem(panel, 'Move to Space');
+  await move.focus();
+  await panel.keyboard.press('ArrowRight');
+  await expect(move).toHaveAttribute('aria-expanded', 'true');
+  await expect(menuItem(panel, 'Space 2')).toBeVisible();
+  await menuItem(panel, 'Space 2').focus();
+  await panel.keyboard.press('ArrowLeft');
+  await expect(move).toHaveAttribute('aria-expanded', 'false');
+  await expect(move).toBeFocused();
+});
+
 test('a menu closes when the panel loses focus (a click in the page)', async ({ panel }) => {
   await visiblePage(panel).getByRole('heading').click({ button: 'right' });
   await expect(panel.getByRole('menu')).toBeVisible();

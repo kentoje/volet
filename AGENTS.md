@@ -53,8 +53,10 @@ Three layers, each with a single job. Dependencies point downward only.
   lists refuse them with `accept: notSpaceDot`, so give any new droppable that filter.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
-  Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`, `submenuSide`): menus open below the
-  pointer so they can slide sideways and flip up to stay inside the panel; submenus open right, left, or below.
+  Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`): menus open below the pointer so they can
+  slide sideways and flip up to stay inside the panel, and scroll when taller than it. Submenus expand in place under
+  their item (`SubMenu.svelte`) instead of flying out: there's no room beside a menu in a side panel, and one laid
+  over it would hide its other items.
   A right-click doesn't give the side panel focus (macOS), and nothing can, so menus must work in an unfocused
   panel (`primitives/menu/dismiss.ts`): they close on blur or, without focus, when the pointer leaves the panel,
   and their items also highlight on hover while `<html data-unfocused>` is set (Bits UI highlights through focus
