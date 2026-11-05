@@ -4,7 +4,12 @@ import { bookmarkTree, expect, stripState, test } from './fixtures';
 const visiblePage = (panel: Page) => panel.locator('section:not([inert])');
 
 /** Drag with real pointer events, the way a person would (past dnd-kit's activation distance). */
-async function drag(panel: Page, from: Locator, to: Locator, { offsetY = 0 } = {}) {
+async function drag(
+  panel: Page,
+  from: Locator,
+  to: Locator,
+  { offsetY = 0, beforeDrop }: { offsetY?: number; beforeDrop?: () => Promise<void> } = {},
+) {
   const a = (await from.boundingBox())!;
   const b = (await to.boundingBox())!;
   await panel.mouse.move(a.x + 30, a.y + a.height / 2);
@@ -13,6 +18,7 @@ async function drag(panel: Page, from: Locator, to: Locator, { offsetY = 0 } = {
   // Wide targets (rows) are aimed near their left edge, small ones (dots, tiles) at their center.
   await panel.mouse.move(b.x + (b.width > 80 ? 30 : b.width / 2), b.y + b.height / 2 + offsetY, { steps: 15 });
   await panel.waitForTimeout(150);
+  await beforeDrop?.();
   await panel.mouse.up();
 }
 
@@ -82,7 +88,9 @@ test('dropping a tab on a Space dot moves it to that Space', async ({ worker, wi
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)
     .toBe('Home');
-  await drag(panel, row(panel, 'Traveler'), panel.getByRole('button', { name: 'Space 2', exact: true }));
+  const dot = panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Space 2', exact: true });
+  // Release only once the dot shows it's the drop target, as a person would.
+  await drag(panel, row(panel, 'Traveler'), dot, { beforeDrop: () => expect(dot).toHaveClass(/scale-125/) });
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)
     .toBe('Space 2');

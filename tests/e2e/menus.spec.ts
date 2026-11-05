@@ -65,3 +65,18 @@ test('pins can be renamed and folders created from menus', async ({ worker, wind
     .toEqual(['New folder', 'Weekly report']);
   await expect(visiblePage(panel).getByRole('button', { name: 'New folder' })).toBeVisible();
 });
+
+test('menus stay inside a narrow panel, even from its corner', async ({ panel }) => {
+  await panel.setViewportSize({ width: 300, height: 500 });
+  await panel.getByRole('button', { name: 'New Space' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  // The last dot sits near the bottom-right corner.
+  await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Space 2' }).click({ button: 'right' });
+  const menu = panel.getByRole('menu');
+  await expect(menu).toBeVisible();
+  const box = (await menu.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(300);
+  expect(box.y + box.height).toBeLessThanOrEqual(500);
+});

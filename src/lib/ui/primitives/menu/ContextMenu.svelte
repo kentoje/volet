@@ -4,6 +4,7 @@
   import type { MenuItem } from '@/lib/model/menu';
   import { OVERLAY_ROOT } from '../overlay';
   import MenuItems from './MenuItems.svelte';
+  import { MENU_PLACEMENT } from './placement';
 
   interface Props {
     /** Built when the menu opens, so it always reflects the current state. */
@@ -21,7 +22,8 @@
     {@render children()}
   </ContextMenu.Trigger>
   <ContextMenu.Portal to={OVERLAY_ROOT}>
-    <ContextMenu.Content class="menu-surface" data-no-drag>
+    <!-- Placed by MENU_PLACEMENT: below the pointer, sliding and flipping to stay on screen. -->
+    <ContextMenu.Content class="menu-surface" data-no-drag {...MENU_PLACEMENT}>
       {#if open}
         <MenuItems items={items()} />
       {/if}

@@ -50,6 +50,8 @@ Three layers, each with a single job. Dependencies point downward only.
   Row buttons are the drag handles; give action buttons and inputs `data-no-drag`.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
+  Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`, `submenuSide`): menus open below the
+  pointer so they can slide sideways and flip up to stay inside the panel; submenus open right, left, or below.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
   (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
