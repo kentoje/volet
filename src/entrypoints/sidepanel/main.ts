@@ -1,10 +1,15 @@
 import { mount } from 'svelte';
-import { FakeSidebarStore } from '@/lib/fake/fake-store.svelte';
-import Sidebar from '@/lib/ui/Sidebar.svelte';
+import { ChromeSidebarStore } from '@/lib/state/chrome/chrome-store.svelte';
+import Sidebar from '@/lib/ui/sidebar/Sidebar.svelte';
 import '@/app.css';
 
-// Fake data until the Chrome engine exists; the same UI runs in `pnpm proto`.
-mount(Sidebar, {
-  target: document.getElementById('app')!,
-  props: { store: new FakeSidebarStore() },
-});
+async function main() {
+  // `?windowId=` lets tests (or a detached panel) drive another window.
+  const requested = Number(new URLSearchParams(location.search).get('windowId'));
+  const windowId = requested || (await browser.windows.getCurrent()).id!;
+  const store = new ChromeSidebarStore(windowId);
+  await store.start();
+  mount(Sidebar, { target: document.getElementById('app')!, props: { store } });
+}
+
+void main();

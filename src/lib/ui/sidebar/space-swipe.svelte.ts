@@ -86,8 +86,3 @@ export class SpaceSwipe {
     this.#options.onCommit(direction);
   }
 }
-
-/** Shortest signed distance between two hues, in degrees (-180 to 180). */
-export function hueDelta(from: number, to: number): number {
-  return ((((to - from) % 360) + 540) % 360) - 180;
-}

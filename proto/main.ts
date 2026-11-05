@@ -1,6 +1,6 @@
 import { mount } from 'svelte';
-import { FakeSidebarStore } from '@/lib/fake/fake-store.svelte';
-import Sidebar from '@/lib/ui/Sidebar.svelte';
+import { FakeSidebarStore } from '@/lib/state/fake/fake-store.svelte';
+import Sidebar from '@/lib/ui/sidebar/Sidebar.svelte';
 import '@/app.css';
 
 // ?theme=dark or ?theme=light forces a color scheme; otherwise it follows the system.

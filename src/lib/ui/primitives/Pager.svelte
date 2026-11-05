@@ -1,0 +1,38 @@
+<script lang="ts" generics="T extends { id: string }">
+  import type { Snippet } from 'svelte';
+
+  interface Props {
+    items: T[];
+    activeIndex: number;
+    /** Live drag offset in px while a swipe is in progress. */
+    offset?: number;
+    dragging?: boolean;
+    label: (item: T) => string;
+    page: Snippet<[T]>;
+  }
+
+  let { items, activeIndex, offset = 0, dragging = false, label, page }: Props = $props();
+</script>
+
+<!-- Pages side by side; only the active one is focusable. Slides with an ease, follows drags 1:1. -->
+<div class="relative min-h-0 flex-1 overflow-hidden">
+  <div
+    class={[
+      'flex h-full',
+      !dragging &&
+        'transition-transform duration-[460ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none',
+    ]}
+    style:transform="translateX(calc({-activeIndex * 100}% + {offset}px))"
+  >
+    {#each items as item, index (item.id)}
+      <section
+        class="h-full w-full flex-none overflow-y-auto [scrollbar-color:var(--rule)_transparent] [scrollbar-width:thin]"
+        aria-label={label(item)}
+        aria-hidden={index !== activeIndex}
+        inert={index !== activeIndex}
+      >
+        {@render page(item)}
+      </section>
+    {/each}
+  </div>
+</div>

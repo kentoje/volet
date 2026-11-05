@@ -1,5 +1,5 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import type { Favorite, LiveTab, Pin, PinnedNode, SidebarStore, Space, SpaceId, TabId } from '../model/types';
+import type { Favorite, LiveTab, Pin, PinnedNode, SidebarStore, Space, SpaceId, TabId } from '../../model/types';
 import { seedFavorites, seedSpaces, seedTabs } from './seed';
 
 const LOAD_MS = 600;
@@ -14,7 +14,8 @@ export class FakeSidebarStore implements SidebarStore {
   collapsedFolders = new SvelteSet<string>(['trips']);
 
   #nextTabId = 1000;
-  #lastActiveBySpace = new Map<SpaceId, TabId>();
+  /** Not reactive on purpose: only read when switching Spaces. */
+  #lastActiveBySpace: Record<SpaceId, TabId> = {};
 
   get #activeSpace(): Space {
     return this.spaces.find((space) => space.id === this.activeSpaceId) ?? this.spaces[0]!;
@@ -22,7 +23,7 @@ export class FakeSidebarStore implements SidebarStore {
 
   activateTab(tabId: TabId): void {
     this.activeTabId = tabId;
-    this.#lastActiveBySpace.set(this.activeSpaceId, tabId);
+    this.#lastActiveBySpace[this.activeSpaceId] = tabId;
   }
 
   openPin(pinId: string): void {
@@ -89,7 +90,7 @@ export class FakeSidebarStore implements SidebarStore {
   switchSpace(spaceId: SpaceId): void {
     if (spaceId === this.activeSpaceId) return;
     this.activeSpaceId = spaceId;
-    const remembered = this.#lastActiveBySpace.get(spaceId);
+    const remembered = this.#lastActiveBySpace[spaceId];
     this.activeTabId = remembered !== undefined && this.tabs.has(remembered) ? remembered : undefined;
   }
 

@@ -3,8 +3,8 @@
   import { getSidebar } from '@/lib/model/context';
   import type { Pin } from '@/lib/model/types';
   import { sameUrl } from '@/lib/model/url';
-  import IconButton from './IconButton.svelte';
-  import TabRow from './TabRow.svelte';
+  import IconButton from '../primitives/IconButton.svelte';
+  import TabRow from '../primitives/TabRow.svelte';
 
   let { pin, depth = 0 }: { pin: Pin; depth?: number } = $props();
 

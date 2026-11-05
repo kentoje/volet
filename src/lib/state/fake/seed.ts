@@ -1,4 +1,4 @@
-import type { Favorite, LiveTab, Space } from '../model/types';
+import type { Favorite, LiveTab, Space } from '../../model/types';
 
 export function seedFavorites(): Favorite[] {
   return [

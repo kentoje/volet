@@ -11,7 +11,7 @@ export default defineConfig({
   manifest: {
     name: 'Spaces',
     description: 'Arc-like vertical tab spaces for Chrome',
-    permissions: ['sidePanel', 'tabs', 'tabGroups', 'bookmarks', 'storage', 'alarms', 'favicon'],
+    permissions: ['sidePanel', 'tabs', 'tabGroups', 'bookmarks', 'storage', 'alarms', 'favicon', 'search'],
     // An action is required so clicking the toolbar icon can open the side panel.
     action: {},
   },
