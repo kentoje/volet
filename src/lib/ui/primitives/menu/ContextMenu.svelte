@@ -16,6 +16,9 @@
   let open = $state(false);
 </script>
 
+<!-- A click outside the panel (in the page) is invisible here, but the panel loses focus: close then. -->
+<svelte:window onblur={() => (open = false)} />
+
 <!-- Right-click (or the context menu key) on `children` opens the menu. -->
 <ContextMenu.Root bind:open>
   <ContextMenu.Trigger class="block">

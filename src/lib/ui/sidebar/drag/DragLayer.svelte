@@ -1,15 +1,25 @@
 <script lang="ts">
+  import type { DragDropManager } from '@dnd-kit/dom';
   import { DragDropProvider } from '@dnd-kit/svelte';
   import type { Snippet } from 'svelte';
   import type { SidebarStore } from '@/lib/model/types';
   import { type DragData, sensors, setDrag } from './context';
   import { type DropTarget, DragState } from './drag-state.svelte';
+  import { PAGE_SLIDE_MS } from '../../primitives/motion';
 
   let { store, children }: { store: SidebarStore; children: Snippet } = $props();
 
   // The store is created once at mount and never replaced.
   // svelte-ignore state_referenced_locally
   const drag = setDrag(new DragState(store));
+
+  /** dnd-kit measures drop zones once; after a Space switch the pages slid, so measure again. */
+  let manager: DragDropManager | undefined;
+  drag.onSpaceSwitched = () => {
+    setTimeout(() => {
+      for (const droppable of manager?.registry.droppables ?? []) droppable.refreshShape();
+    }, PAGE_SLIDE_MS + 40);
+  };
 
   type Point = { x: number; y: number };
   type Node = { data?: unknown; shape?: { center: Point } | null } | null | undefined;
@@ -35,7 +45,8 @@
 <!-- Translates dnd-kit's events into DragState calls. -->
 <DragDropProvider
   {sensors}
-  onDragStart={(event) => {
+  onDragStart={(event, dragManager) => {
+    manager = dragManager;
     const source = dataOf((event.operation as Operation).source);
     if (source?.kind === 'entry') drag.start(source.entry);
   }}

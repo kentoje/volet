@@ -16,6 +16,9 @@ import {
 import type { SidebarStore, SpaceId } from '@/lib/model/types';
 import { createLookup } from '@/lib/state/lookup';
 
+/** How long a dragged entry must hover another Space's dot before switching to that Space. */
+const SPACE_DWELL_MS = 450;
+
 /** What the pointer is over during a drag. */
 export type DropTarget =
   /** `after`: the pointer is past the entry's middle, so the dragged one goes after it. */
@@ -33,9 +36,13 @@ export class DragState {
   draft = $state.raw<Lists | undefined>();
   active = $state.raw<Entry | undefined>();
 
+  /** Called after hovering a dot switched Space: the drop zones moved and need re-measuring. */
+  onSpaceSwitched: (() => void) | undefined;
+
   #store: SidebarStore;
   #lookup: DndLookup;
   #origin: { list: ListId; index: number } | undefined;
+  #dwell: { spaceId: string; timer: ReturnType<typeof setTimeout> } | undefined;
 
   constructor(store: SidebarStore) {
     this.#store = store;
@@ -60,6 +67,7 @@ export class DragState {
   over(target: DropTarget): void {
     const { draft, active } = this;
     if (!draft || !active) return;
+    this.#hoverSpace(target.kind === 'space' ? target.spaceId : undefined);
     const place = this.#placeFor(draft, active, target);
     if (!place || !canEnter(active, place.list, this.#lookup)) return;
     const current = locate(draft, active);
@@ -67,7 +75,24 @@ export class DragState {
     this.draft = moveEntry(draft, active, place.list, place.index);
   }
 
+  /**
+   * Hovering another Space's dot for a moment switches to that Space, so the entry can
+   * then be dropped at an exact spot there (dropping right on the dot still works too).
+   */
+  #hoverSpace(spaceId: string | undefined): void {
+    if (this.#dwell?.spaceId === spaceId) return;
+    clearTimeout(this.#dwell?.timer);
+    this.#dwell = undefined;
+    if (spaceId === undefined || spaceId === this.#store.activeSpaceId) return;
+    const timer = setTimeout(() => {
+      void this.#store.switchSpace(spaceId);
+      this.onSpaceSwitched?.();
+    }, SPACE_DWELL_MS);
+    this.#dwell = { spaceId, timer };
+  }
+
   async end(options: { canceled: boolean; target?: DropTarget }): Promise<void> {
+    this.#hoverSpace(undefined);
     const action = options.canceled ? undefined : this.#actionFor(options.target);
     if (action) await this.#perform(action);
     this.draft = undefined;

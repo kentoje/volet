@@ -80,3 +80,16 @@ test('menus stay inside a narrow panel, even from its corner', async ({ panel })
   expect(box.x + box.width).toBeLessThanOrEqual(300);
   expect(box.y + box.height).toBeLessThanOrEqual(500);
 });
+
+test('a menu closes when the panel loses focus (a click in the page)', async ({ panel }) => {
+  await visiblePage(panel).getByRole('heading').click({ button: 'right' });
+  await expect(panel.getByRole('menu')).toBeVisible();
+  // A click in the web page happens in another document: the panel only sees itself lose focus.
+  await panel.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect(panel.getByRole('menu')).toHaveCount(0);
+});
+
+test('hovering a Space dot shows its name', async ({ panel }) => {
+  await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home' }).hover();
+  await expect(panel.locator('[data-tooltip-content]')).toHaveText('Home');
+});

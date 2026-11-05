@@ -16,6 +16,16 @@ export const MENU_PLACEMENT = {
   sticky: 'always',
 } as const;
 
+/** Tooltips sit above what they describe, sliding sideways and flipping below to stay on screen. */
+export const TOOLTIP_PLACEMENT = {
+  side: 'top',
+  align: 'center',
+  sideOffset: 6,
+  avoidCollisions: true,
+  collisionPadding: 8,
+  sticky: 'always',
+} as const;
+
 /** Space kept between menus and the panel's edges, in px (matches collisionPadding). */
 export const EDGE = MENU_PLACEMENT.collisionPadding;
 

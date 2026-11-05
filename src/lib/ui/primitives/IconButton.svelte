@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { mergeProps } from 'bits-ui';
   import type { Snippet } from 'svelte';
+  import Tooltip from './Tooltip.svelte';
 
   interface Props {
     label: string;
@@ -14,19 +16,24 @@
   let { label, hint, onclick, reveal = false, children }: Props = $props();
 </script>
 
-<button
-  type="button"
-  class={[
-    'grid size-6 place-items-center rounded-[7px] text-ink-muted transition-opacity duration-100 hover:bg-hover hover:text-ink',
-    reveal && 'opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100',
-  ]}
-  aria-label={label}
-  title={hint ?? label}
-  data-no-drag
-  onclick={(event) => {
-    event.stopPropagation();
-    onclick();
-  }}
->
-  {@render children()}
-</button>
+<Tooltip label={hint ?? label}>
+  {#snippet trigger(props)}
+    <button
+      type="button"
+      {...mergeProps(props, {
+        class: [
+          'grid size-6 place-items-center rounded-[7px] text-ink-muted transition-opacity duration-100 hover:bg-hover hover:text-ink',
+          reveal && 'opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100',
+        ],
+        'aria-label': label,
+        'data-no-drag': '',
+        onclick: (event: MouseEvent) => {
+          event.stopPropagation();
+          onclick();
+        },
+      })}
+    >
+      {@render children()}
+    </button>
+  {/snippet}
+</Tooltip>

@@ -1,5 +1,6 @@
 <script lang="ts" generics="T extends { id: string }">
   import type { Snippet } from 'svelte';
+  import { PAGE_SLIDE_MS } from './motion';
 
   interface Props {
     items: T[];
@@ -19,9 +20,9 @@
   <div
     class={[
       'flex h-full',
-      !dragging &&
-        'transition-transform duration-[460ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none',
+      !dragging && 'transition-transform ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none',
     ]}
+    style:transition-duration="{PAGE_SLIDE_MS}ms"
     style:transform="translateX(calc({-activeIndex * 100}% + {offset}px))"
   >
     {#each items as item, index (item.id)}

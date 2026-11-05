@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { mergeProps } from 'bits-ui';
+
   interface Props {
     name: string;
     /** The Space's own hue: each dot previews where it leads. */
@@ -7,18 +9,24 @@
     /** Something is being dragged over it. */
     highlighted?: boolean;
     onclick: () => void;
+    /** Extra attributes and handlers (e.g. a tooltip's trigger props). */
+    [key: string]: unknown;
   }
 
-  let { name, hue, active = false, highlighted = false, onclick }: Props = $props();
+  let { name, hue, active = false, highlighted = false, onclick, ...rest }: Props = $props();
 </script>
 
 <button
   type="button"
-  class={['group/dot grid size-7 place-items-center rounded-lg transition-transform hover:bg-hover', highlighted && 'scale-125 bg-hover']}
-  aria-label={name}
-  aria-current={active ? 'true' : undefined}
-  title={name}
-  {onclick}
+  {...mergeProps(rest, {
+    class: [
+      'group/dot grid size-7 place-items-center rounded-lg transition-transform hover:bg-hover',
+      highlighted && 'scale-125 bg-hover',
+    ],
+    'aria-label': name,
+    'aria-current': active ? ('true' as const) : undefined,
+    onclick,
+  })}
 >
   <span
     class={[

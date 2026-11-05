@@ -47,11 +47,16 @@ Three layers, each with a single job. Dependencies point downward only.
   `options/` (settings) and `import/` (Arc import).
 - **Drag and drop**: lists render from `DragState`'s draft while dragging (`ui/sidebar/drag/`); the rules and the
   drop-to-action mapping are pure (`model/dnd.ts`). dnd-kit's DOM-moving sorting is off so Svelte owns the DOM.
-  Row buttons are the drag handles; give action buttons and inputs `data-no-drag`.
+  Row buttons are the drag handles; give action buttons and inputs `data-no-drag`. Holding a dragged row over a
+  Space dot switches to that Space after a short dwell (`drag-state.svelte.ts`), so it can be dropped there.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`, `submenuSide`): menus open below the
   pointer so they can slide sideways and flip up to stay inside the panel; submenus open right, left, or below.
+  Menus close when the panel loses focus (a click in the page).
+- **Tooltips**: wrap a trigger in `primitives/Tooltip.svelte` instead of a native `title` (`IconButton` does it for
+  you). They show right away and fade in and out (`.tooltip-surface` in `app.css`); one `Tooltip.Provider` sits in
+  `Sidebar.svelte`.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
   (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).

@@ -94,7 +94,6 @@ test('dropping a tab on a Space dot moves it to that Space', async ({ worker, wi
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)
     .toBe('Space 2');
-  await expect(row(panel, 'Traveler')).toHaveCount(0);
 });
 
 /** Pin data: URL tabs in Home, in order, once their titles have loaded. */
@@ -189,4 +188,40 @@ test('a closed pin can be dragged to the favorites too', async ({ worker, window
   await drag(panel, row(panel, 'Closed pin'), panel.getByText('Drag a tab here to make it a favorite'));
   await expect(panel.getByRole('list', { name: 'Favorites' }).getByRole('button', { name: 'Closed pin' })).toBeVisible();
   await expect.poll(() => homePins(worker)).toEqual([]);
+});
+
+test('holding a tab over a Space dot switches to it, so the tab can be placed there', async ({ worker, windowId, panel }) => {
+  await panel.getByRole('button', { name: 'New Space' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+  await openTabs(worker, windowId, ['Mover']);
+  const mover = row(panel, 'Mover');
+  await expect(mover).toBeVisible();
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Mover'))?.group)
+    .toBe('Home');
+
+  // Grab the tab, hold it over Space 2's dot until Space 2 shows, then drop it on Space 2's pinned area.
+  const dot = panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Space 2' });
+  const a = (await mover.boundingBox())!;
+  const d = (await dot.boundingBox())!;
+  await panel.mouse.move(a.x + 30, a.y + a.height / 2);
+  await panel.mouse.down();
+  await panel.mouse.move(a.x + 30, a.y + a.height / 2 + 10, { steps: 4 });
+  await panel.mouse.move(d.x + d.width / 2, d.y + d.height / 2, { steps: 15 });
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.waitForTimeout(600); // the pages finish sliding
+  const hint = visiblePage(panel).getByText('Drag tabs here to pin them to Space 2');
+  const h = (await hint.boundingBox())!;
+  await panel.mouse.move(h.x + 40, h.y + h.height / 2, { steps: 15 });
+  await panel.waitForTimeout(200);
+  await panel.mouse.up();
+
+  await expect
+    .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Space 2')!.children!.map((c) => c.title))
+    .toEqual(['Mover']);
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Mover'))?.group)
+    .toBe('Space 2');
 });

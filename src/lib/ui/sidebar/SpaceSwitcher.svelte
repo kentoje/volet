@@ -4,6 +4,7 @@
   import IconButton from '../primitives/IconButton.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
   import SpaceDot from '../primitives/SpaceDot.svelte';
+  import Tooltip from '../primitives/Tooltip.svelte';
   import SpaceDropTarget from './drag/SpaceDropTarget.svelte';
   import { getMenuContext } from './menus/menu-context';
   import { spaceMenu } from './menus/space-menu';
@@ -28,13 +29,18 @@
         <SpaceDropTarget spaceId={space.id}>
           {#snippet children(highlighted)}
             <ContextMenu items={() => spaceMenu(space, menus)}>
-              <SpaceDot
-                name={space.name}
-                hue={space.hue}
-                active={space.id === sidebar.activeSpaceId}
-                {highlighted}
-                onclick={() => sidebar.switchSpace(space.id)}
-              />
+              <Tooltip label={space.name}>
+                {#snippet trigger(props)}
+                  <SpaceDot
+                    {...props}
+                    name={space.name}
+                    hue={space.hue}
+                    active={space.id === sidebar.activeSpaceId}
+                    {highlighted}
+                    onclick={() => sidebar.switchSpace(space.id)}
+                  />
+                {/snippet}
+              </Tooltip>
             </ContextMenu>
           {/snippet}
         </SpaceDropTarget>

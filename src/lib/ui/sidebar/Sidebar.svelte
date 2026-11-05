@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Tooltip } from 'bits-ui';
   import { MediaQuery } from 'svelte/reactivity';
   import { setSidebar } from '@/lib/model/context';
   import type { PaletteClient } from '@/lib/model/palette';
@@ -56,25 +57,28 @@
   bind:clientWidth={swipe.width}
   {@attach swipe.attach}
 >
-  <DragLayer store={sidebar}>
-    <FavoritesGrid />
-    <Pager
-      items={sidebar.spaces}
-      {activeIndex}
-      offset={swipe.offset}
-      dragging={swipe.dragging}
-      label={(space) => space.name}
-    >
-      {#snippet page(space)}
-        <SpacePage {space} />
-      {/snippet}
-    </Pager>
-    <SpaceSwitcher />
-    <ConfirmHost />
-    {#if palette && panelPalette}
-      <PanelPalette client={palette} state={panelPalette} />
-    {/if}
-  </DragLayer>
-  <!-- Menus and dialogs render here, inside the tint. -->
+  <!-- Tooltips appear right away (they fade in and out, see .tooltip-surface). -->
+  <Tooltip.Provider delayDuration={0}>
+    <DragLayer store={sidebar}>
+      <FavoritesGrid />
+      <Pager
+        items={sidebar.spaces}
+        {activeIndex}
+        offset={swipe.offset}
+        dragging={swipe.dragging}
+        label={(space) => space.name}
+      >
+        {#snippet page(space)}
+          <SpacePage {space} />
+        {/snippet}
+      </Pager>
+      <SpaceSwitcher />
+      <ConfirmHost />
+      {#if palette && panelPalette}
+        <PanelPalette client={palette} state={panelPalette} />
+      {/if}
+    </DragLayer>
+  </Tooltip.Provider>
+  <!-- Menus, tooltips and dialogs render here, inside the tint. -->
   <div data-overlay-root></div>
 </div>

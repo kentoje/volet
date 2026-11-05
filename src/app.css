@@ -30,6 +30,30 @@
 
 /* Menus and dialogs: portaled inside .sidebar (see OVERLAY_ROOT) so they wear the tint. */
 @layer components {
+  /* Inverted (ink on the tint), small and quick to read. */
+  .tooltip-surface {
+    z-index: 70;
+    max-width: 240px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--menu);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    box-shadow: 0 4px 14px oklch(0.2 0.05 var(--space-hue) / 0.25);
+    pointer-events: none;
+  }
+
+  /* Fade in when shown, fade out when hidden (Bits UI waits for the animation before removing it). */
+  .tooltip-surface:is([data-state='delayed-open'], [data-state='instant-open']) {
+    animation: tooltip-fade-in 120ms ease-out;
+  }
+
+  .tooltip-surface[data-state='closed'] {
+    animation: tooltip-fade-out 100ms ease-in forwards;
+  }
+
   .menu-surface {
     z-index: 60;
     min-width: 210px;
@@ -44,9 +68,25 @@
   }
 }
 
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes tooltip-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar {
     transition: none;
+  }
+
+  .tooltip-surface {
+    animation: none !important;
   }
 }
 
