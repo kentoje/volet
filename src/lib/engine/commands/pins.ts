@@ -11,7 +11,7 @@ import {
 import { collapseOtherSpaces, groupTabs } from '../groups';
 import { retry } from '../retry';
 import { setActiveSpace, setBinding } from '../session';
-import { findBookmark, spaceOfBookmark } from '../snapshot';
+import { findBookmark, spaceOfBookmark, spaceOfGroup } from '../snapshot';
 import { keepActiveInSpace, placeTab, releaseFavorite } from '../tab-ops';
 import { deleteBookmark } from './bookmarks';
 import type { CommandOf, Handlers } from './types';
@@ -28,7 +28,9 @@ export async function pinTab({ windowId, tabId, parentId, index }: CommandOf<'pi
   await setBinding(ctx, tabId, { kind: 'pin', id: pin.id });
   await reloadRoot(ctx);
   const spaceId = spaceOfBookmark(ctx.root, pin.id);
-  if (spaceId && spaceId !== spaceOfTab(ctx, { ...tab, pinned: false })) await groupTabs(ctx, spaceId, [tabId]);
+  // Compare with the tab's actual group: asking spaceOfTab would answer through the new pin.
+  const groupSpace = spaceOfGroup(tab.groupId, ctx.groups, ctx.groupSpaces, ctx.spaces);
+  if (spaceId && spaceId !== groupSpace) await groupTabs(ctx, spaceId, [tabId]);
   return pin.id;
 }
 
