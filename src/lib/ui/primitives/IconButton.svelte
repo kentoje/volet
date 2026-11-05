@@ -3,6 +3,8 @@
 
   interface Props {
     label: string;
+    /** Tooltip, when it should say more than the label. */
+    hint?: string;
     onclick: () => void;
     /** Only visible while the parent row is hovered or focused. */
     reveal?: boolean;
@@ -11,7 +13,7 @@
     children: Snippet;
   }
 
-  let { label, onclick, reveal = false, solid = false, children }: Props = $props();
+  let { label, hint, onclick, reveal = false, solid = false, children }: Props = $props();
 </script>
 
 <button
@@ -22,7 +24,7 @@
     reveal && 'opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100',
   ]}
   aria-label={label}
-  title={label}
+  title={hint ?? label}
   data-no-drag
   onclick={(event) => {
     event.stopPropagation();

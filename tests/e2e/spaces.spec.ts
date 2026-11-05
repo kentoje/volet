@@ -78,7 +78,8 @@ test('pins keep their entry when their tab closes, and reopen on click', async (
   const page = visiblePage(panel);
   const pin = page.getByRole('button', { name: 'Docs', exact: true });
   await expect(pin).toBeVisible();
-  await page.getByRole('button', { name: 'Close tab, keep pin' }).click();
+  const pinRow = page.getByRole('listitem').filter({ has: panel.getByRole('button', { name: 'Docs', exact: true }) });
+  await pinRow.getByRole('button', { name: 'Close tab' }).click();
   await expect.poll(async () => (await stripState(worker, windowId)).some((t) => t.id === tabId)).toBe(false);
   await expect(page.getByRole('button', { name: 'Docs', exact: true })).toHaveCount(1); // still listed, now unloaded
 
@@ -86,7 +87,7 @@ test('pins keep their entry when their tab closes, and reopen on click', async (
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((t) => t.active)?.url)
     .toContain('<title>Docs</title>');
-  await expect(page.getByRole('button', { name: 'Close tab, keep pin' })).toBeAttached();
+  await expect(pinRow.getByRole('button', { name: 'Close tab' })).toBeAttached();
 });
 
 test('pinning a tab natively in Chrome makes it a favorite', async ({ worker, windowId, panel }) => {
@@ -121,4 +122,27 @@ test('a new tab from the sidebar stops showing as loading', async ({ panel }) =>
   await page.getByRole('button', { name: 'New tab', exact: true }).click();
   await expect(page.getByRole('button', { name: 'New Tab', exact: true })).toBeVisible();
   await expect(page.getByRole('status', { name: 'Loading' })).toHaveCount(0);
+});
+
+test('the unpin button turns a pin into a temporary tab in one click', async ({ worker, windowId, panel }) => {
+  const tabId = await worker.evaluate(
+    async (id) => (await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Draft</title>' })).id!,
+    windowId,
+  );
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Draft');
+  const homeId = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+  });
+  await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
+
+  const page = visiblePage(panel);
+  const pinRow = page.getByRole('listitem').filter({ has: panel.getByRole('button', { name: 'Draft', exact: true }) });
+  await pinRow.hover();
+  await pinRow.getByRole('button', { name: 'Unpin' }).click();
+  await expect.poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children).toEqual([]);
+  // Still open, now below the divider.
+  await expect(page.getByRole('button', { name: 'Draft', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Unpin' })).toHaveCount(0);
+  expect((await stripState(worker, windowId)).some((tab) => tab.id === tabId)).toBe(true);
 });

@@ -17,5 +17,6 @@
   active={tab !== undefined && tab.id === sidebar.activeTabId}
   {depth}
   {handle}
+  buttons={{ shown: 0, onHover: 0 }}
   onactivate={() => sidebar.openFavorite(favorite.id)}
 />

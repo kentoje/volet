@@ -1,4 +1,4 @@
-import { CornerUpLeft, House, Minus, PencilLine, PinOff, Star } from '@lucide/svelte';
+import { CornerUpLeft, House, PencilLine, PinOff, Star, X } from '@lucide/svelte';
 import { type MenuItem, separator, tidy } from '@/lib/model/menu';
 import type { Pin } from '@/lib/model/types';
 import { spaceOfNode } from '@/lib/state/tree';
@@ -20,18 +20,13 @@ export function pinMenu(pin: Pin, away: boolean, { store, rename }: MenuContext)
     },
     moveToSpace(store, space?.id, (spaceId) => store.moveNode(pin.id, spaceId)),
     separator,
-    tabId !== undefined && {
-      kind: 'action',
-      label: 'Close tab, keep pin',
-      icon: Minus,
-      onSelect: () => store.unloadPin(pin.id),
-    },
-    {
+    space && {
       kind: 'action',
       label: 'Unpin',
       icon: PinOff,
-      // An open pin becomes a temporary tab; a closed one simply goes away.
-      onSelect: () => (tabId !== undefined && space ? store.unpin(pin.id, space.id) : store.deleteNode(pin.id)),
+      // Unpinning never loses the page: it becomes a temporary tab (opened if it was closed).
+      onSelect: () => store.unpin(pin.id, space.id),
     },
+    tabId !== undefined && { kind: 'action', label: 'Close tab', icon: X, onSelect: () => store.unloadPin(pin.id) },
   ]);
 }

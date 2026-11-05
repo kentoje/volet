@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { Attachment } from 'svelte/attachments';
-  import { CornerUpLeft, Minus } from '@lucide/svelte';
+  import { CornerUpLeft, PinOff, X } from '@lucide/svelte';
   import type { Pin } from '@/lib/model/types';
   import { sameUrl } from '@/lib/model/url';
+  import { spaceOfNode } from '@/lib/state/tree';
   import IconButton from '../primitives/IconButton.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
   import RenameField from '../primitives/RenameField.svelte';
@@ -14,6 +15,7 @@
 
   const menus = getMenuContext();
   const { store: sidebar, rename } = menus;
+  const space = $derived(spaceOfNode(sidebar.spaces, pin.id));
   const tab = $derived(pin.tabId !== undefined ? sidebar.tabs.get(pin.tabId) : undefined);
   /** The pin's tab has left its home URL: show where it is now, and offer a way back. */
   const away = $derived(tab !== undefined && tab.status === 'complete' && !sameUrl(tab.url, pin.url));
@@ -41,6 +43,7 @@
     loading={tab?.status === 'loading'}
     {depth}
     {handle}
+    buttons={{ shown: 0, onHover: tab ? 2 : 1 }}
     editor={rename.is(pin.id) ? editor : undefined}
     onactivate={() => sidebar.openPin(pin.id)}
     ondblclick={() => rename.start(pin.id)}
@@ -53,9 +56,14 @@
       {/if}
     {/snippet}
     {#snippet trailing()}
+      {#if space}
+        <IconButton label="Unpin" hint="Unpin (it moves to the tabs below)" reveal onclick={() => sidebar.unpin(pin.id, space.id)}>
+          <PinOff size={14} strokeWidth={2} />
+        </IconButton>
+      {/if}
       {#if tab}
-        <IconButton label="Close tab, keep pin" reveal onclick={() => sidebar.unloadPin(pin.id)}>
-          <Minus size={14} strokeWidth={2.25} />
+        <IconButton label="Close tab" hint="Close tab (it stays pinned)" reveal onclick={() => sidebar.unloadPin(pin.id)}>
+          <X size={14} strokeWidth={2.25} />
         </IconButton>
       {/if}
     {/snippet}

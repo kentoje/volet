@@ -22,6 +22,7 @@
     loading={tab.status === 'loading'}
     {depth}
     {handle}
+    buttons={{ shown: tab.audible ? 1 : 0, onHover: tab.audible ? 2 : 1 }}
     onactivate={() => sidebar.activateTab(tab.id)}
   >
     {#snippet trailing()}

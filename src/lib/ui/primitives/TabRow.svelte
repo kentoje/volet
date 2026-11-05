@@ -19,6 +19,8 @@
     leading?: Snippet;
     /** Buttons on the right edge. */
     trailing?: Snippet;
+    /** How many trailing buttons are always shown, and how many on hover; the title makes room. */
+    buttons?: { shown: number; onHover: number };
     /** Attached to the main button (e.g. to make it a drag handle). */
     handle?: Attachment<HTMLElement>;
     /** Replaces the title with an editor (e.g. a rename field); the row stops being a button meanwhile. */
@@ -39,10 +41,14 @@
     trailing,
     handle,
     editor,
+    buttons = { shown: 0, onHover: 1 },
   }: Props = $props();
 
+  /** Each trailing button takes 24px plus a 2px gap, after a 10px margin. */
+  const room = (count: number) => `${10 + count * 26}px`;
+
   const mainClass = $derived([
-    'flex h-[34px] w-full items-center gap-2.5 rounded-[inherit] pr-10 pl-[calc(10px+var(--depth)*16px)] text-left text-[13px]',
+    'flex h-[34px] w-full items-center gap-2.5 rounded-[inherit] pr-(--room) pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] group-focus-within/row:pr-(--room-hover) group-hover/row:pr-(--room-hover)',
     active && 'font-medium',
     unloaded && 'text-ink-muted',
   ]);
@@ -68,6 +74,8 @@
     active ? 'bg-pill shadow-(--pill-shadow)' : 'hover:bg-hover',
   ]}
   style:--depth={depth}
+  style:--room={room(buttons.shown)}
+  style:--room-hover={room(buttons.onHover)}
 >
   {#if editor}
     <div class={mainClass}>

@@ -45,7 +45,7 @@ test('dragging a tab into the pinned area pins it, and back out unpins it', asyn
   await expect
     .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => c.title))
     .toEqual(['Keeper']);
-  await expect(visiblePage(panel).getByRole('button', { name: 'Close tab, keep pin' })).toBeAttached();
+  await expect(visiblePage(panel).getByRole('button', { name: 'Unpin' })).toBeAttached();
 
   // Back down below the divider: the pin goes, the tab stays.
   await drag(panel, row(panel, 'Keeper'), visiblePage(panel).getByRole('button', { name: 'New tab' }), { offsetY: -20 });
