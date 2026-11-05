@@ -1,6 +1,10 @@
+import type { PaletteItem } from './palette/types';
+
 /** Every change the UI can ask for. The service worker runs them one at a time. */
 export type Command =
   | { type: 'activateTab'; tabId: number }
+  /** Activate a tab and bring its window to the front (it may be in another window). */
+  | { type: 'focusTab'; tabId: number }
   | { type: 'closeTab'; windowId: number; tabId: number }
   | { type: 'toggleMute'; tabId: number }
   | { type: 'newTab'; windowId: number; spaceId?: string; url?: string }
@@ -14,6 +18,8 @@ export type Command =
   | { type: 'setPinHome'; windowId: number; pinId: string }
   /** Save a temporary tab as a pin inside a Space folder (or subfolder). */
   | { type: 'pinTab'; windowId: number; tabId: number; parentId: string; index?: number }
+  /** Pin the tab if it isn't saved; unpin it (or remove it from favorites) if it is. */
+  | { type: 'togglePin'; windowId: number; tabId: number }
   /** Remove a pin, keeping (or opening) its tab as a temporary tab. */
   | { type: 'unpin'; windowId: number; pinId: string; spaceId: string; index?: number }
   | { type: 'moveBookmark'; id: string; parentId: string; index?: number }
@@ -26,6 +32,8 @@ export type Command =
   /** Reorder favorites; `index` is the final position. */
   | { type: 'moveFavorite'; favoriteId: string; index: number }
   | { type: 'switchSpace'; windowId: number; spaceId: string }
+  /** Switch to the next (+1) or previous (-1) Space, wrapping around. */
+  | { type: 'shiftSpace'; windowId: number; offset: 1 | -1 }
   | { type: 'createSpace'; windowId: number; name?: string; hue?: number }
   | { type: 'renameSpace'; spaceId: string; name: string }
   | { type: 'setSpaceHue'; spaceId: string; hue: number }
@@ -46,6 +54,19 @@ export interface HelloMessage {
   windowId: number;
 }
 
-export type RuntimeMessage = CommandMessage | HelloMessage;
+/** Palette search; `windowId` is omitted when sent from a page (the sender's tab tells). */
+export interface PaletteQueryMessage {
+  type: 'palette:query';
+  windowId?: number;
+  text: string;
+}
+
+export interface PaletteRunMessage {
+  type: 'palette:run';
+  windowId?: number;
+  item: PaletteItem;
+}
+
+export type RuntimeMessage = CommandMessage | HelloMessage | PaletteQueryMessage | PaletteRunMessage;
 
 export type CommandResult = { ok: true; value?: unknown } | { ok: false; error: string };

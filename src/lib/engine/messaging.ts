@@ -1,5 +1,8 @@
 import { browser } from 'wxt/browser';
+import { activeSpaceOf, loadContext } from './context';
 import type { Engine } from './engine';
+import { searchPalette } from './palette/search';
+import { toCommand } from './palette/to-command';
 import type { CommandResult, RuntimeMessage } from './protocol';
 
 const failure = (error: unknown): CommandResult => ({
@@ -7,9 +10,9 @@ const failure = (error: unknown): CommandResult => ({
   error: String((error as Error)?.message ?? error),
 });
 
-/** Answer side panel messages: run commands, and tidy a window when its panel opens. */
+/** Answer messages from side panels and the in-page palette. */
 export function listenForMessages(engine: Engine): void {
-  browser.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendResponse) => {
     const respond = (work: Promise<unknown>) => {
       work.then(
         (value) => sendResponse({ ok: true, value } satisfies CommandResult),
@@ -20,11 +23,29 @@ export function listenForMessages(engine: Engine): void {
       );
       return true; // keep the channel open for the async response
     };
+    // The in-page palette doesn't know its window; its tab does.
+    const windowOf = (windowId: number | undefined) => windowId ?? sender.tab?.windowId;
+
     switch (message?.type) {
       case 'command':
         return respond(engine.run(message.command));
       case 'hello':
         return respond(engine.reconcile(message.windowId));
+      case 'palette:query': {
+        const windowId = windowOf(message.windowId);
+        return windowId === undefined ? undefined : respond(searchPalette(windowId, message.text));
+      }
+      case 'palette:run': {
+        const windowId = windowOf(message.windowId);
+        if (windowId === undefined) return undefined;
+        return respond(
+          (async () => {
+            const ctx = await loadContext(windowId);
+            const command = toCommand(message.item, windowId, activeSpaceOf(ctx));
+            if (command) await engine.run(command);
+          })(),
+        );
+      }
       default:
         return undefined;
     }

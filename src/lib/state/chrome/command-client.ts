@@ -1,7 +1,8 @@
 import { browser } from 'wxt/browser';
 import type { Command, CommandResult, RuntimeMessage } from '@/lib/engine/protocol';
 
-async function send(message: RuntimeMessage): Promise<unknown> {
+/** Send a message to the service worker; resolves with the answer's value, throws on failure. */
+export async function send(message: RuntimeMessage): Promise<unknown> {
   const result = (await browser.runtime.sendMessage(message)) as CommandResult | undefined;
   if (!result?.ok) throw new Error(result?.error ?? 'No response from the background worker');
   return result.value;

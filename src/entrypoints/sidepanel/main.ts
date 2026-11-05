@@ -1,5 +1,7 @@
 import { mount } from 'svelte';
 import { ChromeSidebarStore } from '@/lib/state/chrome/chrome-store.svelte';
+import { chromePaletteClient } from '@/lib/state/chrome/palette-client';
+import { watchPaletteRequests } from '@/lib/state/chrome/palette-requests';
 import Sidebar from '@/lib/ui/sidebar/Sidebar.svelte';
 import '@/app.css';
 
@@ -9,7 +11,8 @@ async function main() {
   const windowId = requested || (await browser.windows.getCurrent()).id!;
   const store = new ChromeSidebarStore(windowId);
   await store.start();
-  mount(Sidebar, { target: document.getElementById('app')!, props: { store } });
+  const palette = { ...chromePaletteClient(windowId), onOpenRequest: watchPaletteRequests(windowId) };
+  mount(Sidebar, { target: document.getElementById('app')!, props: { store, palette } });
 }
 
 void main();

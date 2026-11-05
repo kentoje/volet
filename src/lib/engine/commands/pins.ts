@@ -13,7 +13,41 @@ import { retry } from '../retry';
 import { setActiveSpace, setBinding } from '../session';
 import { findBookmark, spaceOfBookmark } from '../snapshot';
 import { keepActiveInSpace, placeTab, releaseFavorite } from '../tab-ops';
-import type { Handlers } from './types';
+import { deleteBookmark } from './bookmarks';
+import type { CommandOf, Handlers } from './types';
+
+/** Save a tab as a pin in a Space folder (or subfolder), keeping the tab bound to it. */
+export async function pinTab({ windowId, tabId, parentId, index }: CommandOf<'pinTab'>): Promise<string | undefined> {
+  const ctx = await loadContext(windowId);
+  const tab = ctx.tabs.find((t) => t.id === tabId);
+  const url = tab && tabUrl(tab);
+  if (!tab || !url) return;
+  await releaseFavorite(ctx, tabId);
+  if (tab.pinned) await retry(() => browser.tabs.update(tabId, { pinned: false }));
+  const pin = await browser.bookmarks.create({ parentId, index, title: tab.title || url, url });
+  await setBinding(ctx, tabId, { kind: 'pin', id: pin.id });
+  await reloadRoot(ctx);
+  const spaceId = spaceOfBookmark(ctx.root, pin.id);
+  if (spaceId && spaceId !== spaceOfTab(ctx, { ...tab, pinned: false })) await groupTabs(ctx, spaceId, [tabId]);
+  return pin.id;
+}
+
+/** Remove a pin, keeping its tab (or opening one) as a temporary tab at `index`. */
+export async function unpin({ windowId, pinId, spaceId, index }: CommandOf<'unpin'>): Promise<void> {
+  const ctx = await loadContext(windowId);
+  const pin = findBookmark(ctx.root, pinId);
+  if (!pin?.url) return;
+  let tabId = boundTab(ctx, pinId)?.id;
+  if (tabId === undefined) {
+    const tab = await browser.tabs.create({ windowId, url: pin.url, active: false });
+    ctx.tabs.push(tab);
+    tabId = tab.id!;
+  }
+  for (const id of boundTabIds(ctx, pinId)) await setBinding(ctx, id, undefined);
+  await browser.bookmarks.remove(pinId);
+  await reloadRoot(ctx);
+  await placeTab(ctx, tabId, spaceId, index);
+}
 
 export const pinHandlers = {
   /** Focus the pin's tab, or open it (switching to the pin's Space if needed). */
@@ -65,36 +99,21 @@ export const pinHandlers = {
     if (url) await browser.bookmarks.update(pinId, { url });
   },
 
-  /** Save a tab as a pin in a Space folder (or subfolder), keeping the tab bound to it. */
-  async pinTab({ windowId, tabId, parentId, index }) {
+  async togglePin({ windowId, tabId }) {
     const ctx = await loadContext(windowId);
+    const binding = ctx.bindings[tabId];
+    if (binding?.kind === 'favorite') {
+      return deleteBookmark({ type: 'deleteBookmark', windowId, id: binding.id });
+    }
     const tab = ctx.tabs.find((t) => t.id === tabId);
-    const url = tab && tabUrl(tab);
-    if (!tab || !url) return;
-    await releaseFavorite(ctx, tabId);
-    if (tab.pinned) await retry(() => browser.tabs.update(tabId, { pinned: false }));
-    const pin = await browser.bookmarks.create({ parentId, index, title: tab.title || url, url });
-    await setBinding(ctx, tabId, { kind: 'pin', id: pin.id });
-    await reloadRoot(ctx);
-    const spaceId = spaceOfBookmark(ctx.root, pin.id);
-    if (spaceId && spaceId !== spaceOfTab(ctx, { ...tab, pinned: false })) await groupTabs(ctx, spaceId, [tabId]);
-    return pin.id;
+    const pinSpace = binding?.kind === 'pin' ? spaceOfBookmark(ctx.root, binding.id) : undefined;
+    if (binding?.kind === 'pin' && pinSpace) {
+      return unpin({ type: 'unpin', windowId, pinId: binding.id, spaceId: pinSpace });
+    }
+    const spaceId = (tab && spaceOfTab(ctx, tab)) || activeSpaceOf(ctx);
+    return pinTab({ type: 'pinTab', windowId, tabId, parentId: spaceId });
   },
 
-  /** Remove a pin, keeping its tab (or opening one) as a temporary tab at `index`. */
-  async unpin({ windowId, pinId, spaceId, index }) {
-    const ctx = await loadContext(windowId);
-    const pin = findBookmark(ctx.root, pinId);
-    if (!pin?.url) return;
-    let tabId = boundTab(ctx, pinId)?.id;
-    if (tabId === undefined) {
-      const tab = await browser.tabs.create({ windowId, url: pin.url, active: false });
-      ctx.tabs.push(tab);
-      tabId = tab.id!;
-    }
-    for (const id of boundTabIds(ctx, pinId)) await setBinding(ctx, id, undefined);
-    await browser.bookmarks.remove(pinId);
-    await reloadRoot(ctx);
-    await placeTab(ctx, tabId, spaceId, index);
-  },
+  pinTab,
+  unpin,
 } satisfies Partial<Handlers>;

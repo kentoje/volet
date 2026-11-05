@@ -66,6 +66,8 @@ export class FakeSidebarStore implements SidebarStore {
   openPin(pinId: string) {
     const pin = tree.findPin(this.spaces, pinId);
     if (!pin) return;
+    const space = tree.spaceOfNode(this.spaces, pinId);
+    if (space) this.switchSpace(space.id);
     const tabId = pin.tabId ?? this.#createTab(pin.url, pin.title);
     this.spaces = tree.withPinTab(this.spaces, pinId, tabId);
     this.activateTab(tabId);

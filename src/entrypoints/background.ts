@@ -1,6 +1,7 @@
 import { archiveIdleTabs } from '@/lib/engine/archive';
 import { Engine } from '@/lib/engine/engine';
 import { listenForMessages } from '@/lib/engine/messaging';
+import { listenForShortcuts } from '@/lib/engine/shortcuts';
 import { forgetGroup, forgetTab, forgetWindow, replaceTab, stampActivity } from '@/lib/engine/session';
 
 const ARCHIVE_ALARM = 'archive-idle-tabs';
@@ -26,6 +27,7 @@ export default defineBackground(() => {
   browser.runtime.onStartup.addListener(() => startup().catch(log('startup')));
 
   listenForMessages(engine);
+  listenForShortcuts(engine);
 
   browser.tabs.onCreated.addListener((tab) => {
     queue('stamp', () => stampActivity([tab.id!]));

@@ -11,6 +11,12 @@ export const tabHandlers = {
     await retry(() => browser.tabs.update(tabId, { active: true }));
   },
 
+  async focusTab({ tabId }) {
+    const tab = await browser.tabs.get(tabId);
+    await browser.windows.update(tab.windowId, { focused: true });
+    await retry(() => browser.tabs.update(tabId, { active: true }));
+  },
+
   async closeTab({ windowId, tabId }) {
     const ctx = await loadContext(windowId);
     await keepActiveInSpace(ctx, [tabId]);

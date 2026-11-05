@@ -44,6 +44,13 @@ export const spaceHandlers = {
     await switchSpace(await loadContext(windowId), spaceId);
   },
 
+  async shiftSpace({ windowId, offset }) {
+    const ctx = await loadContext(windowId);
+    const index = ctx.spaces.findIndex((space) => space.id === activeSpaceOf(ctx));
+    const target = ctx.spaces[(index + offset + ctx.spaces.length) % ctx.spaces.length];
+    if (target) await switchSpace(ctx, target.id);
+  },
+
   async createSpace({ windowId, name, hue }) {
     const ctx = await loadContext(windowId);
     const title = uniqueName(

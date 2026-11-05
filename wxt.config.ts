@@ -11,8 +11,29 @@ export default defineConfig({
   manifest: {
     name: 'Spaces',
     description: 'Arc-like vertical tab spaces for Chrome',
-    permissions: ['sidePanel', 'tabs', 'tabGroups', 'bookmarks', 'storage', 'alarms', 'favicon', 'search'],
+    // activeTab + scripting: the palette shortcut may show the palette on the current page only.
+    permissions: [
+      'sidePanel',
+      'tabs',
+      'tabGroups',
+      'bookmarks',
+      'storage',
+      'alarms',
+      'favicon',
+      'search',
+      'activeTab',
+      'scripting',
+    ],
+    // The in-page palette shows favicons from Chrome's cache, served from the extension's origin.
+    web_accessible_resources: [{ resources: ['_favicon/*'], matches: ['<all_urls>'] }],
     // An action is required so clicking the toolbar icon can open the side panel.
-    action: {},
+    action: { default_title: 'Open Spaces' },
+    commands: {
+      _execute_action: { suggested_key: { default: 'Alt+S' }, description: 'Open the sidebar' },
+      'open-palette': { suggested_key: { default: 'Alt+T' }, description: 'Search tabs, pins and archived tabs' },
+      'next-space': { description: 'Switch to the next Space' },
+      'previous-space': { description: 'Switch to the previous Space' },
+      'toggle-pin': { description: 'Pin or unpin the current tab' },
+    },
   },
 });
