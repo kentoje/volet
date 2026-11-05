@@ -20,4 +20,4 @@ export interface PaletteResults {
   hue: number;
 }
 
-export type PaletteAction = 'new-tab' | 'new-space' | 'clear-tabs';
+export type PaletteAction = 'new-tab' | 'new-space' | 'clear-tabs' | 'settings' | 'import-arc';

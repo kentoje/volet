@@ -1,6 +1,7 @@
 /* Styles for the palette shown over web pages, inside its own shadow root. */
 @import 'tailwindcss';
 @import '../../../styles/tokens.css';
+@import '../../../styles/theme.css';
 
 /* Classes used by the palette components. */
 @source '../';

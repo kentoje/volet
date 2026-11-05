@@ -1,0 +1,29 @@
+/* Styles for the extension's own pages (settings, Arc import). */
+@import 'tailwindcss';
+@import '@fontsource-variable/gabarito';
+@import './tokens.css';
+@import './theme.css';
+
+@source '../lib';
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page-root {
+  /* Pages aren't tied to a Space; they wear the default violet. */
+  --space-hue: 268;
+  min-height: 100vh;
+  background: linear-gradient(170deg, var(--wash-top), var(--wash-bottom));
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}

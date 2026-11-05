@@ -1,3 +1,4 @@
+import type { ImportedSidebar } from '../import/types';
 import type { PaletteItem } from './palette/types';
 
 /** Every change the UI can ask for. The service worker runs them one at a time. */
@@ -41,6 +42,10 @@ export type Command =
   | { type: 'deleteSpace'; windowId: number; spaceId: string }
   | { type: 'reopenArchived'; windowId: number; entryId: string }
   | { type: 'openUrl'; windowId: number; url: string }
+  /** Add imported Spaces (with their pins) and favorites. */
+  | { type: 'importSidebar'; sidebar: ImportedSidebar }
+  | { type: 'openSettings' }
+  | { type: 'openImport' }
   | { type: 'search'; windowId: number; text: string };
 
 export interface CommandMessage {

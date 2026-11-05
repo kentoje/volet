@@ -2,6 +2,8 @@ import type { Command } from '../protocol';
 import { archiveHandlers } from './archive';
 import { bookmarkHandlers } from './bookmarks';
 import { favoriteHandlers } from './favorites';
+import { importHandlers } from './import';
+import { pageHandlers } from './pages';
 import { pinHandlers } from './pins';
 import { spaceHandlers } from './spaces';
 import { tabHandlers } from './tabs';
@@ -15,6 +17,8 @@ const handlers: Handlers = {
   ...favoriteHandlers,
   ...spaceHandlers,
   ...archiveHandlers,
+  ...importHandlers,
+  ...pageHandlers,
 };
 
 export function execute(command: Command): Promise<unknown> {

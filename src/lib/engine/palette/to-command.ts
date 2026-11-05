@@ -32,5 +32,9 @@ function actionCommand(action: PaletteAction, windowId: number, activeSpaceId: s
       return { type: 'createSpace', windowId };
     case 'clear-tabs':
       return { type: 'clearTemporary', windowId, spaceId: activeSpaceId };
+    case 'settings':
+      return { type: 'openSettings' };
+    case 'import-arc':
+      return { type: 'openImport' };
   }
 }

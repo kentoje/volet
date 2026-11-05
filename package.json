@@ -33,6 +33,7 @@
     "wxt": "^0.21.5"
   },
   "dependencies": {
+    "@dnd-kit/collision": "0.5.3",
     "@dnd-kit/dom": "0.5.3",
     "@dnd-kit/svelte": "^0.5.3",
     "@fontsource-variable/gabarito": "^5.3.0",

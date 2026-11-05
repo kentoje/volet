@@ -10,7 +10,8 @@ async function drag(panel: Page, from: Locator, to: Locator, { offsetY = 0 } = {
   await panel.mouse.move(a.x + 30, a.y + a.height / 2);
   await panel.mouse.down();
   await panel.mouse.move(a.x + 30, a.y + a.height / 2 + 10, { steps: 4 });
-  await panel.mouse.move(b.x + Math.min(30, b.width / 2), b.y + b.height / 2 + offsetY, { steps: 15 });
+  // Wide targets (rows) are aimed near their left edge, small ones (dots, tiles) at their center.
+  await panel.mouse.move(b.x + (b.width > 80 ? 30 : b.width / 2), b.y + b.height / 2 + offsetY, { steps: 15 });
   await panel.waitForTimeout(150);
   await panel.mouse.up();
 }
@@ -76,6 +77,10 @@ test('dropping a tab on a Space dot moves it to that Space', async ({ worker, wi
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
   await openTabs(worker, windowId, ['Traveler']);
   await expect(row(panel, 'Traveler')).toBeVisible();
+  // Let the engine finish placing the new tab before dragging it.
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)
+    .toBe('Home');
   await drag(panel, row(panel, 'Traveler'), panel.getByRole('button', { name: 'Space 2', exact: true }));
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pointerIntersection } from '@dnd-kit/collision';
   import { createDroppable } from '@dnd-kit/svelte';
   import type { Snippet } from 'svelte';
   import { type DragData, priority } from './context';
@@ -14,6 +15,8 @@
       return { kind: 'space', spaceId };
     },
     collisionPriority: priority.space,
+    // Dots are small: only the pointer itself counts, not the dragged row's whole shape.
+    collisionDetector: pointerIntersection,
   });
 </script>
 

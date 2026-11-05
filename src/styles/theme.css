@@ -1,0 +1,16 @@
+/* Tailwind theme: fonts and the design tokens exposed as utilities (text-ink, bg-pill...). */
+@theme {
+  /* Rows use the OS font on purpose: the panel sits inside the browser frame. */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Space names are the one display moment. */
+  --font-display: 'Gabarito Variable', system-ui, sans-serif;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-hover: var(--hover);
+  --color-pill: var(--pill);
+  --color-tile: var(--tile);
+  --color-rule: var(--rule);
+}

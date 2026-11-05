@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/gabarito';
 @import './styles/tokens.css';
+@import './styles/theme.css';
 
 /* Scan all of src/ for classes, whichever Vite root (WXT or the prototype) is building. */
 @source '.';
@@ -14,22 +15,6 @@
   syntax: '<number>';
   inherits: true;
   initial-value: 268;
-}
-
-@theme {
-  /* Rows use the OS font on purpose: the panel sits inside the browser frame. */
-  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  /* Space names are the one display moment. */
-  --font-display: 'Gabarito Variable', system-ui, sans-serif;
-}
-
-@theme inline {
-  --color-ink: var(--ink);
-  --color-ink-muted: var(--ink-muted);
-  --color-hover: var(--hover);
-  --color-pill: var(--pill);
-  --color-tile: var(--tile);
-  --color-rule: var(--rule);
 }
 
 /* The panel's wash; the hue transition makes Space switches glide. */

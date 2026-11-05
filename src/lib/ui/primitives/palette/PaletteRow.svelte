@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Eraser, FolderPlus, Plus, Search } from '@lucide/svelte';
+  import { Download, Eraser, FolderPlus, Plus, Search, Settings } from '@lucide/svelte';
   import type { PaletteItem } from '@/lib/model/palette';
   import Favicon from '../Favicon.svelte';
 
@@ -20,7 +20,13 @@
     archived: 'Archived',
     space: 'Space',
   };
-  const ACTION_ICON = { 'new-tab': Plus, 'new-space': FolderPlus, 'clear-tabs': Eraser } as const;
+  const ACTION_ICON = {
+    'new-tab': Plus,
+    'new-space': FolderPlus,
+    'clear-tabs': Eraser,
+    settings: Settings,
+    'import-arc': Download,
+  } as const;
   const ActionIcon = $derived(
     item.kind === 'action' ? ACTION_ICON[item.ref as keyof typeof ACTION_ICON] : item.kind === 'search' ? Search : undefined,
   );
