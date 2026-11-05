@@ -2,7 +2,7 @@
   import type { Attachment } from 'svelte/attachments';
   import { CornerUpLeft, PinOff, X } from '@lucide/svelte';
   import type { Pin } from '@/lib/model/types';
-  import { sameUrl } from '@/lib/model/url';
+  import { sameUrl, shortUrl } from '@/lib/model/url';
   import { spaceOfNode } from '@/lib/state/tree';
   import IconButton from '../primitives/IconButton.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
@@ -20,6 +20,16 @@
   /** The pin's tab has left its home URL: show where it is now, and offer a way back. */
   const away = $derived(tab !== undefined && tab.status === 'complete' && !sameUrl(tab.url, pin.url));
 </script>
+
+{#snippet backButton()}
+  <IconButton
+    label="Back to the pinned page"
+    hint="Back to the pinned page: {shortUrl(pin.url)}"
+    onclick={() => sidebar.resetPin(pin.id)}
+  >
+    <CornerUpLeft size={14} strokeWidth={2.25} />
+  </IconButton>
+{/snippet}
 
 {#snippet editor()}
   <RenameField
@@ -44,17 +54,11 @@
     {depth}
     {handle}
     buttons={{ shown: 0, onHover: tab ? 2 : 1 }}
+    leading={away ? backButton : undefined}
     editor={rename.is(pin.id) ? editor : undefined}
     onactivate={() => sidebar.openPin(pin.id)}
     ondblclick={() => rename.start(pin.id)}
   >
-    {#snippet leading()}
-      {#if away}
-        <IconButton label="Back to {pin.title}" solid onclick={() => sidebar.resetPin(pin.id)}>
-          <CornerUpLeft size={14} strokeWidth={2.25} />
-        </IconButton>
-      {/if}
-    {/snippet}
     {#snippet trailing()}
       {#if space}
         <IconButton label="Unpin" hint="Unpin (it moves to the tabs below)" reveal onclick={() => sidebar.unpin(pin.id, space.id)}>

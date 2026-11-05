@@ -15,7 +15,7 @@
     prefix?: string;
     onactivate: () => void;
     ondblclick?: () => void;
-    /** Buttons drawn over the favicon, shown on hover. */
+    /** A button that takes the favicon's place on hover (the favicon fades out). */
     leading?: Snippet;
     /** Buttons on the right edge. */
     trailing?: Snippet;
@@ -55,7 +55,13 @@
 </script>
 
 {#snippet icon()}
-  <span class={['grid size-4 flex-none place-items-center', unloaded && 'opacity-50 saturate-50']}>
+  <span
+    class={[
+      'grid size-4 flex-none place-items-center transition-opacity duration-100',
+      unloaded && 'opacity-50 saturate-50',
+      leading && !editor && 'group-focus-within/row:opacity-0 group-hover/row:opacity-0',
+    ]}
+  >
     {#if loading}
       <span
         class="size-[13px] animate-spin rounded-full border-[1.5px] border-rule border-t-ink-muted motion-reduce:[animation-duration:2s]"

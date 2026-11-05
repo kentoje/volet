@@ -146,3 +146,29 @@ test('the unpin button turns a pin into a temporary tab in one click', async ({ 
   await expect(page.getByRole('button', { name: 'Unpin' })).toHaveCount(0);
   expect((await stripState(worker, windowId)).some((tab) => tab.id === tabId)).toBe(true);
 });
+
+test('a pin that moved to another page offers a way back', async ({ worker, windowId, panel }) => {
+  // Two of the extension's own pages: Chrome doesn't let extensions navigate tabs to data: URLs.
+  const origin = `chrome-extension://${new URL(worker.url()).host}`;
+  const tabId = await worker.evaluate(async ({ id, url }) => (await chrome.tabs.create({ windowId: id, url })).id!, {
+    id: windowId,
+    url: `${origin}/options.html`,
+  });
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Spaces settings');
+  const homeId = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+  });
+  await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
+
+  const page = visiblePage(panel);
+  await expect(page.getByRole('button', { name: 'Spaces settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Back to the pinned page' })).toHaveCount(0); // not moved yet
+  await worker.evaluate(async ({ id, url }) => chrome.tabs.update(id, { url }), { id: tabId, url: `${origin}/import.html` });
+  const row = page.getByRole('listitem').filter({ has: panel.getByRole('button', { name: 'Import from Arc' }) });
+  await expect(row).toContainText('/');
+  await row.hover();
+  await row.getByRole('button', { name: 'Back to the pinned page' }).click();
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Spaces settings');
+  await expect(page.getByRole('button', { name: 'Back to the pinned page' })).toHaveCount(0);
+});
