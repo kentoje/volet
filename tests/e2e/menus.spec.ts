@@ -5,8 +5,7 @@ const visiblePage = (panel: Page) => panel.locator('section:not([inert])');
 const menuItem = (panel: Page, name: string) => panel.getByRole('menuitem', { name, exact: true });
 
 test('renaming a Space renames its bookmark folder and tab group', async ({ worker, windowId, panel }) => {
-  const title = visiblePage(panel).getByRole('heading').getByRole('button');
-  await title.dblclick();
+  await visiblePage(panel).getByRole('heading').dblclick();
   const field = panel.getByRole('textbox', { name: 'Space name' });
   await field.fill('Studio');
   await field.press('Enter');

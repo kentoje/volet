@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { type BrowserContext, type Page, type Worker, test as base, chromium, expect } from '@playwright/test';
 
-const extensionPath = path.resolve(import.meta.dirname, '../../.output/chrome-mv3');
+export const extensionPath = path.resolve(import.meta.dirname, '../../.output/chrome-mv3');
 
 interface Fixtures {
   context: BrowserContext;
