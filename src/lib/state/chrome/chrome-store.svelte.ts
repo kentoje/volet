@@ -7,6 +7,7 @@ import { watchWindow } from './chrome-events';
 import { sayHello, sendCommand } from './command-client';
 import { loadSnapshot } from './load-snapshot';
 import { RefreshGate } from './refresh-gate';
+import { TabOverlay } from './tab-overlay';
 
 const NEW_FOLDER_TITLE = 'New folder';
 
@@ -26,6 +27,7 @@ export class ChromeSidebarStore implements SidebarStore {
 
   readonly windowId: number;
   #gate: RefreshGate<SidebarState>;
+  #overlay = new TabOverlay();
   #timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(windowId: number) {
@@ -38,7 +40,11 @@ export class ChromeSidebarStore implements SidebarStore {
 
   /** Load the initial state and start following Chrome. */
   async start(): Promise<void> {
-    watchWindow(this.windowId, () => this.#scheduleRefresh());
+    watchWindow(this.windowId, {
+      onChange: () => this.#scheduleRefresh(),
+      onTabUpdated: (tabId, change) => this.#overlay.record(tabId, change),
+      onTabRemoved: (tabId) => this.#overlay.forget(tabId),
+    });
     await this.#gate.request();
     // Let the service worker tidy this window (and create the bookmark folders on first run).
     void sayHello(this.windowId)
@@ -54,7 +60,8 @@ export class ChromeSidebarStore implements SidebarStore {
   #apply(state: SidebarState): void {
     this.spaces = state.spaces;
     this.favorites = state.favorites;
-    this.tabs = state.tabs;
+    // Event values win over a lagging tabs.query (see TabOverlay).
+    this.tabs = this.#overlay.apply(state.tabs);
     this.activeSpaceId = state.activeSpaceId;
     this.activeTabId = state.activeTabId;
     this.collapsedFolders = state.collapsedFolders;

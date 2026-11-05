@@ -114,3 +114,11 @@ test('closing a temporary tab from the sidebar closes it in Chrome', async ({ wo
   await expect(row).toHaveCount(0);
   await expect.poll(async () => (await stripState(worker, windowId)).some((t) => t.url.includes('Temp'))).toBe(false);
 });
+
+test('a new tab from the sidebar stops showing as loading', async ({ panel }) => {
+  // Chrome's tabs.query can still say "loading" right after the "complete" event; the panel must not get stuck.
+  const page = visiblePage(panel);
+  await page.getByRole('button', { name: 'New tab', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'New Tab', exact: true })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Loading' })).toHaveCount(0);
+});
