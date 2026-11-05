@@ -107,6 +107,8 @@ export class DragState {
         return store.moveNode(action.id, action.parentId, action.index);
       case 'addFavorite':
         return store.addFavorite(action.tabId, action.index);
+      case 'favoritePin':
+        return store.favoritePin(action.pinId, action.index);
       case 'moveFavorite':
         return store.moveFavorite(action.favoriteId, action.index);
     }

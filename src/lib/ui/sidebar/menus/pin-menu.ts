@@ -12,12 +12,7 @@ export function pinMenu(pin: Pin, away: boolean, { store, rename }: MenuContext)
     { kind: 'action', label: 'Rename', icon: PencilLine, onSelect: () => rename.start(pin.id) },
     away && { kind: 'action', label: 'Back to pinned page', icon: CornerUpLeft, onSelect: () => store.resetPin(pin.id) },
     away && { kind: 'action', label: 'Pin this page instead', icon: House, onSelect: () => store.setPinHome(pin.id) },
-    tabId !== undefined && {
-      kind: 'action',
-      label: 'Add to favorites',
-      icon: Star,
-      onSelect: () => store.addFavorite(tabId),
-    },
+    { kind: 'action', label: 'Add to favorites', icon: Star, onSelect: () => store.favoritePin(pin.id) },
     moveToSpace(store, space?.id, (spaceId) => store.moveNode(pin.id, spaceId)),
     separator,
     space && {

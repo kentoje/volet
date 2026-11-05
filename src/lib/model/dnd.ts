@@ -60,8 +60,8 @@ export function canEnter(entry: Entry, list: ListId, lookup: DndLookup): boolean
     return kind === 'pins' && !lookup.contains(node.id, id);
   }
   if (entry.kind === 'tab') return true;
-  // Pins move between folders, or become temporary tabs (opening their page if needed).
-  if (entry.kind === 'node' && kind !== 'favorites') return true;
+  // Pins go anywhere: other folders, the temporary tabs (opening their page if needed), the favorites.
+  if (entry.kind === 'node') return true;
   if (kind === 'favorites' && entry.kind === 'favorite') return true;
   // Crossing between favorites, pins and temporary tabs needs an open tab to carry over.
   return tabOf(entry, lookup) !== undefined;
@@ -112,6 +112,7 @@ export type DropAction =
   | { type: 'unpin'; pinId: string; spaceId: SpaceId; index?: number }
   | { type: 'moveNode'; id: string; parentId: string; index?: number }
   | { type: 'addFavorite'; tabId: TabId; index?: number }
+  | { type: 'favoritePin'; pinId: string; index?: number }
   | { type: 'moveFavorite'; favoriteId: string; index: number };
 
 /** Translate "entry now sits at `index` in `list`" into the store call that makes it so. */
@@ -121,6 +122,7 @@ export function dropAction(entry: Entry, list: ListId, index: number, lookup: Dn
   switch (kind) {
     case 'favorites':
       if (entry.kind === 'favorite') return { type: 'moveFavorite', favoriteId: entry.id, index };
+      if (entry.kind === 'node') return { type: 'favoritePin', pinId: entry.id, index };
       return tabId !== undefined ? { type: 'addFavorite', tabId, index } : undefined;
     case 'temp':
       if (entry.kind === 'node') return { type: 'unpin', pinId: entry.id, spaceId: id, index };

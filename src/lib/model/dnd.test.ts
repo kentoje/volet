@@ -89,7 +89,7 @@ describe('canEnter', () => {
 
   it('needs an open tab to turn a pin or favorite into something else', () => {
     expect(canEnter({ kind: 'node', id: 'p1' }, 'favorites', lookup)).toBe(true); // has tab 7
-    expect(canEnter({ kind: 'node', id: 'p2' }, 'favorites', lookup)).toBe(false); // unloaded
+    expect(canEnter({ kind: 'node', id: 'p2' }, 'favorites', lookup)).toBe(true); // the pin itself moves
     expect(canEnter({ kind: 'node', id: 'p2' }, 'temp:s2', lookup)).toBe(true); // unpinning opens it
     expect(canEnter({ kind: 'favorite', id: 'f2' }, 'temp:s1', lookup)).toBe(false);
     expect(canEnter({ kind: 'favorite', id: 'f1' }, 'pins:s1', lookup)).toBe(true);
@@ -105,6 +105,7 @@ describe('dropAction', () => {
     expect(dropAction({ kind: 'tab', id: 3 }, 'favorites', 1, lookup)).toEqual({ type: 'addFavorite', tabId: 3, index: 1 });
     expect(dropAction({ kind: 'favorite', id: 'f1' }, 'favorites', 1, lookup)).toEqual({ type: 'moveFavorite', favoriteId: 'f1', index: 1 });
     expect(dropAction({ kind: 'favorite', id: 'f1' }, 'temp:s1', 0, lookup)).toEqual({ type: 'moveTab', tabId: 9, spaceId: 's1', index: 0 });
+    expect(dropAction({ kind: 'node', id: 'p2' }, 'favorites', 0, lookup)).toEqual({ type: 'favoritePin', pinId: 'p2', index: 0 });
   });
 
   it('moves entries dropped on a Space dot to the end of that Space', () => {

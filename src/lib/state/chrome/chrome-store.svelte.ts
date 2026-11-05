@@ -209,6 +209,12 @@ export class ChromeSidebarStore implements SidebarStore {
     });
   }
 
+  async favoritePin(pinId: string, index?: number) {
+    await this.#run({ type: 'favoritePin', windowId: this.windowId, pinId, index }, () => {
+      ({ spaces: this.spaces, favorites: this.favorites } = tree.pinToFavorite(this.spaces, this.favorites, pinId, index));
+    });
+  }
+
   async moveFavorite(favoriteId: string, index: number) {
     await this.#run({ type: 'moveFavorite', favoriteId, index }, () => {
       this.favorites = tree.moveItem(this.favorites, (favorite) => favorite.id === favoriteId, index);

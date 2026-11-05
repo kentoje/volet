@@ -200,6 +200,19 @@ export function moveItem<T>(items: T[], match: (item: T) => boolean, index: numb
   return copy;
 }
 
+/** Move a pin out of its Space into the favorites, keeping its name and open tab. */
+export function pinToFavorite(
+  spaces: Space[],
+  favorites: Favorite[],
+  pinId: string,
+  index?: number,
+): { spaces: Space[]; favorites: Favorite[] } {
+  const { spaces: without, removed } = removeNode(spaces, pinId);
+  if (removed?.kind !== 'pin') return { spaces, favorites };
+  const favorite = { id: removed.id, title: removed.title, url: removed.url, tabId: removed.tabId };
+  return { spaces: without, favorites: insertFavorite(favorites, favorite, index) };
+}
+
 export function insertFavorite(favorites: Favorite[], favorite: Favorite, index?: number): Favorite[] {
   const copy = [...favorites];
   copy.splice(index ?? copy.length, 0, favorite);

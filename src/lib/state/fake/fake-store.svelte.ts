@@ -152,6 +152,10 @@ export class FakeSidebarStore implements SidebarStore {
     this.favorites = tree.insertFavorite(this.favorites, favorite, index);
   }
 
+  favoritePin(pinId: string, index?: number) {
+    ({ spaces: this.spaces, favorites: this.favorites } = tree.pinToFavorite(this.spaces, this.favorites, pinId, index));
+  }
+
   moveFavorite(favoriteId: string, index: number) {
     this.favorites = tree.moveItem(this.favorites, (favorite) => favorite.id === favoriteId, index);
   }

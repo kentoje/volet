@@ -29,6 +29,8 @@ export type Command =
   | { type: 'createFolder'; parentId: string; index?: number; title: string }
   | { type: 'openFavorite'; windowId: number; favoriteId: string }
   | { type: 'addFavorite'; windowId: number; tabId: number; index?: number }
+  /** Turn a pin into a favorite (its bookmark moves to Favorites, its open tab follows). */
+  | { type: 'favoritePin'; windowId: number; pinId: string; index?: number }
   | { type: 'removeFavorite'; windowId: number; favoriteId: string }
   /** Reorder favorites; `index` is the final position. */
   | { type: 'moveFavorite'; favoriteId: string; index: number }

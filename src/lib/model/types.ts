@@ -94,6 +94,8 @@ export interface SidebarStore {
   // Favorites
   openFavorite(favoriteId: string): Done;
   addFavorite(tabId: TabId, index?: number): Done;
+  /** Turn a pin into a favorite: it leaves its Space, and its open tab (if any) goes with it. */
+  favoritePin(pinId: string, index?: number): Done;
   moveFavorite(favoriteId: string, index: number): Done;
   removeFavorite(favoriteId: string): Done;
 

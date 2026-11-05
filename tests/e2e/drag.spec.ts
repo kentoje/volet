@@ -157,3 +157,28 @@ test('with no favorites, the area explains itself and accepts a dragged tab', as
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('First'))?.pinned)
     .toBe(true);
 });
+
+test('a pin added to the favorites leaves its Space', async ({ worker, windowId, panel }) => {
+  await pinned(worker, windowId, panel, ['Moves up']);
+  const pinRow = row(panel, 'Moves up');
+  await pinRow.click({ button: 'right' });
+  await panel.getByRole('menuitem', { name: 'Add to favorites' }).click();
+  await expect(panel.getByRole('list', { name: 'Favorites' }).getByRole('button', { name: 'Moves up' })).toBeVisible();
+  await expect(pinRow).toHaveCount(0);
+  await expect.poll(() => homePins(worker)).toEqual([]);
+  const favorites = (await bookmarkTree(worker)).children!.find((c) => c.title === 'Favorites')!.children!;
+  expect(favorites.map((f) => f.title)).toEqual(['Moves up']);
+  // Its tab went with it: now one of Chrome's pinned tabs.
+  expect((await stripState(worker, windowId)).find((tab) => tab.url.includes('Moves up'))?.pinned).toBe(true);
+});
+
+test('a closed pin can be dragged to the favorites too', async ({ worker, windowId, panel }) => {
+  await pinned(worker, windowId, panel, ['Closed pin']);
+  const pinRow = visiblePage(panel).getByRole('listitem').filter({ has: panel.getByRole('button', { name: 'Closed pin', exact: true }) });
+  await pinRow.hover();
+  await pinRow.getByRole('button', { name: 'Close tab' }).click();
+  await expect.poll(async () => (await stripState(worker, windowId)).some((tab) => tab.url.includes('Closed pin'))).toBe(false);
+  await drag(panel, row(panel, 'Closed pin'), panel.getByText('Drag a tab here to make it a favorite'));
+  await expect(panel.getByRole('list', { name: 'Favorites' }).getByRole('button', { name: 'Closed pin' })).toBeVisible();
+  await expect.poll(() => homePins(worker)).toEqual([]);
+});

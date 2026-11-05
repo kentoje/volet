@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Space } from '@/lib/model/types';
-import { deleteNode, folderContains, moveItem, moveNode, pinTemporary, placeTemporary, unpinNode } from './tree';
+import {
+  deleteNode,
+  folderContains,
+  moveItem,
+  moveNode,
+  pinTemporary,
+  pinToFavorite,
+  placeTemporary,
+  unpinNode,
+} from './tree';
 
 const spaces = (): Space[] => [
   {
@@ -46,6 +55,13 @@ describe('tree operations', () => {
   it('knows when a folder sits inside another', () => {
     expect(folderContains(spaces(), 'f1', 'f1')).toBe(true);
     expect(folderContains(spaces(), 's1', 'f1')).toBe(false); // Spaces are not folders
+  });
+
+  it('moves a pin, with its open tab, to the favorites', () => {
+    const { spaces: next, favorites } = pinToFavorite(spaces(), [], 'p2', 0);
+    const folder = next[0]!.pinned[1]!;
+    expect(folder.kind === 'folder' && folder.children).toEqual([]);
+    expect(favorites).toEqual([{ id: 'p2', title: 'B', url: 'https://b', tabId: 8 }]);
   });
 
   it('moves list items to a final index', () => {
