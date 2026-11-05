@@ -51,6 +51,7 @@ export class DragState {
   #selection: Selection;
   #lookup: DndLookup;
   #dwell: { spaceId: string; timer: ReturnType<typeof setTimeout> } | undefined;
+  #landing: Promise<unknown> | undefined;
 
   constructor(store: SidebarStore, selection: Selection) {
     this.#store = store;
@@ -67,10 +68,15 @@ export class DragState {
     return this.active !== undefined && sameEntry(this.active, entry);
   }
 
-  start(entry: Entry): void {
+  /** What dragging `entry` carries: the selection when it is one of several selected rows. */
+  groupFor(entry: Entry): Entry[] {
     const selected = this.#selection.inGroup(entry) ? this.#selection.group() : [];
     // Inside a selected folder, the row would move with the folder: drag it on its own then.
-    this.group = selected.some((other) => sameEntry(other, entry)) ? selected : [entry];
+    return selected.some((other) => sameEntry(other, entry)) ? selected : [entry];
+  }
+
+  start(entry: Entry): void {
+    this.group = this.groupFor(entry);
     if (!this.#selection.has(entry)) this.#selection.clear();
     const lists = buildLists(this.#store.spaces, this.#store.favorites);
     this.draft = this.group.reduce((draft, other) => (sameEntry(other, entry) ? draft : withoutEntry(draft, other)), lists);
@@ -109,9 +115,17 @@ export class DragState {
     const actions = options.canceled ? [] : this.#actionsFor(options.target);
     if (actions.length && this.group.length > 1) this.#selection.clear();
     for (const action of actions) await this.#perform(action);
+    // Rows still flying into place keep the draft's identity (a tab doesn't turn into a pin mid-flight).
+    await this.#landing;
+    this.#landing = undefined;
     this.draft = undefined;
     this.active = undefined;
     this.group = [];
+  }
+
+  /** Keep showing the draft after a drop until `landing` settles (rows animating into place). */
+  hold(landing: Promise<unknown>): void {
+    this.#landing = landing;
   }
 
   #placeFor(draft: Lists, active: Entry, target: DropTarget): { list: ListId; index: number } | undefined {

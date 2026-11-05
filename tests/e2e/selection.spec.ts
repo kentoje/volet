@@ -127,8 +127,9 @@ test('dragging one of several selected tabs moves them all, shown as a stack', a
 
   await expect.poll(() => homeOutline(worker)).toEqual(['Alpha', 'Gamma']);
   await expect(selected(panel)).toHaveCount(0);
-  // The unselected tab stays a temporary tab.
+  // The unselected tab stays a temporary tab, and the rows that flew into the stack left no copies behind.
   await expect(row(panel, 'Beta')).toBeVisible();
+  await expect(panel.locator('[data-overlay-root] > li')).toHaveCount(0);
 });
 
 /** Drag with real pointer events (past dnd-kit's activation distance), checking things before the drop. */

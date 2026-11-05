@@ -57,6 +57,7 @@
 <svelte:element
   this={tag}
   class={['relative isolate transition-opacity', drag.isActive(entry) && 'opacity-35 data-dnd-dragging:opacity-100']}
+  data-entry={entryKey(entry)}
   {@attach sortable.attach}
 >
   {@render children(handle)}

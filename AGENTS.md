@@ -64,7 +64,9 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Selection**: `ui/sidebar/selection/selection.svelte.ts` holds the selected rows of the active Space (Shift and
   Cmd/Ctrl+click, Chrome's tab strip model). Rows ask it first on click (`selection.click`), menus switch to the
   selection's menu through `rowMenu`, and a drag that starts on a selected row carries the whole selection
-  (`DragState.group`, landed in order by the pure `groupDrop`). Page order and placement rules are pure
+  (`DragState.group`, landed in order by the pure `groupDrop`). `drag/group-motion.ts` animates it (DOM only, rows
+  found by `data-entry`): the rows fly into the stack on grab and out of it on drop, and `DragState.hold` keeps the
+  draft until they have landed. Page order and placement rules are pure
   (`model/selection.ts`). `SelectionDismiss` clears it on a click outside the selected rows, on panel blur, and on
   an Escape nothing else handled. Mark new menus or dialogs' containers so they stay inside `[data-overlay-root]`.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`

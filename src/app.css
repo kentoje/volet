@@ -73,6 +73,13 @@
   }
 }
 
+/* The stack under several dragged rows forms as they arrive (see DragStack). */
+@keyframes drag-stack-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes tooltip-fade-in {
   from {
     opacity: 0;
