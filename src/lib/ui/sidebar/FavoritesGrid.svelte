@@ -1,6 +1,7 @@
 <script lang="ts">
   import { type Entry, FAVORITES_LIST, entryKey } from '@/lib/model/dnd';
   import { getSidebar } from '@/lib/model/context';
+  import DropHint from '../primitives/DropHint.svelte';
   import { getDrag } from './drag/context';
   import DropZone from './drag/DropZone.svelte';
   import SortableEntry from './drag/SortableEntry.svelte';
@@ -13,8 +14,8 @@
   );
 </script>
 
-<!-- Always a drop target, even when empty, so tabs can be dragged up to become favorites. -->
-<DropZone list={FAVORITES_LIST} class={['mx-2.5 mt-2.5', entries.length === 0 && 'min-h-3'].filter(Boolean).join(' ')}>
+<!-- Always a drop target. Empty, it explains itself; mid-drag, the dragged tab previews as a tile. -->
+<DropZone list={FAVORITES_LIST} class="mx-2.5 mt-2.5">
   {#if entries.length}
     <ul class="grid grid-cols-4 gap-1.5 @md:grid-cols-6" aria-label="Favorites">
       {#each entries as entry, index (entryKey(entry))}
@@ -25,5 +26,7 @@
         </SortableEntry>
       {/each}
     </ul>
+  {:else}
+    <DropHint>Drag a tab here to make it a favorite, shared by all Spaces.</DropHint>
   {/if}
 </DropZone>

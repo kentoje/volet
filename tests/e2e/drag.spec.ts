@@ -144,3 +144,16 @@ test('the pin shortcut pins the current tab, and unpins it the second time', asy
   await expect.poll(() => homePins(worker)).toEqual([]);
   expect((await stripState(worker, windowId)).find((tab) => tab.id === tabId)?.group).toBe('Home'); // still open
 });
+
+test('with no favorites, the area explains itself and accepts a dragged tab', async ({ worker, windowId, panel }) => {
+  const hint = panel.getByText('Drag a tab here to make it a favorite');
+  await expect(hint).toBeVisible();
+  await openTabs(worker, windowId, ['First favorite']);
+  await expect(row(panel, 'First favorite')).toBeVisible();
+  await drag(panel, row(panel, 'First favorite'), hint);
+  await expect(panel.getByRole('list', { name: 'Favorites' }).getByRole('button')).toHaveCount(1);
+  await expect(hint).toHaveCount(0);
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('First'))?.pinned)
+    .toBe(true);
+});
