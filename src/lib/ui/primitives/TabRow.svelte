@@ -14,12 +14,15 @@
     /** Muted text shown before the title (e.g. the "/" of a pin navigated away). */
     prefix?: string;
     onactivate: () => void;
+    ondblclick?: () => void;
     /** Buttons drawn over the favicon, shown on hover. */
     leading?: Snippet;
     /** Buttons on the right edge. */
     trailing?: Snippet;
     /** Attached to the main button (e.g. to make it a drag handle). */
     handle?: Attachment<HTMLElement>;
+    /** Replaces the title with an editor (e.g. a rename field); the row stops being a button meanwhile. */
+    editor?: Snippet;
   }
 
   let {
@@ -31,11 +34,33 @@
     depth = 0,
     prefix,
     onactivate,
+    ondblclick,
     leading,
     trailing,
     handle,
+    editor,
   }: Props = $props();
+
+  const mainClass = $derived([
+    'flex h-[34px] w-full items-center gap-2.5 rounded-[inherit] pr-10 pl-[calc(10px+var(--depth)*16px)] text-left text-[13px]',
+    active && 'font-medium',
+    unloaded && 'text-ink-muted',
+  ]);
 </script>
+
+{#snippet icon()}
+  <span class={['grid size-4 flex-none place-items-center', unloaded && 'opacity-50 saturate-50']}>
+    {#if loading}
+      <span
+        class="size-[13px] animate-spin rounded-full border-[1.5px] border-rule border-t-ink-muted motion-reduce:[animation-duration:2s]"
+        role="status"
+        aria-label="Loading"
+      ></span>
+    {:else}
+      <Favicon {url} />
+    {/if}
+  </span>
+{/snippet}
 
 <div
   class={[
@@ -44,42 +69,36 @@
   ]}
   style:--depth={depth}
 >
-  <button
-    type="button"
-    class={[
-      'flex h-[34px] w-full items-center gap-2.5 rounded-[inherit] pr-10 pl-[calc(10px+var(--depth)*16px)] text-left text-[13px]',
-      active && 'font-medium',
-      unloaded && 'text-ink-muted',
-    ]}
-    title={title}
-    aria-current={active ? 'page' : undefined}
-    onclick={onactivate}
-    {@attach handle}
-  >
-    <span class={['grid size-4 flex-none place-items-center', unloaded && 'opacity-50 saturate-50']}>
-      {#if loading}
-        <span
-          class="size-[13px] animate-spin rounded-full border-[1.5px] border-rule border-t-ink-muted motion-reduce:[animation-duration:2s]"
-          role="status"
-          aria-label="Loading"
-        ></span>
-      {:else}
-        <Favicon {url} />
-      {/if}
-    </span>
-    <span class="truncate">
-      {#if prefix}<span class="mr-1.5 font-normal text-ink-muted">{prefix}</span>{/if}{title}
-    </span>
-  </button>
+  {#if editor}
+    <div class={mainClass}>
+      {@render icon()}
+      {@render editor()}
+    </div>
+  {:else}
+    <button
+      type="button"
+      class={mainClass}
+      {title}
+      aria-current={active ? 'page' : undefined}
+      onclick={onactivate}
+      {ondblclick}
+      {@attach handle}
+    >
+      {@render icon()}
+      <span class="truncate">
+        {#if prefix}<span class="mr-1.5 font-normal text-ink-muted">{prefix}</span>{/if}{title}
+      </span>
+    </button>
+  {/if}
 
-  {#if leading}
+  {#if leading && !editor}
     <div
       class="absolute top-1/2 left-[calc(6px+var(--depth)*16px)] -translate-y-1/2 opacity-0 transition-opacity duration-100 group-focus-within/row:opacity-100 group-hover/row:opacity-100"
     >
       {@render leading()}
     </div>
   {/if}
-  {#if trailing}
+  {#if trailing && !editor}
     <div class="absolute top-1/2 right-1.5 flex -translate-y-1/2 gap-0.5">
       {@render trailing()}
     </div>

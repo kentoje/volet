@@ -2,10 +2,14 @@
   import { Plus } from '@lucide/svelte';
   import { getSidebar } from '@/lib/model/context';
   import IconButton from '../primitives/IconButton.svelte';
+  import ContextMenu from '../primitives/menu/ContextMenu.svelte';
   import SpaceDot from '../primitives/SpaceDot.svelte';
   import SpaceDropTarget from './drag/SpaceDropTarget.svelte';
+  import { getMenuContext } from './menus/menu-context';
+  import { spaceMenu } from './menus/space-menu';
 
   const sidebar = getSidebar();
+  const menus = getMenuContext();
 </script>
 
 <nav class="relative flex h-11 flex-none items-center px-2.5" aria-label="Spaces">
@@ -14,13 +18,15 @@
       <li>
         <SpaceDropTarget spaceId={space.id}>
           {#snippet children(highlighted)}
-            <SpaceDot
-              name={space.name}
-              hue={space.hue}
-              active={space.id === sidebar.activeSpaceId}
-              {highlighted}
-              onclick={() => sidebar.switchSpace(space.id)}
-            />
+            <ContextMenu items={() => spaceMenu(space, menus)}>
+              <SpaceDot
+                name={space.name}
+                hue={space.hue}
+                active={space.id === sidebar.activeSpaceId}
+                {highlighted}
+                onclick={() => sidebar.switchSpace(space.id)}
+              />
+            </ContextMenu>
           {/snippet}
         </SpaceDropTarget>
       </li>

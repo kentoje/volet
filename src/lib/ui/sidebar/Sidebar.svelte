@@ -4,6 +4,10 @@
   import type { SidebarStore } from '@/lib/model/types';
   import Pager from '../primitives/Pager.svelte';
   import DragLayer from './drag/DragLayer.svelte';
+  import ConfirmHost from './editing/ConfirmHost.svelte';
+  import { ConfirmState } from './editing/confirm-state.svelte';
+  import { setConfirm, setRename } from './editing/context';
+  import { RenameState } from './editing/rename-state.svelte';
   import FavoritesGrid from './FavoritesGrid.svelte';
   import SpacePage from './SpacePage.svelte';
   import SpaceSwitcher from './SpaceSwitcher.svelte';
@@ -21,6 +25,8 @@
   // The store is created once at mount and never replaced.
   // svelte-ignore state_referenced_locally
   const sidebar = setSidebar(store);
+  setRename(new RenameState());
+  setConfirm(new ConfirmState());
 
   const prefersDark = new MediaQuery('(prefers-color-scheme: dark)');
   const activeIndex = $derived(Math.max(0, sidebar.spaces.findIndex((space) => space.id === sidebar.activeSpaceId)));
@@ -57,5 +63,8 @@
       {/snippet}
     </Pager>
     <SpaceSwitcher />
+    <ConfirmHost />
   </DragLayer>
+  <!-- Menus and dialogs render here, inside the tint. -->
+  <div data-overlay-root></div>
 </div>

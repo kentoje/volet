@@ -37,6 +37,11 @@ export function findPinByTab(nodes: PinnedNode[], tabId: TabId): Pin[] {
   });
 }
 
+/** The Space whose temporary tabs include `tabId`. */
+export function spaceOfTab(spaces: Space[], tabId: TabId): Space | undefined {
+  return spaces.find((space) => space.tabIds.includes(tabId));
+}
+
 /** The Space a pin or folder lives in. */
 export function spaceOfNode(spaces: Space[], id: string): Space | undefined {
   return spaces.find((space) => space.id === id || containsNode(space.pinned, id));

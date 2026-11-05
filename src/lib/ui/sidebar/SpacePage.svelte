@@ -4,8 +4,8 @@
   import type { Space } from '@/lib/model/types';
   import ListActionButton from '../primitives/ListActionButton.svelte';
   import SectionDivider from '../primitives/SectionDivider.svelte';
-  import SpaceTitle from '../primitives/SpaceTitle.svelte';
   import PinnedSection from './PinnedSection.svelte';
+  import SpaceHeader from './SpaceHeader.svelte';
   import TemporaryTabs from './TemporaryTabs.svelte';
 
   let { space }: { space: Space } = $props();
@@ -23,7 +23,7 @@
 </script>
 
 <div class="flex min-h-full flex-col px-2.5 pt-3 pb-4">
-  <SpaceTitle name={space.name} />
+  <SpaceHeader {space} />
   <PinnedSection {space} />
   <SectionDivider action={clear} />
   <TemporaryTabs {space} />

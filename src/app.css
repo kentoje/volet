@@ -46,6 +46,8 @@
   --focus: oklch(0.52 0.17 var(--space-hue));
   --dot-l: 0.62;
   --dot-c: 0.16;
+  --menu: oklch(0.985 0.012 var(--space-hue));
+  --danger: oklch(0.55 0.2 25);
 
   color: var(--ink);
   background: linear-gradient(170deg, var(--wash-top), var(--wash-bottom));
@@ -65,12 +67,30 @@
   --focus: oklch(0.8 0.13 var(--space-hue));
   --dot-l: 0.74;
   --dot-c: 0.14;
+  --menu: oklch(0.27 0.035 var(--space-hue));
+  --danger: oklch(0.72 0.17 25);
   color-scheme: dark;
 }
 
 /* While a swipe is in progress the hue follows the fingers directly. */
 .sidebar[data-swiping='true'] {
   transition: none;
+}
+
+/* Menus and dialogs: portaled inside .sidebar (see OVERLAY_ROOT) so they wear the tint. */
+@layer components {
+  .menu-surface {
+    z-index: 60;
+    min-width: 210px;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--menu);
+    color: var(--ink);
+    box-shadow:
+      0 10px 30px oklch(0.2 0.05 var(--space-hue) / 0.22),
+      0 0 0 0.5px var(--rule);
+    outline: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
