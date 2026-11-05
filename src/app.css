@@ -1,0 +1,102 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/gabarito';
+
+/* Scan all of src/ for classes, whichever Vite root (WXT or the prototype) is building. */
+@source '.';
+
+/*
+ * The whole panel is tinted by one number: the active Space's OKLCH hue.
+ * Registering it lets CSS interpolate it, so switching Spaces glides from
+ * one color to the next instead of snapping.
+ */
+@property --space-hue {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 268;
+}
+
+@theme {
+  /* Rows use the OS font on purpose: the panel sits inside the browser frame. */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Space names are the one display moment. */
+  --font-display: 'Gabarito Variable', system-ui, sans-serif;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-hover: var(--hover);
+  --color-pill: var(--pill);
+  --color-tile: var(--tile);
+  --color-rule: var(--rule);
+}
+
+/* Tokens live on .sidebar (not :root) so they resolve against its animated hue. */
+.sidebar {
+  --wash-top: oklch(0.87 0.085 var(--space-hue));
+  --wash-bottom: oklch(0.935 0.045 calc(var(--space-hue) + 35));
+  --ink: oklch(0.27 0.035 var(--space-hue));
+  --ink-muted: oklch(0.47 0.035 var(--space-hue));
+  --hover: oklch(0.3 0.06 var(--space-hue) / 0.07);
+  --pill: oklch(1 0 0 / 0.82);
+  --pill-shadow:
+    0 1px 1px oklch(0.3 0.06 var(--space-hue) / 0.08), 0 3px 10px oklch(0.3 0.06 var(--space-hue) / 0.09);
+  --tile: oklch(1 0 0 / 0.36);
+  --rule: oklch(0.3 0.06 var(--space-hue) / 0.13);
+  --focus: oklch(0.52 0.17 var(--space-hue));
+  --dot-l: 0.62;
+  --dot-c: 0.16;
+
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--wash-top), var(--wash-bottom));
+  transition: --space-hue 460ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sidebar[data-scheme='dark'] {
+  --wash-top: oklch(0.31 0.07 var(--space-hue));
+  --wash-bottom: oklch(0.21 0.035 calc(var(--space-hue) + 35));
+  --ink: oklch(0.95 0.015 var(--space-hue));
+  --ink-muted: oklch(0.76 0.03 var(--space-hue));
+  --hover: oklch(1 0 0 / 0.07);
+  --pill: oklch(1 0 0 / 0.14);
+  --pill-shadow: 0 0 0 0.5px oklch(1 0 0 / 0.06);
+  --tile: oklch(1 0 0 / 0.07);
+  --rule: oklch(1 0 0 / 0.1);
+  --focus: oklch(0.8 0.13 var(--space-hue));
+  --dot-l: 0.74;
+  --dot-c: 0.14;
+  color-scheme: dark;
+}
+
+/* While a swipe is in progress the hue follows the fingers directly. */
+.sidebar[data-swiping='true'] {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+html {
+  /* Horizontal swipes switch Spaces; don't let them trigger history navigation. */
+  overscroll-behavior-x: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
