@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { type Context, type Tab, activeSpaceOf, reloadTabs, spaceTabs, temporaryTabs } from './context';
 import { groupTabs } from './groups';
 import { retry } from './retry';
+import { setBinding } from './session';
 
 /** Open a tab inside a Space (in its tab group). */
 export async function openTabIn(ctx: Context, spaceId: string, url?: string, active = true): Promise<Tab> {
@@ -37,4 +38,12 @@ export async function placeTab(ctx: Context, tabId: number, spaceId: string, ind
   // Chrome's target index counts the tab's own slot when it moves to the right.
   const target = moving.index < anchor.index ? anchor.index - 1 : anchor.index;
   if (target !== moving.index) await retry(() => browser.tabs.move(tabId, { index: target }));
+}
+
+/** A favorite's tab that moves into a Space (as a pin or temporary tab) is no longer a favorite. */
+export async function releaseFavorite(ctx: Context, tabId: number): Promise<void> {
+  const binding = ctx.bindings[tabId];
+  if (binding?.kind !== 'favorite') return;
+  await setBinding(ctx, tabId, undefined);
+  await browser.bookmarks.remove(binding.id).catch(() => undefined);
 }

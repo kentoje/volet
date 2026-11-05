@@ -3,6 +3,7 @@
   import { setSidebar } from '@/lib/model/context';
   import type { SidebarStore } from '@/lib/model/types';
   import Pager from '../primitives/Pager.svelte';
+  import DragLayer from './drag/DragLayer.svelte';
   import FavoritesGrid from './FavoritesGrid.svelte';
   import SpacePage from './SpacePage.svelte';
   import SpaceSwitcher from './SpaceSwitcher.svelte';
@@ -42,17 +43,19 @@
   bind:clientWidth={swipe.width}
   {@attach swipe.attach}
 >
-  <FavoritesGrid />
-  <Pager
-    items={sidebar.spaces}
-    {activeIndex}
-    offset={swipe.offset}
-    dragging={swipe.dragging}
-    label={(space) => space.name}
-  >
-    {#snippet page(space)}
-      <SpacePage {space} />
-    {/snippet}
-  </Pager>
-  <SpaceSwitcher />
+  <DragLayer store={sidebar}>
+    <FavoritesGrid />
+    <Pager
+      items={sidebar.spaces}
+      {activeIndex}
+      offset={swipe.offset}
+      dragging={swipe.dragging}
+      label={(space) => space.name}
+    >
+      {#snippet page(space)}
+        <SpacePage {space} />
+      {/snippet}
+    </Pager>
+    <SpaceSwitcher />
+  </DragLayer>
 </div>

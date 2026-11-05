@@ -1,11 +1,12 @@
 <script lang="ts">
+  import type { Attachment } from 'svelte/attachments';
   import { Volume2, VolumeX, X } from '@lucide/svelte';
   import { getSidebar } from '@/lib/model/context';
   import type { LiveTab } from '@/lib/model/types';
   import IconButton from '../primitives/IconButton.svelte';
   import TabRow from '../primitives/TabRow.svelte';
 
-  let { tab }: { tab: LiveTab } = $props();
+  let { tab, depth = 0, handle }: { tab: LiveTab; depth?: number; handle?: Attachment<HTMLElement> } = $props();
 
   const sidebar = getSidebar();
 </script>
@@ -15,6 +16,8 @@
   url={tab.url}
   active={tab.id === sidebar.activeTabId}
   loading={tab.status === 'loading'}
+  {depth}
+  {handle}
   onactivate={() => sidebar.activateTab(tab.id)}
 >
   {#snippet trailing()}

@@ -23,6 +23,7 @@
   ]}
   aria-label={label}
   title={label}
+  data-no-drag
   onclick={(event) => {
     event.stopPropagation();
     onclick();

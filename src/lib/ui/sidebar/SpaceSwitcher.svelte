@@ -3,6 +3,7 @@
   import { getSidebar } from '@/lib/model/context';
   import IconButton from '../primitives/IconButton.svelte';
   import SpaceDot from '../primitives/SpaceDot.svelte';
+  import SpaceDropTarget from './drag/SpaceDropTarget.svelte';
 
   const sidebar = getSidebar();
 </script>
@@ -11,12 +12,17 @@
   <ul class="flex flex-1 items-center justify-center gap-0.5">
     {#each sidebar.spaces as space (space.id)}
       <li>
-        <SpaceDot
-          name={space.name}
-          hue={space.hue}
-          active={space.id === sidebar.activeSpaceId}
-          onclick={() => sidebar.switchSpace(space.id)}
-        />
+        <SpaceDropTarget spaceId={space.id}>
+          {#snippet children(highlighted)}
+            <SpaceDot
+              name={space.name}
+              hue={space.hue}
+              active={space.id === sidebar.activeSpaceId}
+              {highlighted}
+              onclick={() => sidebar.switchSpace(space.id)}
+            />
+          {/snippet}
+        </SpaceDropTarget>
       </li>
     {/each}
   </ul>

@@ -3,7 +3,7 @@ import { activeSpaceOf, loadContext, temporaryTabs } from '../context';
 import { collapseOtherSpaces } from '../groups';
 import { retry } from '../retry';
 import { setBinding } from '../session';
-import { keepActiveInSpace, openTabIn, placeTab } from '../tab-ops';
+import { keepActiveInSpace, openTabIn, placeTab, releaseFavorite } from '../tab-ops';
 import type { Handlers } from './types';
 
 export const tabHandlers = {
@@ -49,6 +49,7 @@ export const tabHandlers = {
     const ctx = await loadContext(windowId);
     const tab = ctx.tabs.find((t) => t.id === tabId);
     if (!tab) return;
+    await releaseFavorite(ctx, tabId);
     if (tab.pinned) await retry(() => browser.tabs.update(tabId, { pinned: false }));
     if (ctx.bindings[tabId]) await setBinding(ctx, tabId, undefined);
     const leavingActiveSpace = spaceId !== activeSpaceOf(ctx);

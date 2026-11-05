@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import Favicon from './Favicon.svelte';
 
   interface Props {
@@ -17,6 +18,8 @@
     leading?: Snippet;
     /** Buttons on the right edge. */
     trailing?: Snippet;
+    /** Attached to the main button (e.g. to make it a drag handle). */
+    handle?: Attachment<HTMLElement>;
   }
 
   let {
@@ -30,6 +33,7 @@
     onactivate,
     leading,
     trailing,
+    handle,
   }: Props = $props();
 </script>
 
@@ -50,6 +54,7 @@
     title={title}
     aria-current={active ? 'page' : undefined}
     onclick={onactivate}
+    {@attach handle}
   >
     <span class={['grid size-4 flex-none place-items-center', unloaded && 'opacity-50 saturate-50']}>
       {#if loading}

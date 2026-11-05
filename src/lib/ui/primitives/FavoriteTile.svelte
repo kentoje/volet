@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Volume2 } from '@lucide/svelte';
+  import type { Attachment } from 'svelte/attachments';
   import Favicon from './Favicon.svelte';
 
   interface Props {
@@ -12,9 +13,11 @@
     open?: boolean;
     playing?: boolean;
     onclick: () => void;
+    /** Attached to the button (e.g. to make it a drag handle). */
+    handle?: Attachment<HTMLElement>;
   }
 
-  let { label, url, title, active = false, open = false, playing = false, onclick }: Props = $props();
+  let { label, url, title, active = false, open = false, playing = false, onclick, handle }: Props = $props();
 </script>
 
 <button
@@ -27,6 +30,7 @@
   aria-current={active ? 'page' : undefined}
   title={title ?? label}
   {onclick}
+  {@attach handle}
 >
   <span class={['transition-opacity', !open && 'opacity-70']}>
     <Favicon {url} size={20} />

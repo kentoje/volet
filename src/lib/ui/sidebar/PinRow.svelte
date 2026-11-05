@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Attachment } from 'svelte/attachments';
   import { CornerUpLeft, Minus } from '@lucide/svelte';
   import { getSidebar } from '@/lib/model/context';
   import type { Pin } from '@/lib/model/types';
@@ -6,7 +7,7 @@
   import IconButton from '../primitives/IconButton.svelte';
   import TabRow from '../primitives/TabRow.svelte';
 
-  let { pin, depth = 0 }: { pin: Pin; depth?: number } = $props();
+  let { pin, depth = 0, handle }: { pin: Pin; depth?: number; handle?: Attachment<HTMLElement> } = $props();
 
   const sidebar = getSidebar();
   const tab = $derived(pin.tabId !== undefined ? sidebar.tabs.get(pin.tabId) : undefined);
@@ -22,6 +23,7 @@
   unloaded={tab === undefined}
   loading={tab?.status === 'loading'}
   {depth}
+  {handle}
   onactivate={() => sidebar.openPin(pin.id)}
 >
   {#snippet leading()}

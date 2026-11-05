@@ -1,151 +1,233 @@
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import type { Favorite, LiveTab, Pin, PinnedNode, SidebarStore, Space, SpaceId, TabId } from '../../model/types';
-import { seedFavorites, seedSpaces, seedTabs } from './seed';
+import { nextHue } from '@/lib/engine/colors';
+import type { Favorite, Folder, LiveTab, SidebarStore, Space, SpaceId, TabId } from '@/lib/model/types';
+import * as tree from '../tree';
+import { seedCollapsed, seedFavorites, seedSpaces, seedTabMap } from './seed';
 
 const LOAD_MS = 600;
 
-/** In-memory store with realistic data, for building the UI without Chrome. */
+/**
+ * In-memory store with realistic data, for building the UI without Chrome.
+ * Built on the same pure tree operations as the Chrome store's optimistic updates.
+ */
 export class FakeSidebarStore implements SidebarStore {
-  spaces = $state<Space[]>(seedSpaces());
-  favorites = $state<Favorite[]>(seedFavorites());
-  tabs = new SvelteMap<TabId, LiveTab>(seedTabs().map((tab) => [tab.id, tab]));
+  spaces = $state.raw<Space[]>(seedSpaces());
+  favorites = $state.raw<Favorite[]>(seedFavorites());
+  tabs = $state.raw<ReadonlyMap<TabId, LiveTab>>(seedTabMap());
   activeSpaceId = $state<SpaceId>('work');
   activeTabId = $state<TabId | undefined>(21);
-  collapsedFolders = new SvelteSet<string>(['trips']);
+  collapsedFolders = $state.raw<ReadonlySet<string>>(seedCollapsed());
 
-  #nextTabId = 1000;
+  #nextId = 1000;
   /** Not reactive on purpose: only read when switching Spaces. */
   #lastActiveBySpace: Record<SpaceId, TabId> = {};
 
-  get #activeSpace(): Space {
-    return this.spaces.find((space) => space.id === this.activeSpaceId) ?? this.spaces[0]!;
-  }
+  // ───────────────────────────── tabs ─────────────────────────────
 
-  activateTab(tabId: TabId): void {
+  activateTab(tabId: TabId) {
     this.activeTabId = tabId;
     this.#lastActiveBySpace[this.activeSpaceId] = tabId;
   }
 
-  openPin(pinId: string): void {
-    const pin = this.#findPin(pinId);
-    if (!pin) return;
-    pin.tabId ??= this.#openTab(pin.url, pin.title);
-    this.activateTab(pin.tabId);
-  }
-
-  openFavorite(favoriteId: string): void {
-    const favorite = this.favorites.find((f) => f.id === favoriteId);
-    if (!favorite) return;
-    favorite.tabId ??= this.#openTab(favorite.url, favorite.title);
-    this.activateTab(favorite.tabId);
-  }
-
-  closeTab(tabId: TabId): void {
-    for (const space of this.spaces) {
+  closeTab(tabId: TabId) {
+    const space = this.spaces.find((s) => s.tabIds.includes(tabId));
+    if (space && this.activeTabId === tabId) {
       const index = space.tabIds.indexOf(tabId);
-      if (index === -1) continue;
-      space.tabIds.splice(index, 1);
-      if (this.activeTabId === tabId) {
-        const neighbor = space.tabIds[index] ?? space.tabIds[index - 1];
-        this.#activateOrClear(neighbor);
-      }
+      this.#activateOrClear(space.tabIds[index + 1] ?? space.tabIds[index - 1]);
     }
-    this.tabs.delete(tabId);
+    this.spaces = tree.withoutTab(this.spaces, tabId);
+    this.#setTab(tabId, undefined);
   }
 
-  unloadPin(pinId: string): void {
-    const pin = this.#findPin(pinId);
-    if (pin?.tabId === undefined) return;
-    const tabId = pin.tabId;
-    pin.tabId = undefined;
-    this.tabs.delete(tabId);
-    if (this.activeTabId === tabId) this.#activateOrClear(this.#activeSpace.tabIds.at(-1));
+  toggleMute(tabId: TabId) {
+    const tab = this.tabs.get(tabId);
+    if (tab) this.#setTab(tabId, { ...tab, muted: !tab.muted });
   }
 
-  resetPin(pinId: string): void {
-    const pin = this.#findPin(pinId);
-    if (pin?.tabId === undefined) return;
-    this.#load(pin.tabId, pin.url, pin.title);
-  }
-
-  toggleMute(tabId: TabId): void {
-    this.#patch(tabId, (tab) => ({ muted: !tab.muted }));
-  }
-
-  newTab(): void {
-    const id = this.#nextTabId++;
-    this.tabs.set(id, { id, title: 'New Tab', url: 'chrome://newtab/', status: 'complete' });
-    this.#activeSpace.tabIds.push(id);
+  newTab() {
+    const id = this.#createTab('chrome://newtab/', 'New Tab', false);
+    this.spaces = tree.placeTemporary(this.spaces, id, this.activeSpaceId);
     this.activateTab(id);
   }
 
-  clearTemporary(spaceId: SpaceId): void {
-    const space = this.spaces.find((s) => s.id === spaceId);
-    if (!space) return;
-    const cleared = space.tabIds.splice(0);
-    for (const id of cleared) this.tabs.delete(id);
+  clearTemporary(spaceId: SpaceId) {
+    const cleared = this.spaces.find((space) => space.id === spaceId)?.tabIds ?? [];
+    this.spaces = tree.withTemporaryCleared(this.spaces, spaceId);
+    for (const id of cleared) this.#setTab(id, undefined);
     if (this.activeTabId !== undefined && cleared.includes(this.activeTabId)) this.#activateOrClear(undefined);
   }
 
-  switchSpace(spaceId: SpaceId): void {
+  moveTab(tabId: TabId, spaceId: SpaceId, index?: number) {
+    this.#release(tabId);
+    this.spaces = tree.placeTemporary(this.spaces, tabId, spaceId, index);
+  }
+
+  // ───────────────────────────── pins and folders ─────────────────────────────
+
+  openPin(pinId: string) {
+    const pin = tree.findPin(this.spaces, pinId);
+    if (!pin) return;
+    const tabId = pin.tabId ?? this.#createTab(pin.url, pin.title);
+    this.spaces = tree.withPinTab(this.spaces, pinId, tabId);
+    this.activateTab(tabId);
+  }
+
+  unloadPin(pinId: string) {
+    const tabId = tree.findPin(this.spaces, pinId)?.tabId;
+    if (tabId === undefined) return;
+    this.spaces = tree.withPinTab(this.spaces, pinId, undefined);
+    this.#setTab(tabId, undefined);
+    if (this.activeTabId === tabId) this.#activateOrClear(undefined);
+  }
+
+  resetPin(pinId: string) {
+    const pin = tree.findPin(this.spaces, pinId);
+    if (pin?.tabId !== undefined) this.#load(pin.tabId, pin.url, pin.title);
+  }
+
+  setPinHome(pinId: string) {
+    const pin = tree.findPin(this.spaces, pinId);
+    const tab = pin?.tabId !== undefined ? this.tabs.get(pin.tabId) : undefined;
+    if (!tab) return;
+    this.spaces = this.spaces.map((space) => ({
+      ...space,
+      pinned: tree.mapPins(space.pinned, (p) => (p.id === pinId ? { ...p, url: tab.url } : p)),
+    }));
+  }
+
+  pinTab(tabId: TabId, parentId: string, index?: number) {
+    const tab = this.tabs.get(tabId);
+    if (!tab) return;
+    this.#release(tabId);
+    const pin = { kind: 'pin', id: `pin-${this.#nextId++}`, title: tab.title, url: tab.url, tabId } as const;
+    this.spaces = tree.pinTemporary(this.spaces, pin, parentId, index);
+  }
+
+  unpin(pinId: string, spaceId: SpaceId, index?: number) {
+    const pin = tree.findPin(this.spaces, pinId);
+    if (!pin) return;
+    // Unpinning an unloaded pin opens its page.
+    if (pin.tabId === undefined) this.spaces = tree.withPinTab(this.spaces, pinId, this.#createTab(pin.url, pin.title));
+    this.spaces = tree.unpinNode(this.spaces, pinId, spaceId, index);
+  }
+
+  moveNode(id: string, parentId: string, index?: number) {
+    this.spaces = tree.moveNode(this.spaces, id, parentId, index);
+  }
+
+  renameNode(id: string, title: string) {
+    this.spaces = tree.renameNode(this.spaces, id, title);
+  }
+
+  deleteNode(id: string) {
+    this.spaces = tree.deleteNode(this.spaces, id);
+  }
+
+  createFolder(parentId: string) {
+    const folder: Folder = { kind: 'folder', id: `folder-${this.#nextId++}`, title: 'New folder', children: [] };
+    this.spaces = tree.insertNode(this.spaces, folder, parentId, 0);
+  }
+
+  toggleFolder(folderId: string) {
+    this.collapsedFolders = tree.toggled(this.collapsedFolders, folderId);
+  }
+
+  // ───────────────────────────── favorites ─────────────────────────────
+
+  openFavorite(favoriteId: string) {
+    const favorite = this.favorites.find((f) => f.id === favoriteId);
+    if (!favorite) return;
+    const tabId = favorite.tabId ?? this.#createTab(favorite.url, favorite.title);
+    this.favorites = this.favorites.map((f) => (f.id === favoriteId ? { ...f, tabId } : f));
+    this.activateTab(tabId);
+  }
+
+  addFavorite(tabId: TabId, index?: number) {
+    const tab = this.tabs.get(tabId);
+    if (!tab) return;
+    this.#release(tabId);
+    this.spaces = tree.withoutTab(this.spaces, tabId);
+    const favorite = { id: `fav-${this.#nextId++}`, title: tab.title, url: tab.url, tabId };
+    this.favorites = tree.insertFavorite(this.favorites, favorite, index);
+  }
+
+  moveFavorite(favoriteId: string, index: number) {
+    this.favorites = tree.moveItem(this.favorites, (favorite) => favorite.id === favoriteId, index);
+  }
+
+  removeFavorite(favoriteId: string) {
+    const tabId = this.favorites.find((favorite) => favorite.id === favoriteId)?.tabId;
+    this.favorites = this.favorites.filter((favorite) => favorite.id !== favoriteId);
+    if (tabId !== undefined) this.spaces = tree.placeTemporary(this.spaces, tabId, this.activeSpaceId);
+  }
+
+  // ───────────────────────────── Spaces ─────────────────────────────
+
+  switchSpace(spaceId: SpaceId) {
     if (spaceId === this.activeSpaceId) return;
     this.activeSpaceId = spaceId;
     const remembered = this.#lastActiveBySpace[spaceId];
     this.activeTabId = remembered !== undefined && this.tabs.has(remembered) ? remembered : undefined;
   }
 
-  createSpace(): void {
-    // Step around the color wheel by the golden angle so new Spaces stay distinct.
-    const hue = Math.round((this.spaces.at(-1)!.hue + 137.5) % 360);
-    const id = `space-${Date.now()}`;
-    this.spaces.push({ id, name: `Space ${this.spaces.length + 1}`, hue, pinned: [], tabIds: [] });
+  createSpace() {
+    const id = `space-${this.#nextId++}`;
+    const hue = nextHue(this.spaces.map((space) => space.hue));
+    this.spaces = [...this.spaces, { id, name: `Space ${this.spaces.length + 1}`, hue, pinned: [], tabIds: [] }];
     this.switchSpace(id);
   }
 
-  toggleFolder(folderId: string): void {
-    if (this.collapsedFolders.has(folderId)) this.collapsedFolders.delete(folderId);
-    else this.collapsedFolders.add(folderId);
+  renameSpace(spaceId: SpaceId, name: string) {
+    this.spaces = tree.updateSpace(this.spaces, spaceId, { name });
   }
 
-  #openTab(url: string, title: string): TabId {
-    const id = this.#nextTabId++;
-    this.tabs.set(id, { id, title, url, status: 'complete' });
-    this.#load(id, url, title);
+  setSpaceHue(spaceId: SpaceId, hue: number) {
+    this.spaces = tree.updateSpace(this.spaces, spaceId, { hue });
+  }
+
+  moveSpace(spaceId: SpaceId, index: number) {
+    this.spaces = tree.moveItem(this.spaces, (space) => space.id === spaceId, index);
+  }
+
+  deleteSpace(spaceId: SpaceId) {
+    if (this.spaces.length < 2) return;
+    const index = this.spaces.findIndex((space) => space.id === spaceId);
+    this.spaces = this.spaces.filter((space) => space.id !== spaceId);
+    if (this.activeSpaceId === spaceId) this.switchSpace((this.spaces[index] ?? this.spaces[index - 1])!.id);
+  }
+
+  // ───────────────────────────── internals ─────────────────────────────
+
+  /** Unlink a tab from a favorite or pin, as the engine does when it moves elsewhere. */
+  #release(tabId: TabId) {
+    this.favorites = this.favorites.filter((favorite) => favorite.tabId !== tabId);
+    const pin = this.spaces.flatMap((space) => tree.findPinByTab(space.pinned, tabId))[0];
+    if (pin) this.spaces = tree.withPinTab(this.spaces, pin.id, undefined);
+  }
+
+  #createTab(url: string, title: string, load = true): TabId {
+    const id = this.#nextId++;
+    this.#setTab(id, { id, title, url, status: 'complete' });
+    if (load) this.#load(id, url, title);
     return id;
   }
 
   /** Simulate a page load so loading states are visible in the prototype. */
-  #load(tabId: TabId, url: string, title: string): void {
-    this.#patch(tabId, () => ({ status: 'loading', url }));
-    setTimeout(() => this.#patch(tabId, () => ({ status: 'complete', title })), LOAD_MS);
+  #load(tabId: TabId, url: string, title: string) {
+    this.#patch(tabId, { status: 'loading', url });
+    setTimeout(() => this.#patch(tabId, { status: 'complete', title }), LOAD_MS);
   }
 
-  /** Tabs are replaced, never mutated: the same way Chrome's events will deliver them. */
-  #patch(tabId: TabId, change: (tab: LiveTab) => Partial<LiveTab>): void {
+  #patch(tabId: TabId, change: Partial<LiveTab>) {
     const tab = this.tabs.get(tabId);
-    if (tab) this.tabs.set(tabId, { ...tab, ...change(tab) });
+    if (tab) this.#setTab(tabId, { ...tab, ...change });
   }
 
-  #activateOrClear(tabId: TabId | undefined): void {
+  #setTab(tabId: TabId, tab: LiveTab | undefined) {
+    this.tabs = tree.withKey(this.tabs, tabId, tab);
+  }
+
+  #activateOrClear(tabId: TabId | undefined) {
     if (tabId === undefined) this.activeTabId = undefined;
     else this.activateTab(tabId);
-  }
-
-  #findPin(pinId: string): Pin | undefined {
-    const search = (nodes: PinnedNode[]): Pin | undefined => {
-      for (const node of nodes) {
-        if (node.kind === 'pin' && node.id === pinId) return node;
-        if (node.kind === 'folder') {
-          const found = search(node.children);
-          if (found) return found;
-        }
-      }
-      return undefined;
-    };
-    for (const space of this.spaces) {
-      const found = search(space.pinned);
-      if (found) return found;
-    }
-    return undefined;
   }
 }

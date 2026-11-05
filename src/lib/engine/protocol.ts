@@ -23,6 +23,8 @@ export type Command =
   | { type: 'openFavorite'; windowId: number; favoriteId: string }
   | { type: 'addFavorite'; windowId: number; tabId: number; index?: number }
   | { type: 'removeFavorite'; windowId: number; favoriteId: string }
+  /** Reorder favorites; `index` is the final position. */
+  | { type: 'moveFavorite'; favoriteId: string; index: number }
   | { type: 'switchSpace'; windowId: number; spaceId: string }
   | { type: 'createSpace'; windowId: number; name?: string; hue?: number }
   | { type: 'renameSpace'; spaceId: string; name: string }

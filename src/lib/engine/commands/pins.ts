@@ -12,7 +12,7 @@ import { collapseOtherSpaces, groupTabs } from '../groups';
 import { retry } from '../retry';
 import { setActiveSpace, setBinding } from '../session';
 import { findBookmark, spaceOfBookmark } from '../snapshot';
-import { keepActiveInSpace, placeTab } from '../tab-ops';
+import { keepActiveInSpace, placeTab, releaseFavorite } from '../tab-ops';
 import type { Handlers } from './types';
 
 export const pinHandlers = {
@@ -71,6 +71,7 @@ export const pinHandlers = {
     const tab = ctx.tabs.find((t) => t.id === tabId);
     const url = tab && tabUrl(tab);
     if (!tab || !url) return;
+    await releaseFavorite(ctx, tabId);
     if (tab.pinned) await retry(() => browser.tabs.update(tabId, { pinned: false }));
     const pin = await browser.bookmarks.create({ parentId, index, title: tab.title || url, url });
     await setBinding(ctx, tabId, { kind: 'pin', id: pin.id });

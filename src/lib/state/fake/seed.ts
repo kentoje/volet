@@ -1,4 +1,4 @@
-import type { Favorite, LiveTab, Space } from '../../model/types';
+import type { Favorite, LiveTab, Space, TabId } from '../../model/types';
 
 export function seedFavorites(): Favorite[] {
   return [
@@ -120,4 +120,12 @@ export function seedSpaces(): Space[] {
       tabIds: [40, 41],
     },
   ];
+}
+
+export function seedTabMap(): ReadonlyMap<TabId, LiveTab> {
+  return new Map(seedTabs().map((tab) => [tab.id, tab]));
+}
+
+export function seedCollapsed(): ReadonlySet<string> {
+  return new Set(['trips']);
 }

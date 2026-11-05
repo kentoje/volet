@@ -1,14 +1,17 @@
 <script lang="ts">
   import { Folder, FolderOpen } from '@lucide/svelte';
+  import type { Attachment } from 'svelte/attachments';
 
   interface Props {
     title: string;
     open: boolean;
     depth?: number;
     ontoggle: () => void;
+    /** Attached to the button (e.g. to make it a drag handle). */
+    handle?: Attachment<HTMLElement>;
   }
 
-  let { title, open, depth = 0, ontoggle }: Props = $props();
+  let { title, open, depth = 0, ontoggle, handle }: Props = $props();
 </script>
 
 <button
@@ -17,6 +20,7 @@
   style:--depth={depth}
   aria-expanded={open}
   onclick={ontoggle}
+  {@attach handle}
 >
   <span class="grid size-4 flex-none place-items-center text-ink-muted">
     {#if open}

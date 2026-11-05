@@ -4,15 +4,17 @@
     /** The Space's own hue: each dot previews where it leads. */
     hue: number;
     active?: boolean;
+    /** Something is being dragged over it. */
+    highlighted?: boolean;
     onclick: () => void;
   }
 
-  let { name, hue, active = false, onclick }: Props = $props();
+  let { name, hue, active = false, highlighted = false, onclick }: Props = $props();
 </script>
 
 <button
   type="button"
-  class="group/dot grid size-7 place-items-center rounded-lg hover:bg-hover"
+  class={['group/dot grid size-7 place-items-center rounded-lg transition-transform hover:bg-hover', highlighted && 'scale-125 bg-hover']}
   aria-label={name}
   aria-current={active ? 'true' : undefined}
   title={name}

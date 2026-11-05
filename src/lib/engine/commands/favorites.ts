@@ -1,9 +1,10 @@
 import { browser } from 'wxt/browser';
 import { boundTab, loadContext, tabUrl } from '../context';
+import { ensureRoot } from '../root';
 import { retry } from '../retry';
 import { setBinding } from '../session';
 import { findBookmark } from '../snapshot';
-import { deleteBookmark } from './bookmarks';
+import { deleteBookmark, moveBookmark } from './bookmarks';
 import type { Handlers } from './types';
 
 /** Favorites are bookmarks in the Favorites folder; when open, they are Chrome's native pinned tabs. */
@@ -37,6 +38,11 @@ export const favoriteHandlers = {
     await setBinding(ctx, tabId, { kind: 'favorite', id: favorite.id });
     await retry(() => browser.tabs.update(tabId, { pinned: true }));
     return favorite.id;
+  },
+
+  async moveFavorite({ favoriteId, index }) {
+    const { favoritesId } = await ensureRoot();
+    await moveBookmark({ type: 'moveBookmark', id: favoriteId, parentId: favoritesId, index });
   },
 
   async removeFavorite({ windowId, favoriteId }) {
