@@ -5,11 +5,12 @@ export interface TabChange {
   status?: string;
   title?: string;
   url?: string;
+  favIconUrl?: string;
   audible?: boolean;
   mutedInfo?: { muted: boolean };
 }
 
-type Live = Partial<Pick<LiveTab, 'status' | 'title' | 'url' | 'audible' | 'muted'>>;
+type Live = Partial<Pick<LiveTab, 'status' | 'title' | 'url' | 'favIconUrl' | 'audible' | 'muted'>>;
 
 /**
  * Chrome's tabs.query can lag behind its own onUpdated events: right after
@@ -26,6 +27,7 @@ export class TabOverlay {
     if (change.status !== undefined) live.status = change.status === 'loading' ? 'loading' : 'complete';
     if (change.title !== undefined) live.title = change.title;
     if (change.url !== undefined) live.url = change.url;
+    if (change.favIconUrl !== undefined) live.favIconUrl = change.favIconUrl || undefined;
     if (change.audible !== undefined) live.audible = change.audible;
     if (change.mutedInfo !== undefined) live.muted = change.mutedInfo.muted;
     if (Object.keys(live).length === 0) return;

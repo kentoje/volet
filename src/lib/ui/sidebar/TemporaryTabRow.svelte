@@ -18,6 +18,7 @@
   <TabRow
     title={tab.title}
     url={tab.url}
+    icon={tab.favIconUrl}
     active={tab.id === sidebar.activeTabId}
     loading={tab.status === 'loading'}
     {depth}

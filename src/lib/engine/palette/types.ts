@@ -8,6 +8,8 @@ export interface PaletteItem {
   detail?: string;
   /** Page URL, for the favicon. */
   url?: string;
+  /** The icon Chrome shows on the open tab, if any. */
+  icon?: string;
   /** Space color, for Space results. */
   hue?: number;
   /** What the item points at: a tab id, bookmark id, archive entry id, Space id or action name. */

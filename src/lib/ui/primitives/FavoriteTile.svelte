@@ -6,6 +6,8 @@
   interface Props {
     label: string;
     url: string;
+    /** The icon Chrome shows on the open tab, if any. */
+    icon?: string;
     /** Tooltip: the live page title when open. */
     title?: string;
     active?: boolean;
@@ -17,7 +19,7 @@
     handle?: Attachment<HTMLElement>;
   }
 
-  let { label, url, title, active = false, open = false, playing = false, onclick, handle }: Props = $props();
+  let { label, url, icon, title, active = false, open = false, playing = false, onclick, handle }: Props = $props();
 </script>
 
 <button
@@ -33,7 +35,7 @@
   {@attach handle}
 >
   <span class={['transition-opacity', !open && 'opacity-70']}>
-    <Favicon {url} size={20} />
+    <Favicon {url} {icon} size={20} />
   </span>
   {#if playing}
     <span class="absolute right-1 bottom-1 text-ink-muted" aria-label="Playing audio">

@@ -7,6 +7,8 @@ export interface LiveTab {
   title: string;
   url: string;
   status: 'loading' | 'complete';
+  /** The icon Chrome shows on the tab, once the page has one. */
+  favIconUrl?: string;
   audible?: boolean;
   muted?: boolean;
 }

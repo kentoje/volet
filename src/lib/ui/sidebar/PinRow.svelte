@@ -47,6 +47,7 @@
   <TabRow
     title={away ? tab!.title : pin.title}
     url={tab?.url ?? pin.url}
+    icon={tab?.favIconUrl}
     prefix={away ? '/' : undefined}
     active={tab !== undefined && tab.id === sidebar.activeTabId}
     unloaded={tab === undefined}

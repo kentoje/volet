@@ -49,7 +49,7 @@
     {:else if ActionIcon}
       <ActionIcon size={15} strokeWidth={2} />
     {:else if item.url}
-      <Favicon url={item.url} />
+      <Favicon url={item.url} icon={item.icon} />
     {/if}
   </span>
   <span class="min-w-0 flex-1 truncate text-[13px]">

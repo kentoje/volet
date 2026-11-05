@@ -32,6 +32,7 @@ export async function searchPalette(windowId: number, text: string): Promise<Pal
         id: tab.id!,
         title: tab.title || tabUrl(tab) || 'New Tab',
         url: tabUrl(tab) ?? '',
+        icon: tab.favIconUrl,
         spaceName: spaceTitle(spaceId),
         boundTo: isSaved(ctx.root, binding?.id) ? binding!.id : undefined,
         order: (tab.windowId === windowId ? 0 : 2) + (spaceId === activeSpaceId ? 0 : 1),

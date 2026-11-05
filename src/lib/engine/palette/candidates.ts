@@ -5,7 +5,7 @@ import type { PaletteItem } from './types';
 
 export interface CandidateInput {
   /** Tabs of every window, the current window's active Space first. */
-  tabs: { id: number; title: string; url: string; spaceName?: string; boundTo?: string }[];
+  tabs: { id: number; title: string; url: string; icon?: string; spaceName?: string; boundTo?: string }[];
   spaces: { id: string; title: string; hue: number; node: BookmarkNode }[];
   activeSpaceId: string;
   favoritesFolder: BookmarkNode | undefined;
@@ -33,6 +33,7 @@ export function candidates(input: CandidateInput): PaletteItem[] {
       title: tab.title,
       detail: tab.spaceName ? `${tab.spaceName} · ${hostOf(tab.url)}` : hostOf(tab.url),
       url: tab.url,
+      icon: tab.icon,
       ref: tab.id,
     });
   }

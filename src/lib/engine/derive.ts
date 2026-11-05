@@ -36,6 +36,7 @@ export function toLiveTab(tab: TabInfo & { id: number }): LiveTab {
     title: tab.title || url || 'New Tab',
     url,
     status: tab.status === 'loading' ? 'loading' : 'complete',
+    favIconUrl: tab.favIconUrl || undefined,
     audible: tab.audible,
     muted: tab.mutedInfo?.muted,
   };

@@ -14,6 +14,7 @@
 <TabRow
   title={tab?.title ?? favorite.title}
   url={tab?.url ?? favorite.url}
+  icon={tab?.favIconUrl}
   active={tab !== undefined && tab.id === sidebar.activeTabId}
   {depth}
   {handle}

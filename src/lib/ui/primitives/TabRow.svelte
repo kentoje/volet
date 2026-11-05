@@ -6,6 +6,8 @@
   interface Props {
     title: string;
     url: string;
+    /** The icon Chrome shows on the open tab, if any. */
+    icon?: string;
     active?: boolean;
     /** A pin whose tab is closed: shown dimmed, clicking reopens it. */
     unloaded?: boolean;
@@ -30,6 +32,7 @@
   let {
     title,
     url,
+    icon,
     active = false,
     unloaded = false,
     loading = false,
@@ -54,7 +57,7 @@
   ]);
 </script>
 
-{#snippet icon()}
+{#snippet favicon()}
   <span
     class={[
       'grid size-4 flex-none place-items-center transition-opacity duration-100',
@@ -69,7 +72,7 @@
         aria-label="Loading"
       ></span>
     {:else}
-      <Favicon {url} />
+      <Favicon {url} {icon} />
     {/if}
   </span>
 {/snippet}
@@ -85,7 +88,7 @@
 >
   {#if editor}
     <div class={mainClass}>
-      {@render icon()}
+      {@render favicon()}
       {@render editor()}
     </div>
   {:else}
@@ -98,7 +101,7 @@
       {ondblclick}
       {@attach handle}
     >
-      {@render icon()}
+      {@render favicon()}
       <span class="truncate">
         {#if prefix}<span class="mr-1.5 font-normal text-ink-muted">{prefix}</span>{/if}{title}
       </span>

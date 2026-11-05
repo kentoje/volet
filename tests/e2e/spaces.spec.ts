@@ -172,3 +172,17 @@ test('a pin that moved to another page offers a way back', async ({ worker, wind
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Spaces settings');
   await expect(page.getByRole('button', { name: 'Back to the pinned page' })).toHaveCount(0);
 });
+
+test("rows show the icon Chrome shows on the tab", async ({ worker, windowId, panel }) => {
+  // A page with its own favicon (a 1px PNG), which Chrome's favicon cache doesn't know yet.
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  await worker.evaluate(
+    async ({ id, url }) => chrome.tabs.create({ windowId: id, url }),
+    { id: windowId, url: `data:text/html,<title>Iconic</title><link rel="icon" href="${png}">` },
+  );
+  await expect
+    .poll(() => worker.evaluate(async () => (await chrome.tabs.query({})).find((t) => t.title === 'Iconic')?.favIconUrl))
+    .toBe(png);
+  const row = visiblePage(panel).getByRole('button', { name: 'Iconic', exact: true });
+  await expect(row.locator('img')).toHaveAttribute('src', png);
+});

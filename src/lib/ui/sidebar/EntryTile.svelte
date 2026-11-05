@@ -33,6 +33,7 @@
   <FavoriteTile
     label={view.label}
     url={view.url}
+    icon={view.tab?.favIconUrl}
     title={view.tab?.title}
     active={view.tab !== undefined && view.tab.id === sidebar.activeTabId}
     open={view.tab !== undefined}

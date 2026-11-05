@@ -8,6 +8,7 @@ export interface TabInfo {
   title?: string;
   url?: string;
   pendingUrl?: string;
+  favIconUrl?: string;
   status?: string;
   active: boolean;
   pinned: boolean;
