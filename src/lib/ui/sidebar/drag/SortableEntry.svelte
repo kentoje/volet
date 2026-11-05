@@ -6,7 +6,7 @@
   import type { Attachment } from 'svelte/attachments';
   import { type Entry, type ListId, entryKey } from '@/lib/model/dnd';
   import DragStack from '../../primitives/DragStack.svelte';
-  import { type DragData, getDrag, priority, sensors } from './context';
+  import { type DragData, getDrag, notSpaceDot, priority, sensors } from './context';
 
   interface Props {
     entry: Entry;
@@ -42,6 +42,7 @@
     get collisionPriority() {
       return priority.entry(depth);
     },
+    accept: notSpaceDot,
     sensors,
     // Svelte owns the DOM: lists reorder from state, so dnd-kit's DOM-moving sorting stays off,
     // and the row stays put (ghosted) while a clone of it follows the pointer.

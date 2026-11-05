@@ -1,5 +1,6 @@
 <script lang="ts">
   import { mergeProps } from 'bits-ui';
+  import type { Attachment } from 'svelte/attachments';
 
   interface Props {
     name: string;
@@ -9,11 +10,13 @@
     /** Something is being dragged over it. */
     highlighted?: boolean;
     onclick: () => void;
+    /** Attached to the button (e.g. to make it a drag handle). */
+    handle?: Attachment<HTMLElement>;
     /** Extra attributes and handlers (e.g. a tooltip's trigger props). */
     [key: string]: unknown;
   }
 
-  let { name, hue, active = false, highlighted = false, onclick, ...rest }: Props = $props();
+  let { name, hue, active = false, highlighted = false, onclick, handle, ...rest }: Props = $props();
 </script>
 
 <button
@@ -27,6 +30,7 @@
     'aria-current': active ? ('true' as const) : undefined,
     onclick,
   })}
+  {@attach handle}
 >
   <!-- Not a pointer target: pointer events (and tooltips) belong to the button. -->
   <span

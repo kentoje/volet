@@ -225,3 +225,25 @@ test('holding a tab over a Space dot switches to it, so the tab can be placed th
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Mover'))?.group)
     .toBe('Space 2');
 });
+
+test('dragging a Space dot reorders the Spaces', async ({ worker, panel }) => {
+  await panel.getByRole('button', { name: 'New Space' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  const dots = panel.getByRole('navigation', { name: 'Spaces' }).locator('li button');
+  await expect(dots).toHaveCount(2);
+
+  // Drag the second dot onto the left half of the first.
+  const from = (await dots.nth(1).boundingBox())!;
+  const to = (await dots.nth(0).boundingBox())!;
+  await panel.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await panel.mouse.down();
+  await panel.mouse.move(from.x + from.width / 2 - 6, from.y + from.height / 2, { steps: 3 });
+  await panel.mouse.move(to.x + 4, to.y + to.height / 2, { steps: 8 });
+  await panel.waitForTimeout(100);
+  await panel.mouse.up();
+
+  await expect(dots.nth(0)).toHaveAttribute('aria-label', 'Space 2');
+  await expect.poll(async () => (await bookmarkTree(worker)).children!.map((c) => c.title)).toEqual(['Favorites', 'Space 2', 'Home']);
+  // Still on the same Space.
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+});

@@ -2,8 +2,16 @@ import { PointerActivationConstraints } from '@dnd-kit/dom';
 import { PointerSensor } from '@dnd-kit/svelte';
 import { createContext } from 'svelte';
 import type { DragState } from './drag-state.svelte';
+import type { SpaceOrder } from './space-order.svelte';
 
 export const [getDrag, setDrag] = createContext<DragState>();
+export const [getSpaceOrder, setSpaceOrder] = createContext<SpaceOrder>();
+
+/** Space dots are dragged too, to reorder Spaces. They only land on other dots. */
+export const SPACE_DOT = 'space-dot';
+
+/** For rows and lists: accept anything dragged except a Space dot. */
+export const notSpaceDot = (draggable: { type?: unknown }) => draggable.type !== SPACE_DOT;
 
 /** What each draggable and drop target carries, so drag events can be translated. */
 export type DragData =

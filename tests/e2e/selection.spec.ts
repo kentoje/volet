@@ -47,6 +47,31 @@ test('Shift selects a range, Cmd adds to it, and Escape clears it', async ({ wor
   await expect(selected(panel)).toHaveCount(0);
 });
 
+test('a click outside the selected rows clears the selection', async ({ worker, windowId, panel }) => {
+  await openTabs(worker, windowId, ['Alpha', 'Beta', 'Gamma']);
+  await expect(row(panel, 'Gamma')).toBeVisible();
+  await row(panel, 'Alpha').click();
+  await row(panel, 'Gamma').click({ modifiers: ['Shift'] });
+  await expect(selected(panel)).toHaveCount(3);
+
+  // Clicking a selected row's own button, or opening its menu, keeps the selection.
+  await row(panel, 'Beta').click({ button: 'right' });
+  await panel.keyboard.press('Escape');
+  await expect(selected(panel)).toHaveCount(3);
+
+  // Empty space in the panel.
+  const page = (await visiblePage(panel).boundingBox())!;
+  await panel.mouse.click(page.x + page.width / 2, page.y + page.height - 20);
+  await expect(selected(panel)).toHaveCount(0);
+
+  // A click in the web page: the panel only sees itself lose focus.
+  await row(panel, 'Alpha').click();
+  await row(panel, 'Beta').click({ modifiers: ['Shift'] });
+  await expect(selected(panel)).toHaveCount(2);
+  await panel.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect(selected(panel)).toHaveCount(0);
+});
+
 test('selected tabs become a new folder of pins, in order', async ({ worker, windowId, panel }) => {
   await openTabs(worker, windowId, ['Alpha', 'Beta', 'Gamma']);
   await expect(row(panel, 'Gamma')).toBeVisible();

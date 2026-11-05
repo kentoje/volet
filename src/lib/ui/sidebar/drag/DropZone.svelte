@@ -2,7 +2,7 @@
   import { createDroppable } from '@dnd-kit/svelte';
   import type { Snippet } from 'svelte';
   import type { ListId } from '@/lib/model/dnd';
-  import { type DragData, priority } from './context';
+  import { type DragData, notSpaceDot, priority } from './context';
 
   interface Props {
     list: ListId;
@@ -23,6 +23,7 @@
     get collisionPriority() {
       return priority.list(depth);
     },
+    accept: notSpaceDot,
   });
 </script>
 

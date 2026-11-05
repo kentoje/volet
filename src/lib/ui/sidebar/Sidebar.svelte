@@ -13,6 +13,7 @@
   import FavoritesGrid from './FavoritesGrid.svelte';
   import { PanelPaletteState, setPanelPalette } from './palette/panel-palette-state.svelte';
   import PanelPalette from './palette/PanelPalette.svelte';
+  import SelectionDismiss from './selection/SelectionDismiss.svelte';
   import { Selection, setSelection } from './selection/selection.svelte';
   import SpacePage from './SpacePage.svelte';
   import SpaceSwitcher from './SpaceSwitcher.svelte';
@@ -34,7 +35,7 @@
   const sidebar = setSidebar(store);
   setRename(new RenameState());
   setConfirm(new ConfirmState());
-  const selection = setSelection(new Selection(sidebar));
+  setSelection(new Selection(sidebar));
   // svelte-ignore state_referenced_locally
   const panelPalette = setPanelPalette(palette ? new PanelPaletteState() : undefined);
 
@@ -50,8 +51,6 @@
   });
   const tint = new SpaceTint({ spaces: () => sidebar.spaces, activeIndex: () => activeIndex, swipe });
 </script>
-
-<svelte:window onkeydown={(event) => event.key === 'Escape' && selection.clear()} />
 
 <div
   class="sidebar @container relative flex h-full flex-col overflow-hidden select-none"
@@ -79,6 +78,7 @@
       </Pager>
       <SpaceSwitcher />
       <ConfirmHost />
+      <SelectionDismiss />
       {#if palette && panelPalette}
         <PanelPalette client={palette} state={panelPalette} />
       {/if}

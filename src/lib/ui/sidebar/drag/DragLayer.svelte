@@ -4,8 +4,9 @@
   import type { Snippet } from 'svelte';
   import type { SidebarStore } from '@/lib/model/types';
   import { getSelection } from '../selection/selection.svelte';
-  import { type DragData, sensors, setDrag } from './context';
+  import { type DragData, sensors, setDrag, setSpaceOrder } from './context';
   import { type DropTarget, DragState } from './drag-state.svelte';
+  import { SpaceOrder } from './space-order.svelte';
   import { PAGE_SLIDE_MS } from '../../primitives/motion';
 
   let { store, children }: { store: SidebarStore; children: Snippet } = $props();
@@ -13,6 +14,8 @@
   // The store is created once at mount and never replaced.
   // svelte-ignore state_referenced_locally
   const drag = setDrag(new DragState(store, getSelection()));
+  // svelte-ignore state_referenced_locally
+  const spaceOrder = setSpaceOrder(new SpaceOrder(store));
 
   /** dnd-kit measures drop zones once; after a Space switch the pages slid, so measure again. */
   let manager: DragDropManager | undefined;
@@ -27,19 +30,28 @@
   type Operation = { source?: Node; target?: Node; position?: { current: Point } };
   const dataOf = (node: Node) => node?.data as DragData | undefined;
 
+  /** Whether the pointer is past the middle of what it is over, along `axis`. */
+  function pastMiddle(operation: Operation, axis: 'x' | 'y'): boolean {
+    const center = operation.target?.shape?.center;
+    const pointer = operation.position?.current;
+    return Boolean(center && pointer && (axis === 'x' ? pointer.x > center.x : pointer.y > center.y));
+  }
+
   /** What the pointer is over; for entries, which side of their middle it is on. */
   function targetOf(operation: Operation): DropTarget | undefined {
     const data = dataOf(operation.target);
     if (data?.kind !== 'entry') return data;
-    const center = operation.target?.shape?.center;
-    const pointer = operation.position?.current;
-    const after = Boolean(center && pointer && (data.axis === 'x' ? pointer.x > center.x : pointer.y > center.y));
-    return { kind: 'entry', entry: data.entry, after };
+    return { kind: 'entry', entry: data.entry, after: pastMiddle(operation, data.axis) };
   }
 
   const place = (operation: Operation) => {
     const target = targetOf(operation);
-    if (target) drag.over(target);
+    // A dot being dragged only moves among the other dots.
+    if (spaceOrder.active !== undefined) {
+      if (target?.kind === 'space') spaceOrder.over(target.spaceId, pastMiddle(operation, 'x'));
+    } else if (target) {
+      drag.over(target);
+    }
   };
 </script>
 
@@ -50,11 +62,13 @@
     manager = dragManager;
     const source = dataOf((event.operation as Operation).source);
     if (source?.kind === 'entry') drag.start(source.entry);
+    if (source?.kind === 'space') spaceOrder.start(source.spaceId);
   }}
   onDragOver={(event) => place(event.operation as Operation)}
   onDragMove={(event) => place(event.operation as Operation)}
   onDragEnd={(event) => {
-    void drag.end({ canceled: event.canceled, target: targetOf(event.operation as Operation) });
+    if (spaceOrder.active !== undefined) void spaceOrder.end(event.canceled);
+    else void drag.end({ canceled: event.canceled, target: targetOf(event.operation as Operation) });
   }}
 >
   {@render children()}

@@ -6,7 +6,8 @@
   import SpaceDot from '../primitives/SpaceDot.svelte';
   import Tooltip from '../primitives/tooltip/Tooltip.svelte';
   import TooltipGroup from '../primitives/tooltip/TooltipGroup.svelte';
-  import SpaceDropTarget from './drag/SpaceDropTarget.svelte';
+  import { getSpaceOrder } from './drag/context';
+  import SortableSpaceDot from './drag/SortableSpaceDot.svelte';
   import { getMenuContext } from './menus/menu-context';
   import { spaceMenu } from './menus/space-menu';
   import { getPanelPalette } from './palette/panel-palette-state.svelte';
@@ -14,6 +15,7 @@
   const sidebar = getSidebar();
   const menus = getMenuContext();
   const palette = getPanelPalette();
+  const order = getSpaceOrder();
 </script>
 
 <nav class="relative flex h-11 flex-none items-center px-2.5" aria-label="Spaces">
@@ -28,27 +30,27 @@
        so the pointer goes straight from one to the next and the tooltip never closes between. -->
   <TooltipGroup>
     <ul class="flex flex-1 items-center justify-center">
-      {#each sidebar.spaces as space (space.id)}
-        <li>
-          <SpaceDropTarget spaceId={space.id}>
-            {#snippet children(highlighted)}
-              <ContextMenu items={() => spaceMenu(space, menus)}>
-                <Tooltip label={space.name}>
-                  {#snippet trigger(props)}
-                    <SpaceDot
-                      {...props}
-                      name={space.name}
-                      hue={space.hue}
-                      active={space.id === sidebar.activeSpaceId}
-                      {highlighted}
-                      onclick={() => sidebar.switchSpace(space.id)}
-                    />
-                  {/snippet}
-                </Tooltip>
-              </ContextMenu>
-            {/snippet}
-          </SpaceDropTarget>
-        </li>
+      <!-- Drag a dot to reorder the Spaces; drop a tab on one to move it there. -->
+      {#each order.ordered(sidebar.spaces) as space, index (space.id)}
+        <SortableSpaceDot spaceId={space.id} {index}>
+          {#snippet children({ highlighted, handle })}
+            <ContextMenu items={() => spaceMenu(space, menus)}>
+              <Tooltip label={space.name}>
+                {#snippet trigger(props)}
+                  <SpaceDot
+                    {...props}
+                    name={space.name}
+                    hue={space.hue}
+                    active={space.id === sidebar.activeSpaceId}
+                    {highlighted}
+                    {handle}
+                    onclick={() => sidebar.switchSpace(space.id)}
+                  />
+                {/snippet}
+              </Tooltip>
+            </ContextMenu>
+          {/snippet}
+        </SortableSpaceDot>
       {/each}
     </ul>
   </TooltipGroup>

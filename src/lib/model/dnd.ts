@@ -94,6 +94,15 @@ export function placeAround(
   return { list: at.list, index: after ? index + 1 : index };
 }
 
+/** `items` with `moving` placed just before `target`, or just after it. */
+export function moveAround<T>(items: readonly T[], moving: T, target: T, after: boolean): T[] {
+  const others = items.filter((item) => item !== moving);
+  const at = others.indexOf(target);
+  if (moving === target || at === -1) return [...items];
+  others.splice(after ? at + 1 : at, 0, moving);
+  return others;
+}
+
 /** The lists without `entry`. */
 export function withoutEntry(lists: Lists, entry: Entry): Lists {
   const at = locate(lists, entry);

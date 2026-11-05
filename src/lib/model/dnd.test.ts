@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { type DndLookup, buildLists, canEnter, dropAction, dropOnSpace, groupDrop, moveEntry, placeAround, tempList } from './dnd';
+import {
+  type DndLookup,
+  buildLists,
+  canEnter,
+  dropAction,
+  dropOnSpace,
+  groupDrop,
+  moveAround,
+  moveEntry,
+  placeAround,
+  tempList,
+} from './dnd';
 import type { Favorite, PinnedNode, Space } from './types';
 
 const nodes: PinnedNode[] = [
@@ -138,5 +149,13 @@ describe('groupDrop', () => {
       { type: 'pinTab', tabId: 2, parentId: 's1', index: 0 },
       { type: 'pinTab', tabId: 3, parentId: 's1', index: 1 },
     ]);
+  });
+});
+
+describe('moveAround', () => {
+  it('places an item just before or just after another', () => {
+    expect(moveAround(['a', 'b', 'c'], 'c', 'a', false)).toEqual(['c', 'a', 'b']);
+    expect(moveAround(['a', 'b', 'c'], 'a', 'b', true)).toEqual(['b', 'a', 'c']);
+    expect(moveAround(['a', 'b', 'c'], 'a', 'a', true)).toEqual(['a', 'b', 'c']);
   });
 });

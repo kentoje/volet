@@ -17,11 +17,13 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
 - **Favorites.** The grid at the top, shared by all Spaces. Open favorites are Chrome's own pinned tabs, so anything you pin
   in Chrome becomes a favorite.
 - **Drag and drop** everything: reorder tabs, drag across the divider to pin or unpin, into folders, up to the favorites,
-  or onto another Space's dot (hold it there to switch to that Space and drop it at an exact spot).
+  or onto another Space's dot (hold it there to switch to that Space and drop it at an exact spot). Drag the dots
+  themselves to reorder your Spaces.
 - **Select several rows** like in Chrome's tab strip: <kbd>Shift</kbd>+click selects a range, <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+click
   adds or removes one, <kbd>Esc</kbd> clears. Drag them together (they move as a stack), or right-click to put them in a new
-  folder (a selected folder nests inside it), move them to another Space, or close them.
-- **Right-click menus** on every tab, pin, folder, favorite and Space: rename (or double-click), move to another Space,
+  folder (a selected folder nests inside it), move them to another Space, or close them. A click anywhere else clears it.
+- **Right-click menus** on every tab, pin, folder, favorite and Space: rename (or double-click a pin or folder, click a
+  Space's name), move to another Space,
   Space colors, reorder and delete Spaces, and more.
 - **Search palette.** Press <kbd>Alt</kbd>+<kbd>T</kbd> on any page for an Arc-style palette over it: open tabs (all windows),
   pins, favorites, archived tabs, Spaces, actions, a web address, or a web search. In the sidebar: the search button,

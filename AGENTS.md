@@ -49,6 +49,8 @@ Three layers, each with a single job. Dependencies point downward only.
   drop-to-action mapping are pure (`model/dnd.ts`). dnd-kit's DOM-moving sorting is off so Svelte owns the DOM.
   Row buttons are the drag handles; give action buttons and inputs `data-no-drag`. Holding a dragged row over a
   Space dot switches to that Space after a short dwell (`drag-state.svelte.ts`), so it can be dropped there.
+  The dots are sortable too (`SortableSpaceDot`, type `SPACE_DOT`, reordered by `space-order.svelte.ts`); rows and
+  lists refuse them with `accept: notSpaceDot`, so give any new droppable that filter.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`, `submenuSide`): menus open below the
@@ -63,7 +65,8 @@ Three layers, each with a single job. Dependencies point downward only.
   Cmd/Ctrl+click, Chrome's tab strip model). Rows ask it first on click (`selection.click`), menus switch to the
   selection's menu through `rowMenu`, and a drag that starts on a selected row carries the whole selection
   (`DragState.group`, landed in order by the pure `groupDrop`). Page order and placement rules are pure
-  (`model/selection.ts`).
+  (`model/selection.ts`). `SelectionDismiss` clears it on a click outside the selected rows, on panel blur, and on
+  an Escape nothing else handled. Mark new menus or dialogs' containers so they stay inside `[data-overlay-root]`.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
   (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
