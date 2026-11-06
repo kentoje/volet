@@ -5,10 +5,12 @@
   import { type Entry, entryKey, pinsList } from '@/lib/model/dnd';
   import { hasOpenTab } from '@/lib/model/pinned';
   import type { PinnedNode } from '@/lib/model/types';
+  import Deferred from '../primitives/Deferred.svelte';
   import { getDrag } from './drag/context';
   import DropZone from './drag/DropZone.svelte';
   import SortableEntry from './drag/SortableEntry.svelte';
   import EntryRow from './EntryRow.svelte';
+  import { getMountQueue, hasMountQueue } from './mount';
 
   interface Props {
     /** The Space (top level) or folder these pins live in. */
@@ -26,6 +28,7 @@
   let { parentId, nodes, depth = 0, folded = false, empty, class: className }: Props = $props();
 
   const drag = getDrag();
+  const mountQueue = hasMountQueue() ? getMountQueue() : undefined;
   const list = $derived(pinsList(parentId));
   const entries = $derived(drag.entries(list, () => nodes.map((node): Entry => ({ kind: 'node', id: node.id }))));
   const duration = $derived(prefersReducedMotion.current ? 0 : 160);
@@ -48,11 +51,14 @@
     {#each entries as entry, index (entryKey(entry))}
       {#if shown(entry)}
         <li class={depth > 0 ? 'pt-0.5' : 'not-first:pt-0.5'} transition:slide={{ duration }}>
-          <SortableEntry tag="div" {entry} {list} {index} {depth}>
-            {#snippet children(handle)}
-              <EntryRow {entry} {depth} {folded} {handle} />
-            {/snippet}
-          </SortableEntry>
+          <!-- A big folder opening mounts its rows over a few frames (see MountQueue). -->
+          <Deferred queue={mountQueue} height={34}>
+            <SortableEntry tag="div" {entry} {list} {index} {depth}>
+              {#snippet children(handle)}
+                <EntryRow {entry} {depth} {folded} {handle} />
+              {/snippet}
+            </SortableEntry>
+          </Deferred>
         </li>
       {/if}
     {/each}

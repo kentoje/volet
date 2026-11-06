@@ -14,6 +14,8 @@
 
   /** Inside a `TooltipGroup`, the group's one tooltip shows this label. */
   const group = inTooltipGroup() ? getTooltipGroup() : undefined;
+  /** The tooltip mounts the first time it shows, then stays (it fades out). */
+  let used = $state(false);
 </script>
 
 {#snippet child({ props }: { props: Record<string, unknown> })}
@@ -23,8 +25,10 @@
 {#if group}
   <Tooltip.Trigger tether={group} payload={label} {child} />
 {:else}
-  <Tooltip.Root>
+  <Tooltip.Root onOpenChange={(open) => (used ||= open)}>
     <Tooltip.Trigger {child} />
-    <TooltipContent>{label}</TooltipContent>
+    {#if used}
+      <TooltipContent>{label}</TooltipContent>
+    {/if}
   </Tooltip.Root>
 {/if}

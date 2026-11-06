@@ -11,11 +11,15 @@
   let { children: grouped }: { children: Snippet } = $props();
 
   const tether = setTooltipGroup(Tooltip.createTether<string>());
+  /** The tooltip mounts the first time it shows, then stays (it fades out): every row has a group. */
+  let used = $state(false);
 </script>
 
 {@render grouped()}
-<Tooltip.Root {tether}>
+<Tooltip.Root {tether} onOpenChange={(open) => (used ||= open)}>
   {#snippet children({ payload })}
-    <TooltipContent glide>{payload}</TooltipContent>
+    {#if used}
+      <TooltipContent glide>{payload}</TooltipContent>
+    {/if}
   {/snippet}
 </Tooltip.Root>

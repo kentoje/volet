@@ -16,6 +16,11 @@
 
   let { items, children }: Props = $props();
   let open = $state(false);
+  /**
+   * The menu's content (portal, floating layer...) mounts the first time the menu opens, then
+   * stays: every row has a menu, and a long folder opening at once would mount them all.
+   */
+  let used = $state(false);
 
   /** A click in the page is invisible here: close when the panel loses focus, or the pointer leaves it (see dismiss.ts). */
   const dismiss = dismissOutsidePanel(() => (open = false));
@@ -42,7 +47,7 @@
 </script>
 
 <!-- Right-click (or the context menu key) on `children` opens the menu. -->
-<ContextMenu.Root bind:open>
+<ContextMenu.Root bind:open onOpenChange={(value) => (used ||= value)}>
   <ContextMenu.Trigger>
     {#snippet child({ props })}
       <div {...props} {@attach keepHovered}>
@@ -50,18 +55,20 @@
       </div>
     {/snippet}
   </ContextMenu.Trigger>
-  <ContextMenu.Portal to={OVERLAY_ROOT}>
-    <!-- Placed by MENU_PLACEMENT: below the pointer, sliding and flipping to stay on screen. -->
-    <ContextMenu.Content class="menu-surface" data-no-drag {...MENU_PLACEMENT} onCloseAutoFocus={keepFieldFocus}>
-      {#snippet child({ wrapperProps, props })}
-        <div {...wrapperProps}>
-          <div {...props} {@attach dismiss} {@attach highlightWithoutFocus}>
-            {#if open}
-              <MenuItems items={items()} />
-            {/if}
+  {#if used}
+    <ContextMenu.Portal to={OVERLAY_ROOT}>
+      <!-- Placed by MENU_PLACEMENT: below the pointer, sliding and flipping to stay on screen. -->
+      <ContextMenu.Content class="menu-surface" data-no-drag {...MENU_PLACEMENT} onCloseAutoFocus={keepFieldFocus}>
+        {#snippet child({ wrapperProps, props })}
+          <div {...wrapperProps}>
+            <div {...props} {@attach dismiss} {@attach highlightWithoutFocus}>
+              {#if open}
+                <MenuItems items={items()} />
+              {/if}
+            </div>
           </div>
-        </div>
-      {/snippet}
-    </ContextMenu.Content>
-  </ContextMenu.Portal>
+        {/snippet}
+      </ContextMenu.Content>
+    </ContextMenu.Portal>
+  {/if}
 </ContextMenu.Root>

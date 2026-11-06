@@ -100,6 +100,11 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Active row in view**: the active tab's row scrolls its page to show itself when it becomes active or appears
   (a new tab at the end of a long list), gliding (`primitives/reveal-row.ts`, attached by `TabRow`). It scrolls only
   the page: `scrollIntoView` would also move the overflow-hidden strip the pages slide in.
+- **Big lists stay smooth**: rows are costly to mount (a sortable, a menu, tooltips), so a folder opening on a hundred
+  pins would freeze the panel. Pinned rows mount through the sidebar's `MountQueue` (`primitives/mount-queue.ts`,
+  `Deferred`): up to 16 per frame, the rest a frame later each, top to bottom, behind a same-height placeholder (the
+  first render has no limit). Menus and tooltips mount their content (portal, floating layer) the first time they
+  open, then keep it: keep new ones lazy the same way.
 - **Tooltips**: wrap a trigger in `primitives/tooltip/Tooltip.svelte` instead of a native `title` (`IconButton` does it
   for you). They show right away, close as soon as the pointer leaves the trigger, and fade in and out
   (`.tooltip-surface` in `app.css`); one `Tooltip.Provider` sits in `Sidebar.svelte`. Wrap neighboring triggers in a

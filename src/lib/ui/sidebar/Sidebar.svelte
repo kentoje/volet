@@ -5,6 +5,7 @@
   import { setSidebar } from '@/lib/model/context';
   import type { PaletteClient } from '@/lib/model/palette';
   import type { SidebarStore } from '@/lib/model/types';
+  import { MountQueue } from '../primitives/mount-queue';
   import Pager from '../primitives/Pager.svelte';
   import ArcInvite from './ArcInvite.svelte';
   import DragLayer from './drag/DragLayer.svelte';
@@ -13,6 +14,7 @@
   import { setConfirm, setRename } from './editing/context';
   import { RenameState } from './editing/rename-state.svelte';
   import FavoritesGrid from './FavoritesGrid.svelte';
+  import { setMountQueue } from './mount';
   import { PanelPaletteState, setPanelPalette } from './palette/panel-palette-state.svelte';
   import PanelPalette from './palette/PanelPalette.svelte';
   import SelectionDismiss from './selection/SelectionDismiss.svelte';
@@ -40,6 +42,7 @@
   setRename(new RenameState());
   setConfirm(new ConfirmState());
   setSelection(new Selection(sidebar));
+  setMountQueue(new MountQueue());
   // svelte-ignore state_referenced_locally
   setArcClient(arc);
   // svelte-ignore state_referenced_locally
