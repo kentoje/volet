@@ -5,6 +5,8 @@ import { rememberArcFile } from './arc.svelte';
 import { importSidebar } from './chrome/command-client';
 import { range, toggled } from './tree';
 
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
 /** The Arc import flow: choose the file, review what's in it, import the chosen Spaces. */
 export class ImportState {
   step = $state<'choose' | 'review' | 'importing' | 'done'>('choose');
@@ -20,8 +22,7 @@ export class ImportState {
   imported = $state.raw<readonly string[]>([]);
 
   async start(): Promise<void> {
-    this.saved = await arcSidebarItem.getValue();
-    this.imported = await importedArcSpacesItem.getValue();
+    [this.saved, this.imported] = await Promise.all([arcSidebarItem.getValue(), importedArcSpacesItem.getValue()]);
   }
 
   async readFile(file: File): Promise<void> {
@@ -37,7 +38,7 @@ export class ImportState {
       this.error =
         error instanceof ArcImportError
           ? error.message
-          : `Couldn't read this file. Choose Arc's StorableSidebar.json (${(error as Error).message}).`;
+          : `Couldn't read this file. Choose Arc's StorableSidebar.json (${messageOf(error)}).`;
     }
   }
 
@@ -69,7 +70,7 @@ export class ImportState {
       this.result = await importSidebar(sidebar);
       this.step = 'done';
     } catch (error) {
-      this.error = `The import stopped: ${(error as Error).message}`;
+      this.error = `The import stopped: ${messageOf(error)}`;
       this.step = 'review';
     }
   }

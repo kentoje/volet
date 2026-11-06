@@ -4,8 +4,7 @@
   import type { Attachment } from 'svelte/attachments';
   import type { MenuItem } from '@/lib/model/menu';
   import { OVERLAY_ROOT } from '../overlay';
-  import { dismissOutsidePanel, highlightWithoutFocus } from './dismiss';
-  import MenuItems from './MenuItems.svelte';
+  import MenuSurface from './MenuSurface.svelte';
   import { MENU_PLACEMENT } from './placement';
 
   interface Props {
@@ -21,9 +20,6 @@
    * stays: every row has a menu, and a long folder opening at once would mount them all.
    */
   let used = $state(false);
-
-  /** A click in the page is invisible here: close when the panel loses focus, or the pointer leaves it (see dismiss.ts). */
-  const dismiss = dismissOutsidePanel(() => (open = false));
 
   /**
    * Closing sends focus back to where it was before the menu opened. An item that opened a text
@@ -60,13 +56,7 @@
       <!-- Placed by MENU_PLACEMENT: below the pointer, sliding and flipping to stay on screen. -->
       <ContextMenu.Content class="menu-surface" data-no-drag {...MENU_PLACEMENT} onCloseAutoFocus={keepFieldFocus}>
         {#snippet child({ wrapperProps, props })}
-          <div {...wrapperProps}>
-            <div {...props} {@attach dismiss} {@attach highlightWithoutFocus}>
-              {#if open}
-                <MenuItems items={items()} />
-              {/if}
-            </div>
-          </div>
+          <MenuSurface {wrapperProps} {props} {open} {items} onclose={() => (open = false)} />
         {/snippet}
       </ContextMenu.Content>
     </ContextMenu.Portal>

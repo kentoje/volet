@@ -4,10 +4,10 @@
   import PageShell from '../primitives/page/PageShell.svelte';
   import ImportChoose from './ImportChoose.svelte';
   import ImportReview from './ImportReview.svelte';
+  import { plural } from './plural';
 
   const importer = new ImportState();
   void importer.start();
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
   const saved = $derived(importer.saved);
 </script>
 
@@ -26,8 +26,8 @@
       onfile={(file) => void importer.readFile(file)}
       saved={saved ? { spaces: saved.spaces.length, onreview: () => importer.review(saved) } : undefined}
     />
-  {:else if importer.step === 'review'}
-    <ImportReview {importer} />
+  {:else if importer.step === 'review' && importer.sidebar}
+    <ImportReview {importer} sidebar={importer.sidebar} />
   {:else if importer.step === 'importing'}
     <Card>
       <p class="text-[14px]" role="status">Importing… this takes a few seconds for large sidebars.</p>

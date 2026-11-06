@@ -1,4 +1,5 @@
 import type { Attachment } from 'svelte/attachments';
+import { prefersReducedMotion } from 'svelte/motion';
 
 /** Room left between a revealed row and the edge of its list, in px. */
 const MARGIN = 8;
@@ -38,8 +39,7 @@ export const revealRow: Attachment<HTMLElement> = (node) => {
     const view = scroller(node);
     if (!view) return;
     const delta = revealDelta(view.getBoundingClientRect(), node.getBoundingClientRect());
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (delta) view.scrollBy({ top: delta, behavior: reduced ? 'instant' : 'smooth' });
+    if (delta) view.scrollBy({ top: delta, behavior: prefersReducedMotion.current ? 'instant' : 'smooth' });
   });
   return () => cancelAnimationFrame(frame);
 };

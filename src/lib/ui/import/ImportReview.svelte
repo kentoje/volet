@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { countPins } from '@/lib/import/types';
+  import { type ImportedSidebar, countPins } from '@/lib/import/types';
   import type { ImportState } from '@/lib/state/import.svelte';
   import Button from '../primitives/page/Button.svelte';
   import Card from '../primitives/page/Card.svelte';
   import Choice from '../primitives/page/Choice.svelte';
+  import { plural } from './plural';
 
-  let { importer }: { importer: ImportState } = $props();
+  /** `sidebar` is the one under review (`importer.sidebar`, set for this step). */
+  let { importer, sidebar }: { importer: ImportState; sidebar: ImportedSidebar } = $props();
 
-  const sidebar = $derived(importer.sidebar!);
   const count = $derived(importer.chosen.size);
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 </script>
 
 <Card title="Choose what to import">

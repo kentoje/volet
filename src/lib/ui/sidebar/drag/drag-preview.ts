@@ -5,6 +5,13 @@ export const PREVIEW_OPACITY = 0.75;
 export const rowOf = (key: string) =>
   document.querySelector<HTMLElement>(`[data-entry="${CSS.escape(key)}"] [data-row]`) ?? undefined;
 
+/** A lookalike of `node` (DOM only), without the ids that must stay unique in the page. */
+export function cloneRow(node: HTMLElement): HTMLElement {
+  const copy = node.cloneNode(true) as HTMLElement;
+  for (const element of [copy, ...copy.querySelectorAll('[id]')]) element.removeAttribute('id');
+  return copy;
+}
+
 /**
  * The row a drag picks up, copied as it is (DOM only). Rows show their hover look with
  * `data-hovered` (the row was under the pointer).
@@ -12,8 +19,7 @@ export const rowOf = (key: string) =>
 export function rowCopy(key: string): { node: HTMLElement; rect: DOMRect } | undefined {
   const row = rowOf(key);
   if (!row) return undefined;
-  const node = row.cloneNode(true) as HTMLElement;
-  for (const element of [node, ...node.querySelectorAll('[id]')]) element.removeAttribute('id');
+  const node = cloneRow(row);
   for (const element of [node, ...node.querySelectorAll('[title]')]) element.removeAttribute('title');
   node.dataset.hovered = '';
   return { node, rect: row.getBoundingClientRect() };

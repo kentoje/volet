@@ -1,4 +1,5 @@
 import type { Attachment } from 'svelte/attachments';
+import { prefersReducedMotion } from 'svelte/motion';
 
 /**
  * A row that scrolls sideways when its items don't fit: no scrollbar, a fade on each edge that
@@ -68,8 +69,8 @@ export function reveal(node: HTMLElement, selector: string, smooth = true): () =
     const item = node.querySelector(selector);
     if (!item) return;
     const offset = revealOffset(node.getBoundingClientRect(), item.getBoundingClientRect());
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (offset) node.scrollBy({ left: offset, behavior: smooth && !reduced ? 'smooth' : 'instant' });
+    const glide = smooth && !prefersReducedMotion.current;
+    if (offset) node.scrollBy({ left: offset, behavior: glide ? 'smooth' : 'instant' });
   });
   return () => cancelAnimationFrame(frame);
 }

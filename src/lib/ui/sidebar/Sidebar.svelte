@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Tooltip } from 'bits-ui';
-  import { MediaQuery } from 'svelte/reactivity';
   import { type ArcClient, setArcClient } from '@/lib/model/arc';
   import { setSidebar } from '@/lib/model/context';
   import type { PaletteClient } from '@/lib/model/palette';
   import type { SidebarStore } from '@/lib/model/types';
+  import { colorScheme } from '../primitives/color-scheme';
   import { MountQueue } from '../primitives/mount-queue';
   import Pager from '../primitives/Pager.svelte';
   import ArcInvite from './ArcInvite.svelte';
@@ -48,7 +48,6 @@
   // svelte-ignore state_referenced_locally
   const panelPalette = setPanelPalette(palette ? new PanelPaletteState() : undefined);
 
-  const prefersDark = new MediaQuery('(prefers-color-scheme: dark)');
   const activeIndex = $derived(Math.max(0, sidebar.spaces.findIndex((space) => space.id === sidebar.activeSpaceId)));
 
   const swipe = new SpaceSwipe({
@@ -63,7 +62,7 @@
 
 <div
   class="sidebar @container relative flex h-full flex-col overflow-hidden select-none"
-  data-scheme={scheme ?? (prefersDark.current ? 'dark' : 'light')}
+  data-scheme={colorScheme(scheme)}
   data-swiping={swipe.dragging}
   style:--space-hue={tint.hue}
   bind:clientWidth={swipe.width}

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-  import type { Attachment } from "svelte/attachments";
-  import Favicon from "./Favicon.svelte";
-  import { revealRow } from "./reveal-row";
-  import TooltipGroup from "./tooltip/TooltipGroup.svelte";
+  import type { Snippet } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
+  import Favicon from './Favicon.svelte';
+  import { revealRow } from './reveal-row';
+  import TooltipGroup from './tooltip/TooltipGroup.svelte';
 
   interface Props {
     title: string;
@@ -55,7 +55,7 @@
 
   /** Hidden while the row is hovered or focused (a button takes its place then). */
   const HIDE_ON_HOVER =
-    "group-focus-within/row:opacity-0 group-hover/row:opacity-0 group-data-hovered/row:opacity-0";
+    'group-focus-within/row:opacity-0 group-hover/row:opacity-0 group-data-hovered/row:opacity-0';
 
   /** Each trailing button takes 24px (they touch, see below), after a 10px margin. */
   const room = (count: number, extra = 0) => `${10 + count * 24 + extra}px`;
@@ -64,15 +64,15 @@
   const dotRight = $derived(`${12 + buttons.shown * 24}px`);
 
   const mainClass = $derived([
-    "flex h-[34px] w-full items-center gap-2.5 rounded-[inherit] pr-(--room) pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] group-focus-within/row:pr-(--room-hover) group-hover/row:pr-(--room-hover) group-data-hovered/row:pr-(--room-hover)",
-    active && "font-medium",
+    'flex h-[34px] w-full items-center gap-2.5 rounded-[inherit] pr-(--room) pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] group-focus-within/row:pr-(--room-hover) group-hover/row:pr-(--room-hover) group-data-hovered/row:pr-(--room-hover)',
+    active && 'font-medium',
   ]);
 </script>
 
 {#snippet favicon()}
   <span
     class={[
-      "grid size-4 flex-none place-items-center transition-opacity duration-100",
+      'grid size-4 flex-none place-items-center transition-opacity duration-100',
       leading && !editor && HIDE_ON_HOVER,
     ]}
   >
@@ -95,12 +95,12 @@
 -->
 <div
   class={[
-    "group/row relative rounded-[10px] transition-[background-color,box-shadow] duration-100",
+    'group/row relative rounded-[10px] transition-[background-color,box-shadow] duration-100',
     selected
-      ? "bg-selected"
+      ? 'bg-selected'
       : active
-        ? "bg-pill shadow-(--pill-shadow)"
-        : "hover:bg-hover data-hovered:bg-hover",
+        ? 'bg-pill shadow-(--pill-shadow)'
+        : 'hover:bg-hover data-hovered:bg-hover',
   ]}
   data-selected={selected || undefined}
   data-open={openMark || undefined}
@@ -120,16 +120,14 @@
       type="button"
       class={mainClass}
       {title}
-      aria-current={active ? "page" : undefined}
+      aria-current={active ? 'page' : undefined}
       onclick={onactivate}
       {ondblclick}
       {@attach handle}
     >
       {@render favicon()}
       <span class="truncate">
-        {#if prefix}<span class="mr-1.5 font-normal text-ink-muted"
-            >{prefix}</span
-          >{/if}{title}
+        {#if prefix}<span class="mr-1.5 font-normal text-ink-muted">{prefix}</span>{/if}{title}
       </span>
     </button>
   {/if}
@@ -138,7 +136,7 @@
     <!-- Open, like a running app's dot in the macOS Dock: faint, at the row's end. -->
     <span
       class={[
-        "pointer-events-none absolute top-[calc(50%-3px)] size-1.5 rounded-full bg-ink-muted/40 transition-opacity duration-100",
+        'pointer-events-none absolute top-[calc(50%-3px)] size-1.5 rounded-full bg-ink-muted/40 transition-opacity duration-100',
         trailing && buttons.onHover > buttons.shown && HIDE_ON_HOVER,
       ]}
       style:right={dotRight}

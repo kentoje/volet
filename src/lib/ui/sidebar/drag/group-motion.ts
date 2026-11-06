@@ -1,6 +1,6 @@
 import { tick } from 'svelte';
 import { prefersReducedMotion } from 'svelte/motion';
-import { rowOf } from './drag-preview';
+import { cloneRow, rowOf } from './drag-preview';
 
 /**
  * Motion for drags (DOM only; the drag state stays pure). Rows are found by their
@@ -67,8 +67,7 @@ function slide(before: Map<string, DOMRect>, skip: ReadonlySet<string>, duration
  * `rect`, that nothing can interact with.
  */
 function ghostOf(node: HTMLElement, rect: DOMRect, layer: Element): HTMLElement {
-  const copy = node.cloneNode(true) as HTMLElement;
-  for (const element of [copy, ...copy.querySelectorAll('[id]')]) element.removeAttribute('id');
+  const copy = cloneRow(node);
   copy.removeAttribute('data-entry');
   const card = document.createElement('div');
   card.dataset.dragCard = '';

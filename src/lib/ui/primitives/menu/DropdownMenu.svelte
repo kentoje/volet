@@ -3,8 +3,7 @@
   import type { Snippet } from 'svelte';
   import type { MenuItem } from '@/lib/model/menu';
   import { OVERLAY_ROOT } from '../overlay';
-  import { dismissOutsidePanel, highlightWithoutFocus } from './dismiss';
-  import MenuItems from './MenuItems.svelte';
+  import MenuSurface from './MenuSurface.svelte';
   import { MENU_PLACEMENT } from './placement';
 
   interface Props {
@@ -16,9 +15,6 @@
 
   let { items, trigger }: Props = $props();
   let open = $state(false);
-
-  /** Like a context menu: close when the panel loses focus, or the pointer leaves it (see dismiss.ts). */
-  const dismiss = dismissOutsidePanel(() => (open = false));
 </script>
 
 <!-- A click on the trigger opens the menu; it's placed like every menu (MENU_PLACEMENT). -->
@@ -31,13 +27,7 @@
   <DropdownMenu.Portal to={OVERLAY_ROOT}>
     <DropdownMenu.Content class="menu-surface" data-no-drag {...MENU_PLACEMENT}>
       {#snippet child({ wrapperProps, props })}
-        <div {...wrapperProps}>
-          <div {...props} {@attach dismiss} {@attach highlightWithoutFocus}>
-            {#if open}
-              <MenuItems items={items()} />
-            {/if}
-          </div>
-        </div>
+        <MenuSurface {wrapperProps} {props} {open} {items} onclose={() => (open = false)} />
       {/snippet}
     </DropdownMenu.Content>
   </DropdownMenu.Portal>

@@ -19,6 +19,8 @@ export class SettingsStore {
   archiveAfterHours = $state(DEFAULT_SETTINGS.archiveAfterHours);
   shortcuts = $state.raw<Shortcut[]>([]);
   archivedCount = $state(0);
+  /** The keys that open search, if assigned. */
+  readonly searchKeys = $derived(this.shortcuts.find((shortcut) => shortcut.name === 'open-palette')?.keys ?? '');
 
   async load(): Promise<void> {
     const [settings, commands, archive] = await Promise.all([
@@ -38,11 +40,6 @@ export class SettingsStore {
       .sort((a, b) => SHORTCUT_ORDER.indexOf(a.name) - SHORTCUT_ORDER.indexOf(b.name));
     settingsItem.watch((next) => (this.archiveAfterHours = next.archiveAfterHours));
     archiveItem.watch((next) => (this.archivedCount = next.length));
-  }
-
-  /** The keys that open search, if assigned. */
-  get searchKeys(): string {
-    return this.shortcuts.find((shortcut) => shortcut.name === 'open-palette')?.keys ?? '';
   }
 
   async setArchiveAfter(hours: number): Promise<void> {
