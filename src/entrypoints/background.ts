@@ -58,8 +58,9 @@ export default defineBackground(() => {
 
   browser.windows.onRemoved.addListener((windowId) => queue('window removed', () => forgetWindow(windowId)));
 
-  // Renames or deletions made in Chrome's bookmark manager (or arriving through sync).
-  const bookmarksChanged = () => engine.reconcileAll().catch(log('bookmarks'));
+  // Renames or deletions made in Chrome's bookmark manager (or arriving through sync). They come in
+  // bursts (a session restore refreshes every pin's title): one reconcile per burst.
+  const bookmarksChanged = () => engine.scheduleReconcileAll();
   browser.bookmarks.onChanged.addListener(bookmarksChanged);
   browser.bookmarks.onRemoved.addListener(bookmarksChanged);
 

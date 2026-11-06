@@ -14,6 +14,7 @@ import { parkedTab, rememberActive, stampActivity, unpark } from './session';
 export class Engine {
   #queue = new SerialQueue();
   #reconcileTimers = new Map<number, ReturnType<typeof setTimeout>>();
+  #reconcileAllTimer: ReturnType<typeof setTimeout> | undefined;
 
   run(command: Command): Promise<unknown> {
     return this.#queue.run(() => execute(command));
@@ -38,6 +39,15 @@ export class Engine {
         this.reconcile(windowId).catch((error) => console.warn('reconcile failed', error));
       }, delay),
     );
+  }
+
+  /** Coalesce bursts of changes that concern every window (bookmarks) into one reconcile of each. */
+  scheduleReconcileAll(delay = 60): void {
+    clearTimeout(this.#reconcileAllTimer);
+    this.#reconcileAllTimer = setTimeout(() => {
+      this.#reconcileAllTimer = undefined;
+      this.reconcileAll().catch((error) => console.warn('reconcile failed', error));
+    }, delay);
   }
 
   async reconcileAll(options: { recover?: boolean } = {}): Promise<void> {
