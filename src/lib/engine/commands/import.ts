@@ -4,19 +4,26 @@ import { nextHue } from '../colors';
 import { ensureRoot } from '../root';
 import { spaceFolders } from '../snapshot';
 import { uniqueName } from '../space-names';
-import { arcInviteItem, importedArcSpacesItem, spaceMetaItem } from '../storage';
+import { arcInviteItem, collapsedItem, importedArcSpacesItem, spaceMetaItem } from '../storage';
 import { markNamed } from '../titles';
 import type { Handlers } from './types';
 
-/** Create the pins and folders; collect the pins whose title the user chose (to keep it). */
-async function createNodes(parentId: string, nodes: ImportedNode[], named: ImportedLink[]): Promise<void> {
+/** What creating the pins and folders collects along the way. */
+interface Created {
+  /** Pins whose title the user chose (to keep it). */
+  named: ImportedLink[];
+  folderIds: string[];
+}
+
+async function createNodes(parentId: string, nodes: ImportedNode[], created: Created): Promise<void> {
   for (const node of nodes) {
     if (node.kind === 'pin') {
       await browser.bookmarks.create({ parentId, title: node.title, url: node.url });
-      if (node.named) named.push(node);
+      if (node.named) created.named.push(node);
     } else {
       const folder = await browser.bookmarks.create({ parentId, title: node.title });
-      await createNodes(folder.id, node.children, named);
+      created.folderIds.push(folder.id);
+      await createNodes(folder.id, node.children, created);
     }
   }
 }
@@ -33,7 +40,7 @@ export const importHandlers = {
     const meta = { ...(await spaceMetaItem.getValue()) };
     const hues = Object.values(meta).map((m) => m.hue);
 
-    const named: ImportedLink[] = [];
+    const created: Created = { named: [], folderIds: [] };
     const spaceIds: string[] = [];
     for (const space of sidebar.spaces) {
       const title = uniqueName(space.name, taken);
@@ -45,7 +52,7 @@ export const importHandlers = {
       await spaceMetaItem.setValue(meta);
       const folder = await browser.bookmarks.create({ parentId: ids.rootId, title });
       spaceIds.push(folder.id);
-      await createNodes(folder.id, space.pinned, named);
+      await createNodes(folder.id, space.pinned, created);
     }
 
     const known = new Set((root.children?.find((n) => n.id === ids.favoritesId)?.children ?? []).map((n) => n.url));
@@ -54,11 +61,15 @@ export const importHandlers = {
       if (known.has(favorite.url)) continue;
       known.add(favorite.url);
       await browser.bookmarks.create({ parentId: ids.favoritesId, title: favorite.title, url: favorite.url });
-      if (favorite.named) named.push(favorite);
+      if (favorite.named) created.named.push(favorite);
       favorites++;
     }
 
-    await markNamed(named);
+    await markNamed(created.named);
+    // Imported folders start closed, so a big Arc sidebar arrives tidy.
+    if (created.folderIds.length) {
+      await collapsedItem.setValue([...(await collapsedItem.getValue()), ...created.folderIds]);
+    }
     // Remember which Spaces came in (the sidebar stops offering them), and the welcome card has done its job.
     const sourceIds = sidebar.spaces.flatMap((space) => (space.id ? [space.id] : []));
     if (sourceIds.length) {

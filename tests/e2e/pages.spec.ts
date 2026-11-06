@@ -69,6 +69,12 @@ test('importing an Arc sidebar creates its Spaces, pins, folders and favorites',
   expect(hue).toBeGreaterThan(130);
   expect(hue).toBeLessThan(170);
   await expect(panel.getByRole('button', { name: 'Studio', exact: true })).toBeVisible(); // its dot
+
+  // Its folders arrive closed.
+  await panel.getByRole('button', { name: 'Studio', exact: true }).click();
+  const folder = panel.locator('section:not([inert])').getByRole('button', { name: 'Refs', exact: true });
+  await expect(folder).toHaveAttribute('aria-expanded', 'false');
+  await expect(panel.locator('section:not([inert])').getByRole('button', { name: 'Refs page', exact: true })).toHaveCount(0);
 });
 
 test('the settings page changes how long unpinned tabs stay open', async ({ context, worker }) => {
