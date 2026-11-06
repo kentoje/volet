@@ -2,6 +2,7 @@ import { EMPTY_STATE, derive, type SidebarState } from '@/lib/engine/derive';
 import type { Command } from '@/lib/engine/protocol';
 import { collapsedItem } from '@/lib/engine/storage';
 import type { Favorite, Folder, LiveTab, SidebarStore, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
+import { reuseContent } from '../reuse';
 import * as tree from '../tree';
 import { watchWindow } from './chrome-events';
 import { sayHello, sendCommand } from './command-client';
@@ -17,7 +18,7 @@ const NEW_FOLDER_TITLE = 'New folder';
  * optimistic update first, then resolves once the store shows Chrome's real state.
  */
 export class ChromeSidebarStore implements SidebarStore {
-  // Raw state: every refresh replaces these values wholesale; they are never mutated.
+  // Raw state: replaced, never mutated. A refresh keeps the objects that didn't change (see reuse.ts).
   spaces = $state.raw<Space[]>(EMPTY_STATE.spaces);
   favorites = $state.raw<Favorite[]>(EMPTY_STATE.favorites);
   tabs = $state.raw<ReadonlyMap<TabId, LiveTab>>(EMPTY_STATE.tabs);
@@ -58,13 +59,15 @@ export class ChromeSidebarStore implements SidebarStore {
   }
 
   #apply(state: SidebarState): void {
-    this.spaces = state.spaces;
-    this.favorites = state.favorites;
-    // Event values win over a lagging tabs.query (see TabOverlay).
-    this.tabs = this.#overlay.apply(state.tabs);
-    this.activeSpaceId = state.activeSpaceId;
-    this.activeTabId = state.activeTabId;
-    this.collapsedFolders = state.collapsedFolders;
+    // Event values win over a lagging tabs.query (see TabOverlay). Whatever didn't change keeps
+    // its object, so the rows showing it have nothing to do.
+    const next = reuseContent(this, { ...state, tabs: this.#overlay.apply(state.tabs) });
+    this.spaces = next.spaces;
+    this.favorites = next.favorites;
+    this.tabs = next.tabs;
+    this.activeSpaceId = next.activeSpaceId;
+    this.activeTabId = next.activeTabId;
+    this.collapsedFolders = next.collapsedFolders;
   }
 
   /** Apply `optimistic` now, run the command, and resolve once Chrome's state is shown. */
