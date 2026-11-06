@@ -24,7 +24,7 @@
         class: [
           // Icons don't take the pointer: the button does, so a shared tooltip sees it go button to button.
           'grid size-6 place-items-center rounded-[7px] text-ink-muted transition-opacity duration-100 hover:bg-hover hover:text-ink *:pointer-events-none',
-          reveal && 'opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100',
+          reveal && 'opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 group-data-hovered/row:opacity-100',
         ],
         'aria-label': label,
         'data-no-drag': '',

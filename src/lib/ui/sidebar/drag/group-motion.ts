@@ -1,5 +1,6 @@
 import { tick } from 'svelte';
 import { prefersReducedMotion } from 'svelte/motion';
+import { PREVIEW_OPACITY } from './drag-preview';
 
 /**
  * Motion for drags (DOM only; the drag state stays pure). Rows are found by their
@@ -148,7 +149,8 @@ export async function land(active: string, carried: string[], change: () => void
         {
           transform: `translate(${left - to.left}px, ${from.top + slot.dy - to.top}px)`,
           clipPath: `inset(0px ${hidden}px 0px 0px round 10px)`,
-          opacity: key === active ? 1 : 0.6,
+          // The dragged row takes over from the see-through preview.
+          opacity: key === active ? PREVIEW_OPACITY : 0.6,
         },
         { transform: 'none', clipPath: 'inset(0px 0px 0px 0px round 10px)', opacity: 1 },
       ],

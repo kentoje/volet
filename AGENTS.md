@@ -52,11 +52,13 @@ Three layers, each with a single job. Dependencies point downward only.
   between rows, `drop-geometry.ts` picks the closest row from the DOM (`data-entry`, `data-list`). The slot rules
   (`zoneAt`, `slotAt`, `resolveDrop`) and the drop-to-action mapping (`groupDrop`) are pure (`model/dnd.ts`). On
   drop, the draft shows the result at once and `group-motion.ts` slides the rows into place. dnd-kit shows no
-  feedback (`feedback: 'none'`, its DOM-moving sorting is off too): `DragPreview` is a copy of the row hanging below
-  the pointer, so the row it points at stays visible, and DragLayer hands its shape to dnd-kit each frame (dnd-kit
-  only re-checks collisions when the dragged shape changes, and reports moves before updating the pointer). Row
-  buttons are the drag handles; give action buttons and inputs `data-no-drag`. Holding a dragged row over a Space
-  dot switches to that Space after a short dwell (`drag-state.svelte.ts`), so it can be dropped there.
+  feedback (`feedback: 'none'`, its DOM-moving sorting is off too): `DragPreview` is a full-size copy of the row
+  (rows mark their root `data-row`; the copy sets `data-hovered` to keep the hover look), held where the pointer took
+  it and slightly see-through, like Arc, so the drop line or folder under it shows. DragLayer hands its shape to
+  dnd-kit each frame (dnd-kit only re-checks collisions when the dragged shape changes, and reports moves before
+  updating the pointer). Row buttons are the drag handles; give action buttons and inputs `data-no-drag`. Holding
+  a dragged row over a Space dot switches to that Space after a short dwell (`drag-state.svelte.ts`), so it can be
+  dropped there.
   The dots are sortable too (`SortableSpaceDot`, type `SPACE_DOT`, reordered by `space-order.svelte.ts`); rows and
   lists refuse them with `accept: notSpaceDot`, so give any new droppable that filter.
 - **Folders**: a collapsed folder keeps rendering its list as `folded` (`PinnedList`): rows without an open tab

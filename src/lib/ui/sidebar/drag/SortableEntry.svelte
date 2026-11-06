@@ -55,17 +55,14 @@
 
   /**
    * The row's own button is the handle, so dnd-kit's button semantics land on a real button.
-   * It is the drop target too (for a folder: the row, not the block with its contents), and
-   * what the drag preview copies (`data-drag-row`).
+   * It is the drop target too: for a folder, the row, not the block with its contents.
    */
   const handle: Attachment<HTMLElement> = (node) => {
     const detachHandle = sortable.attachHandle(node);
     const detachTarget = sortable.attachTarget(node);
-    node.dataset.dragRow = '';
     return () => {
       detachHandle();
       detachTarget();
-      delete node.dataset.dragRow;
     };
   };
 </script>

@@ -56,7 +56,7 @@
   const room = (count: number) => `${10 + count * 24}px`;
 
   const mainClass = $derived([
-    'flex h-[34px] w-full items-center gap-2.5 rounded-[inherit] pr-(--room) pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] group-focus-within/row:pr-(--room-hover) group-hover/row:pr-(--room-hover)',
+    'flex h-[34px] w-full items-center gap-2.5 rounded-[inherit] pr-(--room) pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] group-focus-within/row:pr-(--room-hover) group-hover/row:pr-(--room-hover) group-data-hovered/row:pr-(--room-hover)',
     active && 'font-medium',
     unloaded && 'text-ink-muted',
   ]);
@@ -67,7 +67,7 @@
     class={[
       'grid size-4 flex-none place-items-center transition-opacity duration-100',
       unloaded && 'opacity-50 saturate-50',
-      leading && !editor && 'group-focus-within/row:opacity-0 group-hover/row:opacity-0',
+      leading && !editor && 'group-focus-within/row:opacity-0 group-hover/row:opacity-0 group-data-hovered/row:opacity-0',
     ]}
   >
     {#if loading}
@@ -82,12 +82,17 @@
   </span>
 {/snippet}
 
+<!--
+  `data-row` marks the row's root (a drag copies it). A copy sets `data-hovered` to keep the hover
+  look it had under the pointer: the same rules as hover apply to it.
+-->
 <div
   class={[
     'group/row relative rounded-[10px] transition-[background-color,box-shadow] duration-100',
-    selected ? 'bg-selected' : active ? 'bg-pill shadow-(--pill-shadow)' : 'hover:bg-hover',
+    selected ? 'bg-selected' : active ? 'bg-pill shadow-(--pill-shadow)' : 'hover:bg-hover data-hovered:bg-hover',
   ]}
   data-selected={selected || undefined}
+  data-row
   style:--depth={depth}
   style:--room={room(buttons.shown)}
   style:--room-hover={room(buttons.onHover)}
@@ -119,7 +124,7 @@
   <TooltipGroup>
     {#if leading && !editor}
       <div
-        class="absolute top-1/2 left-[calc(6px+var(--depth)*16px)] -translate-y-1/2 opacity-0 transition-opacity duration-100 group-focus-within/row:opacity-100 group-hover/row:opacity-100"
+        class="absolute top-1/2 left-[calc(6px+var(--depth)*16px)] -translate-y-1/2 opacity-0 transition-opacity duration-100 group-focus-within/row:opacity-100 group-hover/row:opacity-100 group-data-hovered/row:opacity-100"
       >
         {@render leading()}
       </div>

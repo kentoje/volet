@@ -25,7 +25,7 @@
 
   const rowClass = $derived([
     'flex h-[34px] w-full items-center gap-2.5 rounded-[10px] pr-3 pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] transition-colors duration-100',
-    selected ? 'bg-selected' : dropTarget ? 'bg-hover' : 'hover:bg-hover',
+    selected ? 'bg-selected' : dropTarget ? 'bg-hover' : 'hover:bg-hover data-hovered:bg-hover',
   ]);
 </script>
 
@@ -40,7 +40,7 @@
 {/snippet}
 
 {#if editor}
-  <div class={rowClass} style:--depth={depth}>
+  <div class={rowClass} style:--depth={depth} data-row>
     {@render icon()}
     {@render editor()}
   </div>
@@ -50,6 +50,7 @@
     class={rowClass}
     style:--depth={depth}
     data-selected={selected || undefined}
+    data-row
     aria-expanded={open}
     onclick={ontoggle}
     {ondblclick}

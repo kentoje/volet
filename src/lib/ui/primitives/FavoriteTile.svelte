@@ -26,10 +26,11 @@
   type="button"
   class={[
     'relative grid h-11 w-full place-items-center rounded-xl transition-[background-color,box-shadow] duration-100',
-    active ? 'bg-pill shadow-(--pill-shadow)' : 'bg-tile hover:bg-pill',
+    active ? 'bg-pill shadow-(--pill-shadow)' : 'bg-tile hover:bg-pill data-hovered:bg-pill',
   ]}
   aria-label={label}
   aria-current={active ? 'page' : undefined}
+  data-row
   title={title ?? label}
   {onclick}
   {@attach handle}
