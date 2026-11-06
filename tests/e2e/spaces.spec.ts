@@ -116,6 +116,52 @@ test('closing a temporary tab from the sidebar closes it in Chrome', async ({ wo
   await expect.poll(async () => (await stripState(worker, windowId)).some((t) => t.url.includes('Temp'))).toBe(false);
 });
 
+/** Close a temporary tab with its row's close button, like the user does. */
+async function closeRow(panel: import('@playwright/test').Page, name: string) {
+  const page = visiblePage(panel);
+  await page.getByRole('button', { name, exact: true }).hover();
+  const item = page.getByRole('listitem').filter({ has: panel.getByRole('button', { name, exact: true }) });
+  await item.getByRole('button', { name: 'Close tab' }).click();
+}
+
+test("closing a Volet's last tab shows a favorite and leaves the Volet empty", async ({ worker, windowId, panel }) => {
+  // One favorite, and one temporary tab in Home: the active one.
+  await worker.evaluate(async (id) => {
+    const others = await chrome.tabs.query({ windowId: id });
+    await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Mail</title>', pinned: true });
+    await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Last</title>' });
+    await chrome.tabs.remove(others.map((tab) => tab.id!));
+  }, windowId);
+  await expect(panel.getByRole('list', { name: 'Favorites' }).getByRole('button')).toHaveCount(1);
+  await expect(visiblePage(panel).getByRole('button', { name: 'Last', exact: true })).toBeVisible();
+
+  await closeRow(panel, 'Last');
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).map((tab) => ({ pinned: tab.pinned, active: tab.active })))
+    .toEqual([{ pinned: true, active: true }]);
+  // No tab took its place, and the sidebar stays on Home.
+  await panel.waitForTimeout(300);
+  expect(await stripState(worker, windowId)).toHaveLength(1);
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+});
+
+test('a lone New Tab page closes instead of coming back', async ({ worker, windowId, panel }) => {
+  // A new Volet starts with one New Tab page, and no favorite is open.
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).filter((tab) => tab.group === 'Volet 2').length)
+    .toBe(1);
+  const before = (await stripState(worker, windowId)).length;
+
+  await closeRow(panel, 'New Tab');
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).some((tab) => tab.group === 'Volet 2'))
+    .toBe(false);
+  await panel.waitForTimeout(300);
+  expect(await stripState(worker, windowId)).toHaveLength(before - 1);
+});
+
 test('a new tab from the sidebar stops showing as loading', async ({ panel }) => {
   // Chrome's tabs.query can still say "loading" right after the "complete" event; the panel must not get stuck.
   const page = visiblePage(panel);

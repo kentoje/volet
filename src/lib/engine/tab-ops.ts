@@ -3,6 +3,7 @@ import { type Context, type Tab, activeSpaceOf, reloadTabs, spaceTabs, temporary
 import { groupTabs } from './groups';
 import { retry } from './retry';
 import { setBinding } from './session';
+import { successorOf } from './successor';
 
 /** Open a tab inside a Space (in its tab group). */
 export async function openTabIn(ctx: Context, spaceId: string, url?: string, active = true): Promise<Tab> {
@@ -13,18 +14,21 @@ export async function openTabIn(ctx: Context, spaceId: string, url?: string, act
 }
 
 /**
- * Before tabs close or leave the active Space: if one of them is the active tab,
- * activate a neighbor in the same Space (or a new tab) so Chrome doesn't jump
- * into another Space.
+ * Before tabs close or leave the active Space: if one of them is the active tab, bring
+ * another to the front (`successorOf`) so Chrome doesn't jump into another Space.
  */
 export async function keepActiveInSpace(ctx: Context, leaving: number[]): Promise<void> {
   const active = ctx.tabs.find((tab) => tab.active);
   if (active?.id === undefined || !leaving.includes(active.id)) return;
   const spaceId = activeSpaceOf(ctx);
-  const candidates = spaceTabs(ctx, spaceId).filter((tab) => !leaving.includes(tab.id!));
-  const replacement = candidates.find((tab) => tab.index > active.index) ?? candidates.at(-1);
-  if (replacement?.id !== undefined) await retry(() => browser.tabs.update(replacement.id!, { active: true }));
-  else await openTabIn(ctx, spaceId);
+  const next = successorOf({
+    active,
+    leaving: ctx.tabs.filter((tab) => tab.id !== undefined && leaving.includes(tab.id)),
+    spaceTabs: spaceTabs(ctx, spaceId),
+    favorites: ctx.tabs.filter((tab) => tab.pinned),
+  });
+  if (next.kind === 'tab') await retry(() => browser.tabs.update(next.tabId, { active: true }));
+  else if (next.kind === 'new-tab') await openTabIn(ctx, spaceId);
 }
 
 /** Move a tab to a position among a Space's temporary tabs (index omitted = end). */

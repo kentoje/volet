@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sameUrl, shortUrl } from './url';
+import { isNewTabPage, sameUrl, shortUrl } from './url';
 
 describe('sameUrl', () => {
   it('ignores differences that keep you on the same page', () => {
@@ -19,5 +19,15 @@ describe('shortUrl', () => {
   it('drops the scheme and www, keeps the path', () => {
     expect(shortUrl('https://www.github.com/pulls')).toBe('github.com/pulls');
     expect(shortUrl('https://news.ycombinator.com/')).toBe('news.ycombinator.com');
+  });
+});
+
+describe('isNewTabPage', () => {
+  it("recognizes Chrome's New Tab page and tabs that haven't loaded anything yet", () => {
+    expect(isNewTabPage('chrome://newtab/')).toBe(true);
+    expect(isNewTabPage('chrome://new-tab-page/')).toBe(true);
+    expect(isNewTabPage(undefined)).toBe(true);
+    expect(isNewTabPage('https://google.com')).toBe(false);
+    expect(isNewTabPage('chrome://settings')).toBe(false);
   });
 });

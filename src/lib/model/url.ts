@@ -22,6 +22,11 @@ function normalize(url: string): string {
   }
 }
 
+/** Whether the URL is Chrome's New Tab page (a blank tab, as far as the user is concerned). */
+export function isNewTabPage(url: string | undefined): boolean {
+  return !url || url.startsWith('chrome://newtab') || url.startsWith('chrome://new-tab-page');
+}
+
 export function hostOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');

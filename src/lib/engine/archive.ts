@@ -1,4 +1,5 @@
 import { browser, type Browser } from 'wxt/browser';
+import { isNewTabPage } from '../model/url';
 import { tabUrl } from './context';
 import { retry } from './retry';
 import { ensureRoot } from './root';
@@ -28,7 +29,7 @@ export function idleTabs({ tabs, activity, bindings, limitMs, now }: IdleInput):
   return tabs.filter((tab) => {
     if (tab.id === undefined || tab.active || tab.pinned || tab.audible || bindings[tab.id]) return false;
     const url = tabUrl(tab);
-    if (!url || url.startsWith('chrome://newtab')) return false;
+    if (isNewTabPage(url)) return false;
     const seen = activity[tab.id];
     return seen !== undefined && now - seen >= limitMs;
   });
