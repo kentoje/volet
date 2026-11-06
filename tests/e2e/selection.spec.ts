@@ -18,15 +18,15 @@ async function openTabs(worker: Worker, windowId: number, titles: string[]) {
 const homeId = (worker: Worker) =>
   worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
-    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
 
 type Tree = { title: string; url?: string; children?: Tree[] };
-/** Home's pins and folders, as titles (folders as `{ title: [children] }`). */
+/** The first Volet's pins and folders, as titles (folders as `{ title: [children] }`). */
 const homeOutline = async (worker: Worker) => {
   const outline = (nodes: Tree[]): unknown[] =>
     nodes.map((node) => (node.children ? { [node.title]: outline(node.children) } : node.title));
-  return outline((await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!);
+  return outline((await bookmarkTree(worker)).children!.find((c) => c.title === 'Volet 1 (click to rename)')!.children!);
 };
 
 const tabTitle = (url: string) => url.match(/<title>(\w+)/)?.[1];

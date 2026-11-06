@@ -2,16 +2,16 @@ import { bookmarkTree, command, expect, stripState, test } from './fixtures';
 
 const visiblePage = (panel: import('@playwright/test').Page) => panel.locator('section:not([inert])');
 
-test('first run creates the bookmark folders and adopts open tabs into Home', async ({ worker, windowId, panel }) => {
+test('first run creates the bookmark folders and adopts open tabs into the first Volet', async ({ worker, windowId, panel }) => {
   expect(await bookmarkTree(worker)).toEqual({
     title: 'Spaces',
     children: [
       { title: 'Favorites', children: [] },
-      { title: 'Home', children: [] },
+      { title: 'Volet 1 (click to rename)', children: [] },
     ],
   });
-  await expect.poll(async () => (await stripState(worker, windowId)).every((tab) => tab.group === 'Home')).toBe(true);
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+  await expect.poll(async () => (await stripState(worker, windowId)).every((tab) => tab.group === 'Volet 1 (click to rename)')).toBe(true);
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 1 (click to rename)');
 });
 
 test('tabs opened outside the sidebar join the active Space', async ({ worker, windowId, panel }) => {
@@ -20,9 +20,9 @@ test('tabs opened outside the sidebar join the active Space', async ({ worker, w
     await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Two</title>' });
   }, windowId);
   await expect.poll(async () => (await stripState(worker, windowId)).map((tab) => tab.group)).toEqual([
-    'Home',
-    'Home',
-    'Home',
+    'Volet 1 (click to rename)',
+    'Volet 1 (click to rename)',
+    'Volet 1 (click to rename)',
   ]);
   const page = visiblePage(panel);
   await expect(page.getByRole('button', { name: 'One' })).toBeVisible();
@@ -38,20 +38,20 @@ test('creating and switching Spaces collapses the other groups', async ({ worker
     .poll(async () => {
       const strip = await stripState(worker, windowId);
       return {
-        home: strip.filter((tab) => tab.group === 'Home').every((tab) => tab.collapsed),
+        home: strip.filter((tab) => tab.group === 'Volet 1 (click to rename)').every((tab) => tab.collapsed),
         second: strip.some((tab) => tab.group === 'Volet 2' && tab.active && !tab.collapsed),
       };
     })
     .toEqual({ home: true, second: true });
 
-  await panel.getByRole('button', { name: 'Home', exact: true }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+  await panel.getByRole('button', { name: 'Volet 1 (click to rename)', exact: true }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 1 (click to rename)');
   await expect
     .poll(async () => {
       const strip = await stripState(worker, windowId);
       return strip.find((tab) => tab.active)?.group;
     })
-    .toBe('Home');
+    .toBe('Volet 1 (click to rename)');
   expect((await stripState(worker, windowId)).filter((tab) => tab.group === 'Volet 2').every((t) => t.collapsed)).toBe(
     true,
   );
@@ -62,14 +62,14 @@ test('pins keep their entry when their tab closes, and reopen on click', async (
     const tab = await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Docs</title>' });
     return tab.id!;
   }, windowId);
-  const home = (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!;
+  const home = (await bookmarkTree(worker)).children!.find((c) => c.title === 'Volet 1 (click to rename)')!;
   expect(home).toBeTruthy();
   const homeId = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
     const children = await chrome.bookmarks.getChildren(root.rootId);
-    return children.find((c) => c.title === 'Home')!.id;
+    return children.find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
-  await expect.poll(async () => (await stripState(worker, windowId)).find((t) => t.id === tabId)?.group).toBe('Home');
+  await expect.poll(async () => (await stripState(worker, windowId)).find((t) => t.id === tabId)?.group).toBe('Volet 1 (click to rename)');
   // A pin keeps the title its tab had when it was saved: wait for the page to load.
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Docs');
   const result = await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
@@ -125,7 +125,7 @@ async function closeRow(panel: import('@playwright/test').Page, name: string) {
 }
 
 test("closing a Volet's last tab shows a favorite and leaves the Volet empty", async ({ worker, windowId, panel }) => {
-  // One favorite, and one temporary tab in Home: the active one.
+  // One favorite, and one temporary tab in the first Volet: the active one.
   await worker.evaluate(async (id) => {
     const others = await chrome.tabs.query({ windowId: id });
     await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Mail</title>', pinned: true });
@@ -139,10 +139,10 @@ test("closing a Volet's last tab shows a favorite and leaves the Volet empty", a
   await expect
     .poll(async () => (await stripState(worker, windowId)).map((tab) => ({ pinned: tab.pinned, active: tab.active })))
     .toEqual([{ pinned: true, active: true }]);
-  // No tab took its place, and the sidebar stays on Home.
+  // No tab took its place, and the sidebar stays on the first Volet.
   await panel.waitForTimeout(300);
   expect(await stripState(worker, windowId)).toHaveLength(1);
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 1 (click to rename)');
 });
 
 test('a lone New Tab page closes instead of coming back', async ({ worker, windowId, panel }) => {
@@ -178,7 +178,7 @@ test('the unpin button turns a pin into a temporary tab in one click', async ({ 
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Draft');
   const homeId = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
-    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
   await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
 
@@ -186,7 +186,7 @@ test('the unpin button turns a pin into a temporary tab in one click', async ({ 
   const pinRow = page.getByRole('listitem').filter({ has: panel.getByRole('button', { name: 'Draft', exact: true }) });
   await pinRow.hover();
   await pinRow.getByRole('button', { name: 'Unpin' }).click();
-  await expect.poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children).toEqual([]);
+  await expect.poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Volet 1 (click to rename)')!.children).toEqual([]);
   // Still open, now below the divider.
   await expect(page.getByRole('button', { name: 'Draft', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Unpin' })).toHaveCount(0);
@@ -203,7 +203,7 @@ test('a pin that moved to another page offers a way back', async ({ worker, wind
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Volet settings');
   const homeId = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
-    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
   await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
 
@@ -277,7 +277,7 @@ test('at 8 Volets, a tab group made in Chrome joins the active Volet instead of 
 
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Grouped'))?.group)
-    .toBe('Home');
+    .toBe('Volet 1 (click to rename)');
   expect((await bookmarkTree(worker)).children).toHaveLength(9);
   await expect(visiblePage(panel).getByRole('button', { name: 'Grouped', exact: true })).toBeVisible();
 });

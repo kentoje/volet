@@ -15,7 +15,7 @@ test('a collapsed folder still shows its open tabs', async ({ worker, windowId, 
   await expect(row(panel, 'Gamma')).toBeVisible();
   const home = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
-    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
   const items = ids.map((id) => ({ kind: 'tab', id }));
   await command(panel, { type: 'createFolderWith', windowId, parentId: home, title: 'Dashboard', items });

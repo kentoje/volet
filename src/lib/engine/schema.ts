@@ -32,5 +32,5 @@ export interface RootIds {
 
 export const ROOT_TITLE = 'Spaces';
 export const FAVORITES_TITLE = 'Favorites';
-export const DEFAULT_SPACE_NAME = 'Home';
+export const DEFAULT_SPACE_NAME = 'Volet 1 (click to rename)';
 export const ARCHIVE_LIMIT = 500;

@@ -30,7 +30,7 @@ test('"Rename Volet" in a dot menu focuses the name field, also for another Vole
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Studio');
 
   // Another Volet's dot: its page comes into view with the field focused.
-  await dots.getByRole('button', { name: 'Home', exact: true }).click({ button: 'right' });
+  await dots.getByRole('button', { name: 'Volet 1 (click to rename)', exact: true }).click({ button: 'right' });
   await menuItem(panel, 'Rename Volet').click();
   await expect(field).toBeFocused();
   await panel.keyboard.type('Base');
@@ -44,7 +44,7 @@ test('the Space menu recolors the Space and its tab group', async ({ worker, win
   await panel.getByRole('menuitem', { name: 'Hue 152' }).click();
   await expect
     .poll(() => worker.evaluate(async () => (await chrome.storage.sync.get('spaceMeta')).spaceMeta))
-    .toEqual({ Home: { hue: 152 } });
+    .toEqual({ 'Volet 1 (click to rename)': { hue: 152 } });
   await expect
     .poll(() =>
       worker.evaluate(async (id) => (await chrome.tabGroups.query({ windowId: id }))[0]?.color, windowId),
@@ -60,9 +60,9 @@ test('deleting a Space asks first, then closes its tabs', async ({ worker, windo
   await menuItem(panel, 'Delete Volet').click();
   await expect(panel.getByRole('alertdialog')).toContainText('Delete “Volet 2”?');
   await panel.getByRole('button', { name: 'Delete Volet' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
-  await expect.poll(async () => (await bookmarkTree(worker)).children!.map((c) => c.title)).toEqual(['Favorites', 'Home']);
-  await expect.poll(async () => (await stripState(worker, windowId)).every((tab) => tab.group === 'Home')).toBe(true);
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 1 (click to rename)');
+  await expect.poll(async () => (await bookmarkTree(worker)).children!.map((c) => c.title)).toEqual(['Favorites', 'Volet 1 (click to rename)']);
+  await expect.poll(async () => (await stripState(worker, windowId)).every((tab) => tab.group === 'Volet 1 (click to rename)')).toBe(true);
 });
 
 test('pins can be renamed and folders created from menus', async ({ worker, windowId, panel }) => {
@@ -73,7 +73,7 @@ test('pins can be renamed and folders created from menus', async ({ worker, wind
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Report');
   const homeId = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
-    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
   await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
 
@@ -90,7 +90,7 @@ test('pins can be renamed and folders created from menus', async ({ worker, wind
   await folderName.press('Enter');
 
   await expect
-    .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => c.title))
+    .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Volet 1 (click to rename)')!.children!.map((c) => c.title))
     .toEqual(['New folder', 'Weekly report']);
   await expect(visiblePage(panel).getByRole('button', { name: 'New folder' })).toBeVisible();
 });
@@ -102,12 +102,12 @@ test('"New folder" on a folder or a tab adds a folder at the top of the Space, n
 }) => {
   const home = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
-    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
   await command(panel, { type: 'createFolder', parentId: home, index: 0, title: 'Docs' });
   await worker.evaluate((id) => chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Loose</title>' }), windowId);
   const homeOutline = async () =>
-    (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => [c.title, c.children?.length]);
+    (await bookmarkTree(worker)).children!.find((c) => c.title === 'Volet 1 (click to rename)')!.children!.map((c) => [c.title, c.children?.length]);
 
   // Each new folder opens for renaming right away: typing names it.
   const folderName = panel.getByRole('textbox', { name: 'Folder name' });
@@ -128,7 +128,7 @@ test('"New folder" on a folder or a tab adds a folder at the top of the Space, n
 test('a row keeps its hover look while its menu is open', async ({ worker, panel }) => {
   const home = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
-    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
   await command(panel, { type: 'createFolder', parentId: home, index: 0, title: 'Docs' });
   const folder = visiblePage(panel).getByRole('button', { name: 'Docs', exact: true });
@@ -164,8 +164,8 @@ test('a submenu expands in place, without covering the items below it', async ({
   await panel.setViewportSize({ width: 300, height: 600 });
   await panel.getByRole('button', { name: 'New Volet' }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
-  await panel.getByRole('button', { name: 'Home', exact: true }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+  await panel.getByRole('button', { name: 'Volet 1 (click to rename)', exact: true }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 1 (click to rename)');
   const tabId = await worker.evaluate(
     async (id) => (await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Report</title>' })).id!,
     windowId,
@@ -194,8 +194,8 @@ test('a submenu expands in place, without covering the items below it', async ({
 test('a submenu opens and closes with the arrow keys', async ({ panel }) => {
   await panel.getByRole('button', { name: 'New Volet' }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
-  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Home', exact: true }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
+  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Volet 1 (click to rename)', exact: true }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 1 (click to rename)');
   // A Space's menu has no submenu, a folder's or a tab's does: use the New tab row's tab.
   await visiblePage(panel).getByRole('button', { name: 'about:blank' }).click({ button: 'right' });
   const move = menuItem(panel, 'Move to Volet');
@@ -262,8 +262,8 @@ test('menu items highlight on hover even when the panel has no focus', async ({ 
 });
 
 test('hovering a Space dot shows its name', async ({ panel }) => {
-  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Home' }).hover();
-  await expect(panel.locator('[data-tooltip-content]')).toHaveText('Home');
+  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Volet 1 (click to rename)' }).hover();
+  await expect(panel.locator('[data-tooltip-content]')).toHaveText('Volet 1 (click to rename)');
 });
 
 /** Record every tooltip mount and state change in the panel from now on. */
@@ -292,7 +292,7 @@ test('the Space dots share one tooltip, which moves to the hovered dot', async (
   const tooltip = panel.locator('[data-tooltip-content]:not([data-state="closed"])');
 
   await dots.nth(0).hover();
-  await expect(tooltip).toHaveText('Home');
+  await expect(tooltip).toHaveText('Volet 1 (click to rename)');
   await watchTooltips(panel);
   await dots.nth(1).hover();
   await expect(tooltip).toHaveText((await dots.nth(1).getAttribute('aria-label'))!);
@@ -309,7 +309,7 @@ test("a row's buttons share one tooltip, gone as soon as the pointer leaves them
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Report');
   const homeId = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
-    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
   });
   await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
   const tooltip = panel.locator('[data-tooltip-content]');

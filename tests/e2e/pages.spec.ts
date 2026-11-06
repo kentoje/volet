@@ -53,7 +53,7 @@ test('importing an Arc sidebar creates its Spaces, pins, folders and favorites',
   const tree = await bookmarkTree(worker);
   expect(tree.children).toEqual([
     { title: 'Favorites', children: [{ title: 'Mail', url: 'https://mail.example/' }] },
-    { title: 'Home', children: [] },
+    { title: 'Volet 1 (click to rename)', children: [] },
     {
       title: 'Studio',
       children: [
@@ -81,13 +81,13 @@ test('importing more Arc Spaces than fit offers only the room left', async ({ co
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(file)),
   });
-  // Home is already there, so seven fit: the first seven are chosen and the others can't be.
+  // The first Volet is already there, so seven fit: the first seven are chosen and the others can't be.
   await expect(page.getByRole('checkbox', { name: /Arc 7/ })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: /Arc 8/ })).toBeDisabled();
   await expect(page.getByText('so 7 more fit')).toBeVisible();
   await page.getByRole('button', { name: 'Import 7 Volets' }).click();
   await expect(page.getByRole('status')).toContainText('Imported 7 Volets');
-  expect((await bookmarkTree(worker)).children).toHaveLength(9); // Favorites, Home and seven from Arc
+  expect((await bookmarkTree(worker)).children).toHaveLength(9); // Favorites, the first Volet and seven from Arc
 });
 
 test('the settings page changes how long unpinned tabs stay open', async ({ context, worker }) => {

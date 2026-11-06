@@ -31,7 +31,7 @@ test('typing an address opens it in the active Space', async ({ context, worker,
   await input.press('Enter');
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('docs.example'))?.group)
-    .toBe('Home');
+    .toBe('Volet 1 (click to rename)');
 });
 
 test('the shortcut on a page that cannot host it opens the palette in the panel', async ({ worker, windowId, panel }) => {
