@@ -1,6 +1,6 @@
 import { EMPTY_STATE, derive, type SidebarState } from '@/lib/engine/derive';
 import type { Command } from '@/lib/engine/protocol';
-import { collapsedItem } from '@/lib/engine/storage';
+import { openFoldersItem } from '@/lib/engine/storage';
 import type { Favorite, Folder, LiveTab, SidebarStore, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
 import { reuseContent } from '../reuse';
 import * as tree from '../tree';
@@ -22,7 +22,7 @@ export class ChromeSidebarStore implements SidebarStore {
   tabs = $state.raw<ReadonlyMap<TabId, LiveTab>>(EMPTY_STATE.tabs);
   activeSpaceId = $state<SpaceId>(EMPTY_STATE.activeSpaceId);
   activeTabId = $state<TabId | undefined>(EMPTY_STATE.activeTabId);
-  collapsedFolders = $state.raw<ReadonlySet<string>>(EMPTY_STATE.collapsedFolders);
+  openFolders = $state.raw<ReadonlySet<string>>(EMPTY_STATE.openFolders);
 
   readonly windowId: number;
   #gate: RefreshGate<SidebarState>;
@@ -68,7 +68,7 @@ export class ChromeSidebarStore implements SidebarStore {
     this.tabs = next.tabs;
     this.activeSpaceId = next.activeSpaceId;
     this.activeTabId = next.activeTabId;
-    this.collapsedFolders = next.collapsedFolders;
+    this.openFolders = next.openFolders;
   }
 
   /** Apply `optimistic` now, run the command, and resolve once Chrome's state is shown. */
@@ -191,14 +191,16 @@ export class ChromeSidebarStore implements SidebarStore {
     const title = tree.NEW_FOLDER_TITLE;
     return this.#create({ type: 'createFolderWith', windowId: this.windowId, parentId, index, title, items }, () => {
       const folder: Folder = { kind: 'folder', id: 'pending-folder', title, children: [] };
+      // It starts open (the engine records it so), and so does its stand-in.
+      this.openFolders = tree.including(this.openFolders, folder.id);
       this.#show(tree.folderWith(this, folder, parentId, index, items, this.tabs, (tabId) => `pending-${tabId}`));
     });
   }
 
   async toggleFolder(folderId: string) {
-    this.collapsedFolders = tree.toggled(this.collapsedFolders, folderId);
+    this.openFolders = tree.toggled(this.openFolders, folderId);
     // Purely visual state: written directly, no need for the service worker.
-    await collapsedItem.setValue([...this.collapsedFolders]);
+    await openFoldersItem.setValue([...this.openFolders]);
   }
 
   // ───────────────────────────── favorites ─────────────────────────────

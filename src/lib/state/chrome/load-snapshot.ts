@@ -3,15 +3,15 @@ import type { Snapshot } from '@/lib/engine/snapshot';
 import {
   activeSpacesItem,
   bindingsItem,
-  collapsedItem,
   groupSpacesItem,
+  openFoldersItem,
   rootItem,
   spaceMetaItem,
 } from '@/lib/engine/storage';
 
 /** The storage items a snapshot reads (`area:key`): changes to any other item don't concern the sidebar. */
 const SNAPSHOT_KEYS: ReadonlySet<string> = new Set(
-  [rootItem, bindingsItem, groupSpacesItem, activeSpacesItem, spaceMetaItem, collapsedItem].map((item) => item.key),
+  [rootItem, bindingsItem, groupSpacesItem, activeSpacesItem, spaceMetaItem, openFoldersItem].map((item) => item.key),
 );
 
 /** Whether a `storage.onChanged` event changed something a snapshot reads. */
@@ -21,7 +21,7 @@ export function changesSnapshot(changes: Record<string, unknown>, area: string):
 
 /** Read everything one window's sidebar needs, straight from Chrome. */
 export async function loadSnapshot(windowId: number): Promise<Snapshot> {
-  const [[ids, subtree], tabs, groups, bindings, groupSpaces, activeSpaces, spaceMeta, collapsed] = await Promise.all([
+  const [[ids, subtree], tabs, groups, bindings, groupSpaces, activeSpaces, spaceMeta, openFolders] = await Promise.all([
     rootItem
       .getValue()
       .then(async (ids) => [ids, ids ? await browser.bookmarks.getSubTree(ids.rootId).catch(() => []) : []] as const),
@@ -31,7 +31,7 @@ export async function loadSnapshot(windowId: number): Promise<Snapshot> {
     groupSpacesItem.getValue(),
     activeSpacesItem.getValue(),
     spaceMetaItem.getValue(),
-    collapsedItem.getValue(),
+    openFoldersItem.getValue(),
   ]);
   return {
     windowId,
@@ -43,6 +43,6 @@ export async function loadSnapshot(windowId: number): Promise<Snapshot> {
     groupSpaces,
     activeSpaces,
     spaceMeta,
-    collapsed,
+    openFolders,
   };
 }

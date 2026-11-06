@@ -291,6 +291,11 @@ export function updateSpace(spaces: Space[], spaceId: SpaceId, change: Partial<S
   return spaces.map((space) => (space.id === spaceId ? { ...space, ...change } : space));
 }
 
+/** `set` with `value` in it (`set` itself when it already was). */
+export function including<T>(set: ReadonlySet<T>, value: T): ReadonlySet<T> {
+  return set.has(value) ? set : new Set([...set, value]);
+}
+
 /** A copy of `set` with `value` added or removed. */
 export function toggled<T>(set: ReadonlySet<T>, value: T): ReadonlySet<T> {
   const next = new Set(set);

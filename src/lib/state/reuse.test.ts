@@ -21,7 +21,7 @@ const content = (): Content => ({
     [1, { id: 1, title: 'One', url: 'https://one', status: 'complete' }],
     [2, { id: 2, title: 'Two', url: 'https://two', status: 'loading' }],
   ]),
-  collapsedFolders: new Set(['f1']),
+  openFolders: new Set(['f1']),
 });
 
 describe('reuseContent', () => {
@@ -31,7 +31,7 @@ describe('reuseContent', () => {
     expect(next.spaces).toBe(prev.spaces);
     expect(next.favorites).toBe(prev.favorites);
     expect(next.tabs).toBe(prev.tabs);
-    expect(next.collapsedFolders).toBe(prev.collapsedFolders);
+    expect(next.openFolders).toBe(prev.openFolders);
   });
 
   it('replaces only the path to what changed', () => {
@@ -71,16 +71,16 @@ describe('reuseContent', () => {
     expect(reuseContent(prev, { ...content(), tabs: fewer }).tabs).not.toBe(prev.tabs);
   });
 
-  it('notices a pin becoming a folder, a moved tab and a new collapsed folder', () => {
+  it('notices a pin becoming a folder, a moved tab and a newly opened folder', () => {
     const prev = content();
     const changed = content();
     changed.spaces[0]!.pinned[0] = { kind: 'folder', id: 'p1', title: 'A', children: [] };
     changed.spaces[1]!.tabIds = [3, 2];
-    changed.collapsedFolders = new Set(['f1', 'f2']);
+    changed.openFolders = new Set(['f1', 'f2']);
     const next = reuseContent(prev, changed);
     expect(next.spaces[0]!.pinned[0]).toEqual({ kind: 'folder', id: 'p1', title: 'A', children: [] });
     expect(next.spaces[1]!.tabIds).toEqual([3, 2]);
-    expect(next.collapsedFolders).toBe(changed.collapsedFolders);
+    expect(next.openFolders).toBe(changed.openFolders);
   });
 
   it('compares own keys, not just values', () => {

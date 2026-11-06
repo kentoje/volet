@@ -57,7 +57,8 @@ export interface Snapshot {
   groupSpaces: Record<string, string>;
   activeSpaces: Record<string, string>;
   spaceMeta: Record<string, SpaceMeta>;
-  collapsed: string[];
+  /** Folders shown open (see `openFoldersItem`). */
+  openFolders: string[];
 }
 
 export const NO_GROUP = -1;

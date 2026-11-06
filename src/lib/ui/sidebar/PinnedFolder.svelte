@@ -26,7 +26,7 @@
   const drag = getDrag();
   const { store: sidebar, rename, selection } = menus;
   const entry = $derived<SpaceItem>({ kind: 'node', id: folder.id });
-  const open = $derived(!sidebar.collapsedFolders.has(folder.id));
+  const open = $derived(sidebar.openFolders.has(folder.id));
   const duration = $derived(prefersReducedMotion.current ? 0 : 160);
 </script>
 

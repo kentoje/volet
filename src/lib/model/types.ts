@@ -66,7 +66,8 @@ export interface SidebarStore {
   readonly tabs: ReadonlyMap<TabId, LiveTab>;
   readonly activeSpaceId: SpaceId;
   readonly activeTabId: TabId | undefined;
-  readonly collapsedFolders: ReadonlySet<string>;
+  /** Folders shown open; every other folder is collapsed. */
+  readonly openFolders: ReadonlySet<string>;
 
   // Tabs
   activateTab(tabId: TabId): Done;

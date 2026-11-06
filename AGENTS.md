@@ -91,6 +91,10 @@ Three layers, each with a single job. Dependencies point downward only.
   dropped there.
   The dots are sortable too (`SortableSpaceDot`, type `SPACE_DOT`, reordered by `space-order.svelte.ts`); rows and
   lists refuse them with `accept: notSpaceDot`, so give any new droppable that filter.
+- **Folders start collapsed**: Volet remembers which folders are open (`openFoldersItem`, `SidebarStore.openFolders`),
+  so any folder it didn't make starts collapsed: an import, folders made in Chrome's bookmarks or arriving through
+  sync, and every folder after a reinstall (removing the extension clears its storage, the bookmarks stay). Folders
+  made in Volet start open (the `createFolder` and `createFolderWith` commands record them so).
 - **Folders**: a collapsed folder keeps rendering its list as `folded` (`PinnedList`): rows without an open tab
   slide away and the open ones stay in place (`hasOpenTab` in `model/pinned.ts`). Those slides are local
   transitions on purpose, so rows added or removed for other reasons (drags, optimistic ids) just appear.
@@ -162,7 +166,7 @@ Engine specifics:
 - Bring a tab to the front with `activate()` (`tab-ops.ts`), and load the root folder's tree with `loadRoot()`.
 - When a command removes a tab and its binding, close the tab first, then unbind: never let a closing tab show up as
   a temporary tab in between.
-- Settings and purely visual state (collapsed folders) are written directly from the UI's state modules; everything
+- Settings and purely visual state (open folders) are written directly from the UI's state modules; everything
   that touches tabs, groups or bookmarks is a command.
 - Reconcile must stay idempotent: running it twice changes nothing.
 

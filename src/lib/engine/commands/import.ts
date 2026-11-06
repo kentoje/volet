@@ -4,15 +4,17 @@ import { nextHue } from '../colors';
 import { loadRoot } from '../root';
 import { type BookmarkNode, favoritesFolder, spaceFolders } from '../snapshot';
 import { uniqueName } from '../space-names';
-import { arcInviteItem, collapsedItem, importedArcSpacesItem, spaceMetaItem } from '../storage';
+import { arcInviteItem, importedArcSpacesItem, spaceMetaItem } from '../storage';
 import { rememberAutoTitles } from '../titles';
 import type { Handlers } from './types';
 
-/** What creating the pins and folders collects along the way. */
+/**
+ * What creating the pins and folders collects along the way. (The folders start collapsed, like
+ * any folder Volet didn't make, so a big Arc sidebar arrives tidy.)
+ */
 interface Created {
   /** Bookmarks titled after their page (not a name the user chose in Arc): they follow it. */
   auto: { id: string; title: string }[];
-  folderIds: string[];
 }
 
 async function createNodes(parentId: string, nodes: ImportedNode[], created: Created): Promise<void> {
@@ -22,7 +24,6 @@ async function createNodes(parentId: string, nodes: ImportedNode[], created: Cre
       if (!node.named) created.auto.push(pin);
     } else {
       const folder = await browser.bookmarks.create({ parentId, title: node.title });
-      created.folderIds.push(folder.id);
       await createNodes(folder.id, node.children, created);
     }
   }
@@ -80,15 +81,11 @@ export const importHandlers = {
    */
   async importSidebar({ sidebar }): Promise<ImportResult> {
     const { ids, root } = await loadRoot();
-    const created: Created = { auto: [], folderIds: [] };
+    const created: Created = { auto: [] };
     const spaceIds = await importSpaces(root, ids.favoritesId, sidebar.spaces, created);
     const favorites = await importFavorites(root, ids.favoritesId, sidebar.favorites, created);
 
     await rememberAutoTitles(created.auto);
-    // Imported folders start closed, so a big Arc sidebar arrives tidy.
-    if (created.folderIds.length) {
-      await collapsedItem.setValue([...(await collapsedItem.getValue()), ...created.folderIds]);
-    }
     // Remember which Spaces came in (the sidebar stops offering them), and the welcome card has done its job.
     const sourceIds = sidebar.spaces.flatMap((space) => (space.id ? [space.id] : []));
     if (sourceIds.length) {

@@ -10,7 +10,7 @@ export interface Content {
   spaces: Space[];
   favorites: Favorite[];
   tabs: ReadonlyMap<TabId, LiveTab>;
-  collapsedFolders: ReadonlySet<string>;
+  openFolders: ReadonlySet<string>;
 }
 
 /** `next`, with every value equal to the one in `prev` replaced by `prev`'s own object. */
@@ -20,7 +20,7 @@ export function reuseContent<T extends Content>(prev: Content, next: T): T {
     spaces: reuseArray(prev.spaces, next.spaces, reuseSpace),
     favorites: reuseArray(prev.favorites, next.favorites, reuseFlat),
     tabs: reuseTabs(prev.tabs, next.tabs),
-    collapsedFolders: sameSet(prev.collapsedFolders, next.collapsedFolders) ? prev.collapsedFolders : next.collapsedFolders,
+    openFolders: sameSet(prev.openFolders, next.openFolders) ? prev.openFolders : next.openFolders,
   };
 }
 

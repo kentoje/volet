@@ -74,16 +74,19 @@ test("double-clicking a folder doesn't rename it; its menu does", async ({ worke
   await expect(row(panel, 'Reports')).toBeVisible();
 });
 
-test('opening a folder with many pins shows them all (over a few frames)', async ({ worker, panel }) => {
+test('a folder Volet didn\'t make starts collapsed; opening it shows its many pins (over a few frames)', async ({
+  worker,
+  panel,
+}) => {
   await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
     const home = (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
     const folder = await chrome.bookmarks.create({ parentId: home, title: 'Archive' });
     for (let i = 1; i <= 60; i++) await chrome.bookmarks.create({ parentId: folder.id, title: `Page ${i}`, url: `https://p${i}.example/` });
   });
+  // Made in Chrome's bookmarks (like after a reinstall, or through sync): collapsed.
   const folder = row(panel, 'Archive');
-  await expect(row(panel, 'Page 60')).toBeAttached();
-  await folder.click();
+  await expect(folder).toHaveAttribute('aria-expanded', 'false');
   await expect(row(panel, 'Page 1')).toHaveCount(0);
 
   await folder.click();

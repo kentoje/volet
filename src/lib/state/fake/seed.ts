@@ -126,6 +126,6 @@ export function seedTabMap(): ReadonlyMap<TabId, LiveTab> {
   return new Map(seedTabs().map((tab) => [tab.id, tab]));
 }
 
-export function seedCollapsed(): ReadonlySet<string> {
-  return new Set(['trips']);
+export function seedOpenFolders(): ReadonlySet<string> {
+  return new Set(['docs']);
 }

@@ -18,7 +18,7 @@ export function folderMenu(folder: Folder, menus: MenuContext): MenuItem[] {
       label: 'New folder inside',
       icon: FolderPlus,
       onSelect: async () => {
-        if (store.collapsedFolders.has(folder.id)) await store.toggleFolder(folder.id);
+        if (!store.openFolders.has(folder.id)) await store.toggleFolder(folder.id);
         await createAndRename(menus, folder.id);
       },
     },

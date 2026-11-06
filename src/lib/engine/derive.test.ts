@@ -39,7 +39,7 @@ function snapshot(extra: Partial<Snapshot> = {}): Snapshot {
     groupSpaces: { 10: 'work', 20: 'home' },
     activeSpaces: { [WINDOW]: 'work' },
     spaceMeta: { Work: { hue: 300 } },
-    collapsed: ['docs'],
+    openFolders: ['docs'],
     ...extra,
   };
 }
@@ -50,7 +50,7 @@ describe('derive', () => {
     expect(state.spaces.map((space) => space.name)).toEqual(['Work', 'Home']);
     expect(state.spaces[0]!.hue).toBe(300);
     expect(state.spaces[0]!.pinned.map((node) => node.kind)).toEqual(['pin', 'folder']);
-    expect(state.collapsedFolders.has('docs')).toBe(true);
+    expect(state.openFolders.has('docs')).toBe(true);
   });
 
   it('puts unbound tabs in the Space of their group, in strip order', () => {

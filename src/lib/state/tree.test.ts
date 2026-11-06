@@ -5,6 +5,7 @@ import {
   deleteSpace,
   favoriteTab,
   folderWith,
+  including,
   fillNewFolder,
   findNode,
   findPin,
@@ -173,5 +174,13 @@ describe('changes both stores make', () => {
     expect(deleteSpace(three, 's3').successor?.id).toBe('s2');
     expect(deleteSpace(three, 's3').spaces.map((space) => space.id)).toEqual(['s1', 's2']);
     expect(deleteSpace(three, 'nope').successor).toBeUndefined();
+  });
+});
+
+describe('including', () => {
+  it('adds a value, and keeps the set itself when it is already there', () => {
+    const open = new Set(['a']);
+    expect([...including(open, 'b')]).toEqual(['a', 'b']);
+    expect(including(open, 'a')).toBe(open);
   });
 });

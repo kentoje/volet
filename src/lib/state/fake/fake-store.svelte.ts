@@ -1,7 +1,7 @@
 import { nextHue } from '@/lib/engine/colors';
 import type { Favorite, Folder, LiveTab, SidebarStore, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
 import * as tree from '../tree';
-import { seedCollapsed, seedFavorites, seedSpaces, seedTabMap } from './seed';
+import { seedFavorites, seedOpenFolders, seedSpaces, seedTabMap } from './seed';
 
 const LOAD_MS = 600;
 
@@ -15,7 +15,7 @@ export class FakeSidebarStore implements SidebarStore {
   tabs = $state.raw<ReadonlyMap<TabId, LiveTab>>(seedTabMap());
   activeSpaceId = $state<SpaceId>('work');
   activeTabId = $state<TabId | undefined>(21);
-  collapsedFolders = $state.raw<ReadonlySet<string>>(seedCollapsed());
+  openFolders = $state.raw<ReadonlySet<string>>(seedOpenFolders());
 
   #nextId = 1000;
   /** Not reactive on purpose: only read when switching Spaces. */
@@ -130,7 +130,7 @@ export class FakeSidebarStore implements SidebarStore {
   }
 
   toggleFolder(folderId: string) {
-    this.collapsedFolders = tree.toggled(this.collapsedFolders, folderId);
+    this.openFolders = tree.toggled(this.openFolders, folderId);
   }
 
   // ───────────────────────────── favorites ─────────────────────────────
@@ -215,8 +215,11 @@ export class FakeSidebarStore implements SidebarStore {
     this.favorites = favorites;
   }
 
+  /** Folders made here start open, as in the Chrome store. */
   #newFolder(): Folder {
-    return { kind: 'folder', id: `folder-${this.#nextId++}`, title: tree.NEW_FOLDER_TITLE, children: [] };
+    const folder: Folder = { kind: 'folder', id: `folder-${this.#nextId++}`, title: tree.NEW_FOLDER_TITLE, children: [] };
+    this.openFolders = tree.including(this.openFolders, folder.id);
+    return folder;
   }
 
   #createTab(url: string, title: string, load = true): TabId {

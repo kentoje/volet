@@ -18,7 +18,7 @@ export interface SidebarState {
   tabs: Map<TabId, LiveTab>;
   activeSpaceId: SpaceId;
   activeTabId: TabId | undefined;
-  collapsedFolders: Set<string>;
+  openFolders: Set<string>;
 }
 
 /** State before anything has loaded. Its collections are never mutated (state is replaced, not edited). */
@@ -28,7 +28,7 @@ export const EMPTY_STATE: Readonly<SidebarState> = Object.freeze({
   tabs: new Map(),
   activeSpaceId: '',
   activeTabId: undefined,
-  collapsedFolders: new Set<string>(),
+  openFolders: new Set<string>(),
 });
 
 function toLiveTab(tab: TabInfo & { id: number }): LiveTab {
@@ -100,7 +100,7 @@ export function derive(snapshot: Snapshot): SidebarState {
     tabs,
     activeSpaceId: activeSpaceId ?? '',
     activeTabId: activeTab?.id,
-    collapsedFolders: new Set(snapshot.collapsed),
+    openFolders: new Set(snapshot.openFolders),
   };
 }
 

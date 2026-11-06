@@ -4,16 +4,17 @@ import type { PinnedNode, Space, SpaceItem, TabId } from './types';
 
 /**
  * The entries of a Space's page, top to bottom: pins and folders, then temporary tabs.
- * A folder's contents follow it unless it is in `collapsed` (a collapsed folder still shows
- * the pins whose tab is open). Pass no `collapsed` set to list everything.
+ * A folder's contents follow it when it is in `open` (a collapsed folder still shows the pins
+ * whose tab is open). Pass no `open` set to list everything.
  */
-export function pageEntries(space: Space, collapsed?: ReadonlySet<string>): SpaceItem[] {
+export function pageEntries(space: Space, open?: ReadonlySet<string>): SpaceItem[] {
   const walk = (nodes: PinnedNode[]): SpaceItem[] =>
     nodes.flatMap((node): SpaceItem[] => {
       if (node.kind === 'pin') return [{ kind: 'node', id: node.id }];
-      const inside = collapsed?.has(node.id)
-        ? openPinsIn(node.children).map((pin): SpaceItem => ({ kind: 'node', id: pin.id }))
-        : walk(node.children);
+      const inside =
+        open && !open.has(node.id)
+          ? openPinsIn(node.children).map((pin): SpaceItem => ({ kind: 'node', id: pin.id }))
+          : walk(node.children);
       return [{ kind: 'node', id: node.id }, ...inside];
     });
   return [...walk(space.pinned), ...space.tabIds.map((id): SpaceItem => ({ kind: 'tab', id }))];
