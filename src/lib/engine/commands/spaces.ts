@@ -13,7 +13,7 @@ import {
 import { collapseOtherSpaces, updateSpaceGroups } from '../groups';
 import { retry } from '../retry';
 import { ensureRoot } from '../root';
-import { isSpaceFolder } from '../snapshot';
+import { isSpaceFolder, tabIds } from '../snapshot';
 import { lastActiveTab, park, rememberActive, setActiveSpace, unpark } from '../session';
 import { newSpaceName, uniqueName } from '../space-names';
 import { spaceMetaItem } from '../storage';
@@ -114,20 +114,22 @@ export const spaceHandlers = {
   async deleteSpace({ windowId, spaceId }) {
     const ctx = await loadContext(windowId);
     const index = ctx.spaces.findIndex((space) => space.id === spaceId);
+    const doomedSpace = ctx.spaces[index];
+    if (!doomedSpace) return;
     const others = ctx.spaces.filter((space) => space.id !== spaceId);
-    if (index === -1) return;
-    if (others.length === 0) throw new Error('Keep at least one Volet');
-    const fallback = (others[index] ?? others[index - 1] ?? others[0])!;
+    const fallback = others[index] ?? others[index - 1] ?? others[0];
+    if (!fallback) throw new Error('Keep at least one Volet');
 
     for (const window of await browser.windows.getAll({ windowTypes: ['normal'] })) {
-      const wctx = await loadContext(window.id!);
+      if (window.id === undefined) continue;
+      const wctx = await loadContext(window.id);
       // The tabs in front are about to close: the fallback needs one of its own.
       if (activeSpaceOf(wctx) === spaceId) await switchSpace(wctx, fallback.id, { open: true });
-      const doomed = spaceTabs(await loadContext(window.id!), spaceId).map((tab) => tab.id!);
+      const doomed = tabIds(spaceTabs(await loadContext(window.id), spaceId));
       if (doomed.length) await retry(() => browser.tabs.remove(doomed));
     }
 
-    const { [ctx.spaces[index]!.title]: _removed, ...rest } = await spaceMetaItem.getValue();
+    const { [doomedSpace.title]: _removed, ...rest } = await spaceMetaItem.getValue();
     await spaceMetaItem.setValue(rest);
     await browser.bookmarks.removeTree(spaceId);
   },

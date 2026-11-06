@@ -1,6 +1,6 @@
 import { hostOf } from '../../model/url';
 import type { ArchiveEntry } from '../schema';
-import { type BookmarkNode, pinsIn } from '../snapshot';
+import { type BookmarkNode, isPin, pinsIn } from '../snapshot';
 import type { PaletteItem } from './types';
 
 export interface CandidateInput {
@@ -38,13 +38,13 @@ export function candidates(input: CandidateInput): PaletteItem[] {
     });
   }
 
-  for (const favorite of (input.favoritesFolder?.children ?? []).filter((node) => node.url)) {
-    items.push({ id: `favorite:${favorite.id}`, kind: 'favorite', title: favorite.title, detail: hostOf(favorite.url!), url: favorite.url, ref: favorite.id });
+  for (const favorite of (input.favoritesFolder?.children ?? []).filter(isPin)) {
+    items.push({ id: `favorite:${favorite.id}`, kind: 'favorite', title: favorite.title, detail: hostOf(favorite.url), url: favorite.url, ref: favorite.id });
   }
 
   for (const space of input.spaces) {
     for (const pin of pinsIn(space.node)) {
-      items.push({ id: `pin:${pin.id}`, kind: 'pin', title: pin.title, detail: `${space.title} · ${hostOf(pin.url!)}`, url: pin.url, ref: pin.id });
+      items.push({ id: `pin:${pin.id}`, kind: 'pin', title: pin.title, detail: `${space.title} · ${hostOf(pin.url)}`, url: pin.url, ref: pin.id });
     }
   }
 

@@ -47,9 +47,11 @@ export async function placeTab(ctx: Context, tabId: number, spaceId: string, ind
   // Past the last one: grouping put a tab from elsewhere at the end, but one already in the group
   // (a pin's tab) stays where it was, maybe before some of them.
   const last = others.at(-1);
-  if (!anchor && (!last || moving.index > last.index)) return;
+  let target: number;
   // Chrome's target index counts the tab's own slot when it moves to the right.
-  const target = anchor ? (moving.index < anchor.index ? anchor.index - 1 : anchor.index) : last!.index;
+  if (anchor) target = moving.index < anchor.index ? anchor.index - 1 : anchor.index;
+  else if (last && moving.index <= last.index) target = last.index;
+  else return;
   if (target !== moving.index) await retry(() => browser.tabs.move(tabId, { index: target }));
 }
 

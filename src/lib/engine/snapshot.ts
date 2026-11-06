@@ -34,6 +34,16 @@ export interface BookmarkNode {
   children?: BookmarkNode[];
 }
 
+/** A bookmark with a URL: a pin or a favorite (folders have none). */
+export type PinNode = BookmarkNode & { url: string };
+
+export const isPin = (node: BookmarkNode): node is PinNode => node.url !== undefined;
+
+/** The ids of `tabs` (Chrome may leave one without, say a devtools tab). */
+export function tabIds(tabs: { id?: number }[]): number[] {
+  return tabs.flatMap((tab) => (tab.id === undefined ? [] : [tab.id]));
+}
+
 /** Everything needed to compute what one window's sidebar shows. */
 export interface Snapshot {
   windowId: number;
@@ -123,9 +133,9 @@ export function spaceOfBookmark(root: BookmarkNode | undefined, id: string): str
 }
 
 /** All pins (bookmarks with a URL) inside a folder, depth-first. */
-export function pinsIn(folder: BookmarkNode | undefined): BookmarkNode[] {
+export function pinsIn(folder: BookmarkNode | undefined): PinNode[] {
   if (!folder) return [];
-  return (folder.children ?? []).flatMap((node) => (node.url !== undefined ? [node] : pinsIn(node)));
+  return (folder.children ?? []).flatMap((node) => (isPin(node) ? [node] : pinsIn(node)));
 }
 
 /** Which Space a tab group belongs to: its recorded mapping, else a Space with the same name. */

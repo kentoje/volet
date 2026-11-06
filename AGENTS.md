@@ -36,10 +36,18 @@ Three layers, each with a single job. Dependencies point downward only.
 | UI: primitives | `src/lib/ui/primitives/` | Presentational components (`TabRow`, `FolderRow`, `FavoriteTile`, `SpaceDot`, `Pager`...). Props in, callbacks and snippets out. Know nothing about the store. |
 | UI: containers | `src/lib/ui/sidebar/` | Thin components that read `SidebarStore` (via `getSidebar()`) and wire primitives to its actions, plus UI state modules (`space-swipe`, `space-tint`). |
 | Model | `src/lib/model/` | Domain types (`SidebarStore` contract), context, and small pure helpers (`hue`, `url`, `pinned`). |
-| State | `src/lib/state/` | `SidebarStore` implementations: `chrome/` (reads Chrome, sends commands, optimistic updates) and `fake/` (prototype data). Pure update helpers in `tree.ts`. |
+| State | `src/lib/state/` | `SidebarStore` implementations: `chrome/` (reads Chrome, sends commands, optimistic updates) and `fake/` (prototype data). Pure update helpers in `tree.ts`, shared by both stores (the Chrome store's optimistic updates are the fake store's whole implementation). |
 | Business logic | `src/lib/engine/` | Pure derivation (`derive.ts`, `snapshot.ts`, `schema.ts`, `colors.ts`) and the service worker engine: `engine.ts` (queue), `commands/` (one file per area), `reconcile.ts`, `groups.ts`, `tab-ops.ts`, `session.ts`. The only code that writes to Chrome. |
 
 - **Reads are local, writes are central.** Each side panel derives its state from Chrome's events. Every change is a `Command` (see `engine/commands.ts`) sent to the service worker, which runs commands one at a time through a serial queue and retries calls Chrome rejects while the user drags a tab.
+- **A refresh does as little as it can**: the panel reloads its snapshot only for changes it shows. A tab's title,
+  icon, loading state, URL or sound patches that tab alone (`isLiveChange`, `TabOverlay.patch`), storage changes
+  count only for the items `loadSnapshot` reads (`changesSnapshot`), and each command waits for one reload
+  (`RefreshGate.settled`). A reload keeps every object that didn't change (`state/reuse.ts`), so rows showing
+  them do nothing.
+- **Lookups go through cached indexes**: `tree.ts` (pins, folders, a tab's Space) indexes each `spaces` array, and
+  `snapshot.ts` (`findBookmark`, `spaceOfBookmark`) each bookmark tree, the first time they're asked. So never
+  change a `spaces` array, a pin or folder, or a bookmark tree in place: make a new one (every helper already does).
 - **Bookmarks are the source of truth**: the `Volet` folder holds `Favorites` and one folder per Space; pins are bookmarks. Session-only links (tab to pin, group to Space, active Space per window) live in `chrome.storage.session` and are rebuilt after restarts.
 - **Switching to a Space with no open tab opens none**: the page in front stays (it's parked, `parkedTabsItem`), and
   the sidebar doesn't follow it back to its own Space; picking any other tab ends that. A new Volet still starts with a
@@ -150,7 +158,8 @@ Svelte specifics:
 Engine specifics:
 
 - Every Chrome write goes through the engine queue. Call Chrome tab APIs that can hit the drag lock through `retry()`.
-- Read a tab's URL with `tabUrl()`: Chrome leaves `tab.url` empty until the first navigation commits.
+- Read a tab's URL with `tabUrl()` (`snapshot.ts`): Chrome leaves `tab.url` empty until the first navigation commits.
+- Bring a tab to the front with `activate()` (`tab-ops.ts`), and load the root folder's tree with `loadRoot()`.
 - When a command removes a tab and its binding, close the tab first, then unbind: never let a closing tab show up as
   a temporary tab in between.
 - Settings and purely visual state (collapsed folders) are written directly from the UI's state modules; everything

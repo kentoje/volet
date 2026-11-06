@@ -7,7 +7,7 @@ import { pendingPaletteItem } from './storage';
 const NO_SCRIPTS = /^(chrome|chrome-extension|chrome-search|chrome-untrusted|devtools|edge|brave|about|view-source):/i;
 const WEB_STORE = /^https:\/\/(chromewebstore\.google\.com|chrome\.google\.com\/webstore)/i;
 
-export const PALETTE_SCRIPT = '/palette.js';
+const PALETTE_SCRIPT = '/palette.js';
 
 /** Keyboard shortcuts declared in the manifest's `commands`. */
 export function listenForShortcuts(engine: Engine): void {

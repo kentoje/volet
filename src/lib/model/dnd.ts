@@ -98,7 +98,7 @@ export function moveAround<T>(items: readonly T[], moving: T, target: T, after: 
 export function moveEntry(lists: Lists, entry: Entry, list: ListId, index: number): Lists {
   const from = locate(lists, entry);
   const next: Lists = { ...lists };
-  if (from) next[from.list] = next[from.list]!.filter((_, i) => i !== from.index);
+  if (from) next[from.list] = (next[from.list] ?? []).filter((_, i) => i !== from.index);
   const target = [...(next[list] ?? [])];
   target.splice(Math.max(0, Math.min(index, target.length)), 0, entry);
   next[list] = target;
@@ -151,7 +151,8 @@ export function groupDrop(
   let previous = after;
   for (const entry of group) {
     const others = (current[list] ?? []).filter((other) => !sameEntry(other, entry));
-    const index = previous ? others.findIndex((other) => sameEntry(other, previous!)) + 1 : 0;
+    const anchor = previous;
+    const index = anchor ? others.findIndex((other) => sameEntry(other, anchor)) + 1 : 0;
     const from = locate(current, entry);
     if (from?.list !== list || from.index !== index) {
       const action = dropAction(entry, list, index, lookup);

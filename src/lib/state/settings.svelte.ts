@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_SETTINGS, archiveItem, settingsItem } from '@/lib/engine/storage';
 
-export interface Shortcut {
+interface Shortcut {
   name: string;
   description: string;
   /** Empty when the user hasn't assigned one. */

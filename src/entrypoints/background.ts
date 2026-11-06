@@ -5,6 +5,7 @@ import { listenForShortcuts } from '@/lib/engine/shortcuts';
 import { forgetGroup, forgetTab, forgetWindow, replaceTab, stampActivity } from '@/lib/engine/session';
 import { trackSidePanels } from '@/lib/engine/side-panel';
 import { arcInviteItem } from '@/lib/engine/storage';
+import { tabIds } from '@/lib/engine/snapshot';
 import { refreshBoundTitle } from '@/lib/engine/titles';
 
 const ARCHIVE_ALARM = 'archive-idle-tabs';
@@ -22,7 +23,7 @@ export default defineBackground(() => {
     await browser.alarms.create(ARCHIVE_ALARM, { periodInMinutes: 5 });
     await engine.reconcileAll({ recover: true });
     const tabs = await browser.tabs.query({});
-    await queue('stamp', () => stampActivity(tabs.map((tab) => tab.id!)));
+    await queue('stamp', () => stampActivity(tabIds(tabs)));
     // Session restore can trail behind startup: look again once it has settled.
     setTimeout(() => engine.reconcileAll({ recover: true }).catch(log('late recovery')), 5000);
   };
@@ -38,7 +39,7 @@ export default defineBackground(() => {
   trackSidePanels();
 
   browser.tabs.onCreated.addListener((tab) => {
-    queue('stamp', () => stampActivity([tab.id!]));
+    queue('stamp', () => stampActivity(tabIds([tab])));
     engine.scheduleReconcile(tab.windowId);
   });
   browser.tabs.onUpdated.addListener((tabId, info, tab) => {

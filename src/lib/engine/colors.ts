@@ -21,7 +21,7 @@ export function nextHue(existing: number[]): number {
 /** Swatches offered in the Space color picker. */
 export const HUE_SWATCHES = [268, 295, 330, 15, 42, 100, 152, 205];
 
-export type GroupColor = 'grey' | 'blue' | 'red' | 'yellow' | 'green' | 'pink' | 'purple' | 'cyan' | 'orange';
+type GroupColor = 'grey' | 'blue' | 'red' | 'yellow' | 'green' | 'pink' | 'purple' | 'cyan' | 'orange';
 
 /** Approximate OKLCH hue of each Chrome tab group color. */
 const GROUP_HUES: [GroupColor, number][] = [

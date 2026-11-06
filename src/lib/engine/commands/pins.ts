@@ -70,12 +70,12 @@ export const pinHandlers = {
   /** Close the pin's tab; the pin stays. */
   async unloadPin({ windowId, pinId }) {
     const ctx = await loadContext(windowId);
-    const bound = boundTab(ctx, pinId);
-    if (bound?.id === undefined) return;
-    await keepActiveInSpace(ctx, [bound.id]);
+    const tabId = boundTab(ctx, pinId)?.id;
+    if (tabId === undefined) return;
+    await keepActiveInSpace(ctx, [tabId]);
     // Close first, unbind after: never show the closing tab as a temporary tab.
-    await retry(() => browser.tabs.remove(bound.id!));
-    await setBinding(ctx, bound.id, undefined);
+    await retry(() => browser.tabs.remove(tabId));
+    await setBinding(ctx, tabId, undefined);
   },
 
   /** Navigate the pin's tab back to its home URL. */

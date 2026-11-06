@@ -3,6 +3,7 @@ import { activeSpaceOf, loadContext, temporaryTabs } from '../context';
 import { collapseOtherSpaces } from '../groups';
 import { retry } from '../retry';
 import { setBinding } from '../session';
+import { tabIds } from '../snapshot';
 import { activate, keepActiveInSpace, leaveFavorites, openTabIn, placeTab } from '../tab-ops';
 import type { Handlers } from './types';
 
@@ -45,7 +46,7 @@ export const tabHandlers = {
 
   async clearTemporary({ windowId, spaceId }) {
     const ctx = await loadContext(windowId);
-    const ids = temporaryTabs(ctx, spaceId).map((tab) => tab.id!);
+    const ids = tabIds(temporaryTabs(ctx, spaceId));
     if (ids.length === 0) return;
     await keepActiveInSpace(ctx, ids);
     await retry(() => browser.tabs.remove(ids));

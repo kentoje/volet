@@ -25,7 +25,7 @@ export function tidy(items: (MenuItem | false | undefined)[]): MenuItem[] {
   return kept.filter(
     (item, index) =>
       item.kind !== 'separator' ||
-      (index > 0 && index < kept.length - 1 && kept[index - 1]!.kind !== 'separator'),
+      (index > 0 && index < kept.length - 1 && kept[index - 1]?.kind !== 'separator'),
   );
 }
 

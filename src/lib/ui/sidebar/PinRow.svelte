@@ -47,7 +47,7 @@
 
 <ContextMenu items={() => rowMenu(entry, menus, () => pinMenu(pin, away, menus))}>
   <TabRow
-    title={away ? tab!.title : pin.title}
+    title={away && tab ? tab.title : pin.title}
     url={tab?.url ?? pin.url}
     icon={tab?.favIconUrl}
     prefix={away ? '/' : undefined}

@@ -16,7 +16,16 @@ import {
 import { collapseOtherSpaces, groupTabs } from './groups';
 import { retry } from './retry';
 import { parkedTab, setActiveSpace, setBinding, setGroupSpace } from './session';
-import { NO_GROUP, bookmarkIds, favoritesFolder, pinsIn, spaceOfBookmark, tabUrl } from './snapshot';
+import {
+  type BookmarkNode,
+  NO_GROUP,
+  bookmarkIds,
+  favoritesFolder,
+  isPin,
+  pinsIn,
+  spaceOfBookmark,
+  tabUrl,
+} from './snapshot';
 import { newSpaceName } from './space-names';
 import { rememberAutoTitles } from './titles';
 
@@ -62,7 +71,7 @@ async function mapGroupsToSpaces(ctx: Context): Promise<void> {
 /** Favorites are Chrome's native pinned tabs: adopt new native pins, release unpinned ones. */
 async function syncFavorites(ctx: Context): Promise<void> {
   const liveIds = bookmarkIds(ctx.root);
-  const favorites = (favoritesFolder(ctx.root, ctx.ids.favoritesId)?.children ?? []).filter((node) => node.url);
+  const favorites = (favoritesFolder(ctx.root, ctx.ids.favoritesId)?.children ?? []).filter(isPin);
   for (const tab of ctx.tabs) {
     if (tab.id === undefined) continue;
     const binding = ctx.bindings[tab.id];
@@ -73,7 +82,7 @@ async function syncFavorites(ctx: Context): Promise<void> {
       const url = tabUrl(tab);
       if (!url) continue;
       const taken = boundIdsInWindow(ctx);
-      let favorite = favorites.find((fav) => !taken.has(fav.id) && sameUrl(fav.url!, url));
+      let favorite: BookmarkNode | undefined = favorites.find((fav) => !taken.has(fav.id) && sameUrl(fav.url, url));
       if (!favorite) {
         favorite = await browser.bookmarks.create({ parentId: ctx.ids.favoritesId, title: tab.title || url, url });
         await rememberAutoTitles([favorite]);
@@ -93,7 +102,7 @@ async function recoverPins(ctx: Context): Promise<void> {
       const url = tabUrl(tab);
       if (tab.id === undefined || liveBinding(ctx, tab.id) || !url) continue;
       const taken = boundIdsInWindow(ctx);
-      const pin = pins.find((p) => !taken.has(p.id) && sameUrl(p.url!, url));
+      const pin = pins.find((p) => !taken.has(p.id) && sameUrl(p.url, url));
       if (pin) await setBinding(ctx, tab.id, { kind: 'pin', id: pin.id });
     }
   }

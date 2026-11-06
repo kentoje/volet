@@ -2,7 +2,7 @@ import { browser } from 'wxt/browser';
 import { changesSnapshot } from './load-snapshot';
 import { type TabChange, isLiveChange } from './tab-overlay';
 
-export interface WindowWatchers {
+interface WindowWatchers {
   /** Anything the window's sidebar shows may have changed. */
   onChange: () => void;
   /**

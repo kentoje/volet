@@ -18,7 +18,7 @@ export function toggleSidePanel(windowId: number): void {
     .catch((error) => console.warn('toggle side panel', error));
 }
 
-export async function isPanelOpen(windowId: number): Promise<boolean> {
+async function isPanelOpen(windowId: number): Promise<boolean> {
   return Boolean((await openPanelsItem.getValue())[windowId]);
 }
 

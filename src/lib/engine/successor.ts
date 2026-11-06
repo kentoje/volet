@@ -6,9 +6,9 @@ import { tabUrl } from './snapshot';
  * What to bring to the front when the active tab leaves its Space: another tab, a new tab in the
  * Space, or nothing (Chrome picks the next tab itself).
  */
-export type Successor = { kind: 'tab'; tabId: number } | { kind: 'new-tab' } | { kind: 'chrome' };
+type Successor = { kind: 'tab'; tabId: number } | { kind: 'new-tab' } | { kind: 'chrome' };
 
-export interface SuccessorInput {
+interface SuccessorInput {
   /** The active tab, which is leaving. */
   active: Tab;
   /** Every tab leaving the Space (closing or moving out), the active one included. */

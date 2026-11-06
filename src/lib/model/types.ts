@@ -54,10 +54,10 @@ export interface Favorite {
 }
 
 /** An action's result: resolves once the store shows the change (immediately for synchronous stores). */
-export type Done = void | Promise<void>;
+type Done = void | Promise<void>;
 
 /** An action that creates something: resolves to its id (undefined if it couldn't be created). */
-export type Created = string | undefined | Promise<string | undefined>;
+type Created = string | undefined | Promise<string | undefined>;
 
 /** Everything the sidebar renders and can do. Implemented by the Chrome store and the fake store. */
 export interface SidebarStore {

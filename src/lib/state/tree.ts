@@ -145,7 +145,7 @@ function removeFrom(nodes: PinnedNode[], id: string): { nodes: PinnedNode[]; rem
 }
 
 /** Remove a pin or folder; returns it with the Space it was in. */
-export function removeNode(spaces: Space[], id: string): { spaces: Space[]; removed?: PinnedNode; from?: SpaceId } {
+function removeNode(spaces: Space[], id: string): { spaces: Space[]; removed?: PinnedNode; from?: SpaceId } {
   let removed: PinnedNode | undefined;
   let from: SpaceId | undefined;
   const next = spaces.map((space) => {
@@ -261,10 +261,10 @@ export function unpinNode(spaces: Space[], pinId: string, spaceId: SpaceId, inde
 /** Move one item of a list to `index` (counted after removing it). */
 export function moveItem<T>(items: T[], match: (item: T) => boolean, index: number): T[] {
   const from = items.findIndex(match);
-  if (from === -1) return items;
-  const copy = [...items];
-  const [item] = copy.splice(from, 1);
-  copy.splice(index, 0, item!);
+  const item = items[from];
+  if (item === undefined) return items;
+  const copy = items.filter((_, i) => i !== from);
+  copy.splice(index, 0, item);
   return copy;
 }
 

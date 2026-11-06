@@ -13,7 +13,7 @@ import {
 } from './storage';
 
 export type Tab = Browser.tabs.Tab;
-export type Group = Browser.tabGroups.TabGroup;
+type Group = Browser.tabGroups.TabGroup;
 
 /** Key under activeSpaces remembering the last Space used in any window (for new windows). */
 export const LAST_SPACE_KEY = 'last';

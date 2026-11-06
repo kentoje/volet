@@ -3,7 +3,7 @@ import { isNewTabPage } from '../model/url';
 import { retry } from './retry';
 import { loadRoot } from './root';
 import { stampActivity } from './session';
-import { type GroupInfo, spaceFolders, spaceOfGroup, tabUrl } from './snapshot';
+import { type GroupInfo, spaceFolders, spaceOfGroup, tabIds, tabUrl } from './snapshot';
 import {
   ARCHIVE_LIMIT,
   type ArchiveEntry,
@@ -57,16 +57,15 @@ export async function archiveIdleTabs(now = Date.now()): Promise<void> {
   if (idle.length === 0) return;
 
   const spaceName = await spaceNamer();
-  const entries: ArchiveEntry[] = idle.map((tab) => ({
-    id: `${now}-${tab.id}`,
-    title: tab.title || tabUrl(tab)!,
-    url: tabUrl(tab)!,
-    spaceName: spaceName(tab.groupId),
-    archivedAt: now,
-  }));
+  // Idle tabs all have a URL (pages without one never count as idle, see idleTabs).
+  const entries: ArchiveEntry[] = idle.flatMap((tab) => {
+    const url = tabUrl(tab);
+    if (!url) return [];
+    return [{ id: `${now}-${tab.id}`, title: tab.title || url, url, spaceName: spaceName(tab.groupId), archivedAt: now }];
+  });
   const archive = await archiveItem.getValue();
   await archiveItem.setValue([...entries, ...archive].slice(0, ARCHIVE_LIMIT));
-  await retry(() => browser.tabs.remove(idle.map((tab) => tab.id!)));
+  await retry(() => browser.tabs.remove(tabIds(idle)));
 }
 
 async function spaceNamer(): Promise<(groupId: number) => string> {

@@ -16,7 +16,6 @@ export type Command =
   | { type: 'openPin'; windowId: number; pinId: string }
   | { type: 'unloadPin'; windowId: number; pinId: string }
   | { type: 'resetPin'; windowId: number; pinId: string }
-  /** Make the pin's home its tab's current page. */
   /** Make the page a pin's or favorite's tab is on its new home. */
   | { type: 'setHome'; windowId: number; id: string }
   /** Save a temporary tab as a pin inside a Space folder (or subfolder). */

@@ -13,7 +13,7 @@ export function seedFavorites(): Favorite[] {
   ];
 }
 
-export function seedTabs(): LiveTab[] {
+function seedTabs(): LiveTab[] {
   return [
     { id: 1, title: 'Inbox (12)', url: 'https://mail.google.com/mail/u/0/', status: 'complete' },
     { id: 2, title: 'GitHub', url: 'https://github.com/', status: 'complete' },

@@ -6,6 +6,7 @@ import {
   type TabInfo,
   bookmarkIds,
   favoritesFolder,
+  isPin,
   spaceFolders,
   spaceOfGroup,
   tabUrl,
@@ -30,7 +31,7 @@ export const EMPTY_STATE: Readonly<SidebarState> = Object.freeze({
   collapsedFolders: new Set<string>(),
 });
 
-export function toLiveTab(tab: TabInfo & { id: number }): LiveTab {
+function toLiveTab(tab: TabInfo & { id: number }): LiveTab {
   const url = tabUrl(tab) ?? '';
   return {
     id: tab.id,
@@ -90,8 +91,8 @@ export function derive(snapshot: Snapshot): SidebarState {
   }
 
   const favorites: Favorite[] = (favoritesFolder(snapshot.root, snapshot.favoritesId)?.children ?? [])
-    .filter((node) => node.url !== undefined)
-    .map((node) => ({ id: node.id, title: node.title, url: node.url!, tabId: boundTabs.get(node.id) }));
+    .filter(isPin)
+    .map((node) => ({ id: node.id, title: node.title, url: node.url, tabId: boundTabs.get(node.id) }));
 
   return {
     spaces,
