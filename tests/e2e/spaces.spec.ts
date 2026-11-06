@@ -350,7 +350,7 @@ test('a new active tab at the end of a long list scrolls into view; one opened i
       await chrome.tabs.create({ windowId: id, url: `data:text/html,<title>Tab ${i}</title>`, active: false });
     }
   }, windowId);
-  const list = visiblePage(panel);
+  const list = visiblePage(panel).locator('[data-page-scroll]');
   await expect(list.getByRole('button', { name: 'Tab 25', exact: true })).toBeAttached();
   await list.evaluate((element) => element.scrollTo({ top: 0 }));
   const open = (title: string, active: boolean) =>
@@ -363,7 +363,7 @@ test('a new active tab at the end of a long list scrolls into view; one opened i
   const shown = (title: string) =>
     list.getByRole('button', { name: title, exact: true }).evaluate((element) => {
       const row = element.getBoundingClientRect();
-      const view = element.closest('section')!.getBoundingClientRect();
+      const view = element.closest('[data-page-scroll]')!.getBoundingClientRect();
       return row.top >= view.top && row.bottom <= view.bottom;
     });
 
@@ -480,4 +480,25 @@ test("switching to a Volet with no open tab doesn't open one: the page in front 
       (await stripState(worker, windowId)).filter((tab) => tab.group === 'Volet 1 (click to rename)').every((tab) => tab.collapsed),
     )
     .toBe(true);
+});
+
+test('the Volet title stays at the top while its pins and tabs scroll under it', async ({ worker, windowId, panel }) => {
+  await panel.setViewportSize({ width: 360, height: 500 });
+  await worker.evaluate(async (id) => {
+    for (let i = 1; i <= 25; i++) {
+      await chrome.tabs.create({ windowId: id, url: `data:text/html,<title>Tab ${i}</title>`, active: false });
+    }
+  }, windowId);
+  const page = visiblePage(panel);
+  const list = page.locator('[data-page-scroll]');
+  const title = page.getByRole('heading');
+  await expect(list.getByRole('button', { name: 'Tab 25', exact: true })).toBeAttached();
+  await list.evaluate((element) => element.scrollTo({ top: 0 }));
+  const top = (await title.boundingBox())!.y;
+  await expect(list).not.toHaveAttribute('data-scrolled');
+
+  await list.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+  await expect(list).toHaveAttribute('data-scrolled', '');
+  expect((await title.boundingBox())!.y).toBe(top); // it didn't move
+  await expect(title).toBeInViewport();
 });

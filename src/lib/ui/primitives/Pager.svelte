@@ -24,7 +24,10 @@
   });
 </script>
 
-<!-- Pages side by side; only the active one is focusable. Slides with an ease, follows drags 1:1. -->
+<!--
+  Pages side by side; only the active one is focusable. Slides with an ease, follows drags 1:1.
+  A page fills its slot and scrolls (or not) as it likes.
+-->
 <div class="relative min-h-0 flex-1 overflow-hidden">
   <div
     class={[
@@ -36,7 +39,7 @@
   >
     {#each items as item, index (item.id)}
       <section
-        class="h-full w-full flex-none overflow-y-auto [scrollbar-color:var(--rule)_transparent] [scrollbar-width:thin]"
+        class="h-full w-full flex-none overflow-hidden"
         aria-label={label(item)}
         aria-hidden={index !== activeIndex}
         inert={index !== activeIndex}
