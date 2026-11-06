@@ -310,6 +310,41 @@ test('when the Volet dots stop fitting they narrow, then scroll, keeping the act
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Extra 20');
 });
 
+test('a renamed pin keeps its name when its tab moves to another page, and still offers a way back', async ({
+  worker,
+  windowId,
+  panel,
+}) => {
+  const origin = `chrome-extension://${new URL(worker.url()).host}`;
+  const tabId = await worker.evaluate(async ({ id, url }) => (await chrome.tabs.create({ windowId: id, url })).id!, {
+    id: windowId,
+    url: `${origin}/options.html`,
+  });
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Volet settings');
+  const homeId = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
+  });
+  const pinId = (await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId })).value as string;
+  await command(panel, { type: 'renameBookmark', id: pinId, title: 'A' });
+
+  const page = visiblePage(panel);
+  const pin = page.getByRole('button', { name: 'A', exact: true });
+  await expect(pin).toBeVisible();
+  await worker.evaluate(async ({ id, url }) => chrome.tabs.update(id, { url }), { id: tabId, url: `${origin}/import.html` });
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Import from Arc');
+
+  // The name stays exactly as given: no page title, no "/".
+  const row = page.getByRole('listitem').filter({ has: panel.getByRole('button', { name: 'A', exact: true }) });
+  await expect(row.getByRole('button', { name: 'Back to the pinned page' })).toBeAttached();
+  await expect(pin).toHaveText('A');
+  await expect(page.getByRole('button', { name: 'Import from Arc' })).toHaveCount(0);
+  await row.hover();
+  await row.getByRole('button', { name: 'Back to the pinned page' }).click();
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Volet settings');
+  await expect(pin).toHaveText('A');
+});
+
 test("a pin's title never changes on load once someone renamed it, in Volet or in Chrome's bookmarks", async ({
   worker,
   windowId,

@@ -40,6 +40,8 @@ function snapshot(extra: Partial<Snapshot> = {}): Snapshot {
     activeSpaces: { [WINDOW]: 'work' },
     spaceMeta: { Work: { hue: 300 } },
     openFolders: ['docs'],
+    // p1 still has the title Volet gave it; p2's was changed (someone named it).
+    autoTitles: { p1: 'Issues', p2: 'Wiki page' },
     ...extra,
   };
 }
@@ -51,6 +53,15 @@ describe('derive', () => {
     expect(state.spaces[0]!.hue).toBe(300);
     expect(state.spaces[0]!.pinned.map((node) => node.kind)).toEqual(['pin', 'folder']);
     expect(state.openFolders.has('docs')).toBe(true);
+  });
+
+  it('tells pins someone named from pins titled after their page', () => {
+    const [issues, docs] = derive(snapshot()).spaces[0]!.pinned;
+    expect(issues).toMatchObject({ id: 'p1', named: false });
+    expect(docs?.kind === 'folder' && docs.children[0]).toMatchObject({ id: 'p2', named: true });
+    // A title Volet has no record of giving counts as someone's name too.
+    const unknown = derive(snapshot({ autoTitles: {} })).spaces[0]!.pinned[0];
+    expect(unknown).toMatchObject({ id: 'p1', named: true });
   });
 
   it('puts unbound tabs in the Space of their group, in strip order', () => {

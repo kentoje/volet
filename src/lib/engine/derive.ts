@@ -67,7 +67,7 @@ export function derive(snapshot: Snapshot): SidebarState {
     id: folder.id,
     name: folder.title,
     hue: spaceHue(snapshot.spaceMeta, folder.title, index),
-    pinned: toPinnedNodes(folder.children ?? [], boundTabs),
+    pinned: toPinnedNodes(folder.children ?? [], boundTabs, snapshot.autoTitles),
     tabIds: [],
   }));
 
@@ -104,10 +104,27 @@ export function derive(snapshot: Snapshot): SidebarState {
   };
 }
 
-function toPinnedNodes(nodes: BookmarkNode[], boundTabs: Map<string, TabId>): PinnedNode[] {
+function toPinnedNodes(
+  nodes: BookmarkNode[],
+  boundTabs: Map<string, TabId>,
+  autoTitles: Record<string, string>,
+): PinnedNode[] {
   return nodes.map((node) =>
     node.url !== undefined
-      ? { kind: 'pin', id: node.id, title: node.title, url: node.url, tabId: boundTabs.get(node.id) }
-      : { kind: 'folder', id: node.id, title: node.title, children: toPinnedNodes(node.children ?? [], boundTabs) },
+      ? {
+          kind: 'pin',
+          id: node.id,
+          title: node.title,
+          url: node.url,
+          tabId: boundTabs.get(node.id),
+          // A title Volet didn't give it is someone's name for it (see `refreshedTitle`).
+          named: autoTitles[node.id] !== node.title,
+        }
+      : {
+          kind: 'folder',
+          id: node.id,
+          title: node.title,
+          children: toPinnedNodes(node.children ?? [], boundTabs, autoTitles),
+        },
   );
 }

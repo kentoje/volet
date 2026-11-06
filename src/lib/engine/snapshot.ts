@@ -59,6 +59,8 @@ export interface Snapshot {
   spaceMeta: Record<string, SpaceMeta>;
   /** Folders shown open (see `openFoldersItem`). */
   openFolders: string[];
+  /** The titles Volet gave bookmarks from their page, by bookmark id (see `titles.ts`). */
+  autoTitles: Record<string, string>;
 }
 
 export const NO_GROUP = -1;

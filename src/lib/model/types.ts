@@ -21,6 +21,11 @@ export interface Pin {
   url: string;
   /** The open tab bound to this pin in the current window, if loaded. */
   tabId?: TabId;
+  /**
+   * Its title is a name someone gave it (a rename in Volet or in Chrome's bookmarks, a custom name
+   * from Arc), not its page's: it shows that name whatever page its tab is on.
+   */
+  named?: boolean;
 }
 
 export interface Folder {

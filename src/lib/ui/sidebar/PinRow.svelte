@@ -19,8 +19,10 @@
   const entry = $derived<SpaceItem>({ kind: 'node', id: pin.id });
   const space = $derived(spaceOfNode(sidebar.spaces, pin.id));
   const tab = $derived(pin.tabId !== undefined ? sidebar.tabs.get(pin.tabId) : undefined);
-  /** The pin's tab has left its home URL: show where it is now, and offer a way back. */
+  /** The pin's tab has left its home URL: offer a way back. */
   const away = $derived(tab !== undefined && tab.status === 'complete' && !sameUrl(tab.url, pin.url));
+  /** Away, a pin titled after its page shows the page it's on instead; a pin someone named keeps its name. */
+  const showsPage = $derived(away && !pin.named);
 </script>
 
 {#snippet backButton()}
@@ -47,10 +49,10 @@
 
 <ContextMenu items={() => rowMenu(entry, menus, () => pinMenu(pin, away, menus))}>
   <TabRow
-    title={away && tab ? tab.title : pin.title}
+    title={showsPage && tab ? tab.title : pin.title}
     url={tab?.url ?? pin.url}
     icon={tab?.favIconUrl}
-    prefix={away ? '/' : undefined}
+    prefix={showsPage ? '/' : undefined}
     active={tab !== undefined && tab.id === sidebar.activeTabId}
     selected={selection.has(entry)}
     openMark={tab !== undefined}

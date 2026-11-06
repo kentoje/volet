@@ -130,6 +130,8 @@ describe('changes both stores make', () => {
     expect(findNode(after, 'p2')).toMatchObject({ tabId: undefined });
     expect(withPinTab(after, 'p2', undefined)).toBe(after);
     expect(renameNode(before, 'nope', 'X')).toBe(before);
+    expect(findNode(renameNode(before, 'p1', 'Mine'), 'p1')).toMatchObject({ title: 'Mine', named: true });
+    expect(findNode(renameNode(before, 'f1', 'Folder'), 'f1')).not.toHaveProperty('named');
     expect(renameNode(before, 's1', 'X')).toBe(before); // a Space isn't a node
   });
 

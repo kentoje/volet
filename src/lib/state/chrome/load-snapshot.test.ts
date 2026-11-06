@@ -10,6 +10,7 @@ describe('changesSnapshot', () => {
     expect(changesSnapshot({ bindings: {} }, 'session')).toBe(true);
     expect(changesSnapshot({ openFolders: {} }, 'local')).toBe(true);
     expect(changesSnapshot({ spaceMeta: {} }, 'sync')).toBe(true);
+    expect(changesSnapshot({ autoTitles: {} }, 'local')).toBe(true);
     expect(changesSnapshot({ tabActivity: {}, lastActive: {} }, 'session')).toBe(false);
     expect(changesSnapshot({ archive: {} }, 'local')).toBe(false);
     // Same name, other area.

@@ -58,7 +58,9 @@ Three layers, each with a single job. Dependencies point downward only.
   Volet gave it from its page (`autoTitlesItem`, per bookmark id: pinning a tab, an import, an earlier refresh). Once
   anyone renames it (in Volet, in Chrome's bookmarks, a custom name from Arc), it never changes again; a title Volet
   didn't give counts as the user's too. When code creates a pin or favorite titled after its page, call
-  `rememberAutoTitles`.
+  `rememberAutoTitles`. Its row never changes it either: when a pin's tab moves to another page, a pin titled after
+  its page shows that page's title after a "/", but a pin someone named keeps its name (`Pin.named`, derived from
+  `autoTitlesItem`); both offer the way back.
 - **Arc import**: `import/arc.ts` parses Arc's `StorableSidebar.json` (pure). The import page reads it with a plain
   file input (Chrome's File System Access picker refuses anything under `~/Library`, where Arc keeps it, so no lasting
   file handle either) and remembers what's in it (`arcSidebarItem`), to review again without the file; the engine

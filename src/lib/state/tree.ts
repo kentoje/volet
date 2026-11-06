@@ -127,8 +127,9 @@ function mapNodes(nodes: PinnedNode[], change: (node: PinnedNode) => PinnedNode)
   });
 }
 
+/** Rename a pin or folder. A renamed pin keeps that name, whatever page its tab shows (`Pin.named`). */
 export function renameNode(spaces: Space[], id: string, title: string): Space[] {
-  return updateNode(spaces, id, (node) => ({ ...node, title }));
+  return updateNode(spaces, id, (node) => (node.kind === 'pin' ? { ...node, title, named: true } : { ...node, title }));
 }
 
 function removeFrom(nodes: PinnedNode[], id: string): { nodes: PinnedNode[]; removed?: PinnedNode } {
