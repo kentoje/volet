@@ -1,4 +1,5 @@
 import { nextHue } from '@/lib/engine/colors';
+import { roomForSpaces } from '@/lib/model/spaces';
 import type { Favorite, Folder, LiveTab, SidebarStore, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
 import * as tree from '../tree';
 import { seedCollapsed, seedFavorites, seedSpaces, seedTabMap } from './seed';
@@ -187,6 +188,7 @@ export class FakeSidebarStore implements SidebarStore {
   }
 
   createSpace() {
+    if (roomForSpaces(this.spaces.length) === 0) return;
     const id = `space-${this.#nextId++}`;
     const hue = nextHue(this.spaces.map((space) => space.hue));
     this.spaces = [...this.spaces, { id, name: `Volet ${this.spaces.length + 1}`, hue, pinned: [], tabIds: [] }];

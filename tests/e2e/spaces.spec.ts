@@ -186,3 +186,52 @@ test("rows show the icon Chrome shows on the tab", async ({ worker, windowId, pa
   const row = visiblePage(panel).getByRole('button', { name: 'Iconic', exact: true });
   await expect(row.locator('img')).toHaveAttribute('src', png);
 });
+
+/** Adds empty Volets (folders under the root) until there are `total`, named "Extra 2", "Extra 3"... */
+function fillVolets(worker: import('@playwright/test').Worker, total: number) {
+  return worker.evaluate(async (count) => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string; favoritesId: string } };
+    const existing = (await chrome.bookmarks.getChildren(root.rootId)).filter((n) => !n.url && n.id !== root.favoritesId);
+    for (let i = existing.length; i < count; i++) await chrome.bookmarks.create({ parentId: root.rootId, title: `Extra ${i + 1}` });
+  }, total);
+}
+
+test('Volets stop at 8: the New Volet button turns off and the engine refuses more', async ({ worker, windowId, panel }) => {
+  await fillVolets(worker, 8);
+  const dots = panel.getByRole('navigation', { name: 'Volets' }).locator('li button');
+  await expect(dots).toHaveCount(8);
+  const add = panel.getByRole('button', { name: 'New Volet' });
+  await expect(add).toHaveAttribute('aria-disabled', 'true');
+  await add.click({ force: true }); // Playwright waits on aria-disabled buttons; a user can still click it
+
+  const refused = await command(panel, { type: 'createSpace', windowId });
+  expect(refused).toEqual({ ok: false, error: 'There can be at most 8 Spaces' });
+  expect((await bookmarkTree(worker)).children).toHaveLength(9); // Favorites and the eight Volets
+  await expect(dots).toHaveCount(8);
+
+  // Deleting one makes room again.
+  await worker.evaluate(async () => {
+    const [extra] = await chrome.bookmarks.search({ title: 'Extra 8' });
+    await chrome.bookmarks.removeTree(extra!.id);
+  });
+  await expect(add).not.toHaveAttribute('aria-disabled');
+});
+
+test('at 8 Volets, a tab group made in Chrome joins the active Volet instead of becoming a new one', async ({
+  worker,
+  windowId,
+  panel,
+}) => {
+  await fillVolets(worker, 8);
+  await expect(panel.getByRole('navigation', { name: 'Volets' }).locator('li button')).toHaveCount(8);
+  await worker.evaluate(async (id) => {
+    const tab = await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Grouped</title>', active: false });
+    await chrome.tabs.group({ tabIds: [tab.id!], createProperties: { windowId: id } });
+  }, windowId);
+
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Grouped'))?.group)
+    .toBe('Home');
+  expect((await bookmarkTree(worker)).children).toHaveLength(9);
+  await expect(visiblePage(panel).getByRole('button', { name: 'Grouped', exact: true })).toBeVisible();
+});

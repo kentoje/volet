@@ -1,5 +1,8 @@
+import { browser } from 'wxt/browser';
+import { rootItem } from '@/lib/engine/storage';
 import { ArcImportError, parseArcSidebar } from '@/lib/import/arc';
 import type { ImportedSidebar } from '@/lib/import/types';
+import { MAX_SPACES, roomForSpaces } from '@/lib/model/spaces';
 import { sendCommand } from './chrome/command-client';
 import { range, toggled } from './tree';
 
@@ -7,6 +10,16 @@ export interface ImportResult {
   spaces: number;
   pins: number;
   favorites: number;
+  /** Chosen Spaces left out because there was no room for them. */
+  skipped: number;
+}
+
+/** Spaces already in the sidebar: the root folder's subfolders, except Favorites. */
+async function existingSpaceCount(): Promise<number> {
+  const ids = await rootItem.getValue();
+  if (!ids) return 0;
+  const children = await browser.bookmarks.getChildren(ids.rootId).catch(() => []);
+  return children.filter((node) => !node.url && node.id !== ids.favoritesId).length;
 }
 
 /** The Arc import flow: choose the file, review what's in it, import the chosen Spaces. */
@@ -16,6 +29,8 @@ export class ImportState {
   sidebar = $state.raw<ImportedSidebar>();
   /** Indexes of the Spaces to import. */
   chosen = $state.raw<ReadonlySet<number>>(range(0));
+  /** How many more Spaces fit next to the existing ones, read when a file is chosen. */
+  room = $state(MAX_SPACES);
   includeFavorites = $state(true);
   result = $state.raw<ImportResult>();
 
@@ -27,7 +42,8 @@ export class ImportState {
         throw new ArcImportError('This file has no Spaces or favorites to import.');
       }
       this.sidebar = sidebar;
-      this.chosen = range(sidebar.spaces.length);
+      this.room = roomForSpaces(await existingSpaceCount());
+      this.chosen = range(Math.min(sidebar.spaces.length, this.room));
       this.step = 'review';
     } catch (error) {
       this.error =
@@ -37,7 +53,13 @@ export class ImportState {
     }
   }
 
+  /** True when no more Spaces can be chosen: the unchosen ones are off. */
+  get full(): boolean {
+    return this.chosen.size >= this.room;
+  }
+
   toggle(index: number): void {
+    if (!this.chosen.has(index) && this.full) return;
     this.chosen = toggled(this.chosen, index);
   }
 

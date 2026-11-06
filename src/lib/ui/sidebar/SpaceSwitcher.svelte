@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Plus, Search } from '@lucide/svelte';
   import { getSidebar } from '@/lib/model/context';
+  import { MAX_SPACES, roomForSpaces } from '@/lib/model/spaces';
   import IconButton from '../primitives/IconButton.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
   import SpaceDot from '../primitives/SpaceDot.svelte';
@@ -16,6 +17,7 @@
   const menus = getMenuContext();
   const palette = getPanelPalette();
   const order = getSpaceOrder();
+  const full = $derived(roomForSpaces(sidebar.spaces.length) === 0);
 </script>
 
 <nav class="relative flex h-11 flex-none items-center px-2.5" aria-label="Volets">
@@ -55,7 +57,12 @@
     </ul>
   </TooltipGroup>
   <div class="absolute right-2.5">
-    <IconButton label="New Volet" onclick={() => sidebar.createSpace()}>
+    <IconButton
+      label="New Volet"
+      hint={full ? `You can have up to ${MAX_SPACES} Volets` : undefined}
+      disabled={full}
+      onclick={() => sidebar.createSpace()}
+    >
       <Plus size={16} strokeWidth={2} />
     </IconButton>
   </div>

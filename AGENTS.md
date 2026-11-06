@@ -70,6 +70,10 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Folders**: a collapsed folder keeps rendering its list as `folded` (`PinnedList`): rows without an open tab
   slide away and the open ones stay in place (`hasOpenTab` in `model/pinned.ts`). Those slides are local
   transitions on purpose, so rows added or removed for other reasons (drags, optimistic ids) just appear.
+- **Volet limit**: at most `MAX_SPACES` (8) Spaces (`model/spaces.ts`), so their dots fit the switcher. The engine
+  enforces it: `createSpace` refuses, reconcile ungroups a group made in Chrome's tab strip instead of making a ninth
+  Space (its tabs join the active one), and the Arc import takes only the room left. The UI just reflects it (the New
+  Volet button turns off, the palette drops the action, the import review caps its choices).
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`): menus open below the pointer so they can

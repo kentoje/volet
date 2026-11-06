@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { MAX_SPACES } from '@/lib/model/spaces';
   import { ImportState } from '@/lib/state/import.svelte';
   import Card from '../primitives/page/Card.svelte';
   import PageShell from '../primitives/page/PageShell.svelte';
@@ -34,6 +35,9 @@
           .favorites
           ? `, and ${plural(importer.result.favorites, 'favorite')}`
           : ''}. Open the sidebar to see them.
+        {#if importer.result.skipped}
+          {plural(importer.result.skipped, 'Arc Space')} didn't fit: you can have up to {MAX_SPACES} Volets.
+        {/if}
       </p>
     </Card>
   {/if}

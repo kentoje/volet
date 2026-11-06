@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { countPins, type ImportedNode } from '../../import/types';
+import { roomForSpaces } from '../../model/spaces';
 import { nextHue } from '../colors';
 import { ensureRoot } from '../root';
 import { spaceFolders } from '../snapshot';
@@ -19,15 +20,19 @@ async function createNodes(parentId: string, nodes: ImportedNode[]): Promise<voi
 }
 
 export const importHandlers = {
-  /** New Spaces are added next to the existing ones (names made unique); favorites skip duplicates. */
+  /**
+   * New Spaces are added next to the existing ones (names made unique), as many as there's room for;
+   * favorites skip duplicates.
+   */
   async importSidebar({ sidebar }) {
     const ids = await ensureRoot();
     const root = (await browser.bookmarks.getSubTree(ids.rootId))[0]!;
     const taken = spaceFolders(root, ids.favoritesId).map((space) => space.title);
     const meta = { ...(await spaceMetaItem.getValue()) };
     const hues = Object.values(meta).map((m) => m.hue);
+    const spaces = sidebar.spaces.slice(0, roomForSpaces(taken.length));
 
-    for (const space of sidebar.spaces) {
+    for (const space of spaces) {
       const title = uniqueName(space.name, taken);
       taken.push(title);
       const hue = space.hue ?? nextHue(hues);
@@ -49,9 +54,10 @@ export const importHandlers = {
     }
 
     return {
-      spaces: sidebar.spaces.length,
-      pins: sidebar.spaces.reduce((total, space) => total + countPins(space.pinned), 0),
+      spaces: spaces.length,
+      pins: spaces.reduce((total, space) => total + countPins(space.pinned), 0),
       favorites,
+      skipped: sidebar.spaces.length - spaces.length,
     };
   },
 } satisfies Partial<Handlers>;
