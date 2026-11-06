@@ -53,7 +53,7 @@
     prefix={away ? '/' : undefined}
     active={tab !== undefined && tab.id === sidebar.activeTabId}
     selected={selection.has(entry)}
-    unloaded={tab === undefined}
+    openMark={tab !== undefined}
     loading={tab?.status === 'loading'}
     {depth}
     {handle}

@@ -11,15 +11,13 @@
     /** Tooltip: the live page title when open. */
     title?: string;
     active?: boolean;
-    /** Whether the favorite has an open tab. */
-    open?: boolean;
     playing?: boolean;
     onclick: () => void;
     /** Attached to the button (e.g. to make it a drag handle). */
     handle?: Attachment<HTMLElement>;
   }
 
-  let { label, url, icon, title, active = false, open = false, playing = false, onclick, handle }: Props = $props();
+  let { label, url, icon, title, active = false, playing = false, onclick, handle }: Props = $props();
 </script>
 
 <button
@@ -35,9 +33,7 @@
   {onclick}
   {@attach handle}
 >
-  <span class={['transition-opacity', !open && 'opacity-70']}>
-    <Favicon {url} {icon} size={20} />
-  </span>
+  <Favicon {url} {icon} size={20} />
   {#if playing}
     <span class="absolute right-1 bottom-1 text-ink-muted" aria-label="Playing audio">
       <Volume2 size={11} strokeWidth={2.25} />

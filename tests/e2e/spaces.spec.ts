@@ -79,15 +79,28 @@ test('pins keep their entry when their tab closes, and reopen on click', async (
   const pin = page.getByRole('button', { name: 'Docs', exact: true });
   await expect(pin).toBeVisible();
   const pinRow = page.getByRole('listitem').filter({ has: panel.getByRole('button', { name: 'Docs', exact: true }) });
+  const row = pinRow.locator('[data-row]');
+  await expect(row).toHaveAttribute('data-open'); // open: its dot shows
   await pinRow.getByRole('button', { name: 'Close tab' }).click();
   await expect.poll(async () => (await stripState(worker, windowId)).some((t) => t.id === tabId)).toBe(false);
-  await expect(page.getByRole('button', { name: 'Docs', exact: true })).toHaveCount(1); // still listed, now unloaded
+  await expect(page.getByRole('button', { name: 'Docs', exact: true })).toHaveCount(1); // still listed, closed
+  // Closed: no dot, and nothing faded (it isn't disabled).
+  await expect(row).not.toHaveAttribute('data-open');
+  const look = () =>
+    pin.evaluate((button) => ({
+      title: getComputedStyle(button.querySelector('.truncate')!).color,
+      icon: getComputedStyle(button.firstElementChild!).opacity,
+    }));
+  const closed = await look();
+  expect(closed.icon).toBe('1');
 
   await pin.click();
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((t) => t.active)?.url)
     .toContain('<title>Docs</title>');
   await expect(pinRow.getByRole('button', { name: 'Close tab' })).toBeAttached();
+  await expect(row).toHaveAttribute('data-open');
+  expect((await look()).title).toBe(closed.title); // same ink, open or closed
 });
 
 test('pinning a tab natively in Chrome makes it a favorite', async ({ worker, windowId, panel }) => {
