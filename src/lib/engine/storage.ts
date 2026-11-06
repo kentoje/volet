@@ -20,6 +20,8 @@ export const tabActivityItem = storage.defineItem<Record<string, number>>('sessi
 export const pendingPaletteItem = storage.defineItem<Record<string, boolean>>('session:pendingPalette', {
   fallback: {},
 });
+/** windowId → true while that window shows the side panel */
+export const openPanelsItem = storage.defineItem<Record<string, true>>('session:openPanels', { fallback: {} });
 
 // Local: device-specific (bookmark ids differ between devices).
 export const rootItem = storage.defineItem<RootIds | null>('local:root', { fallback: null });

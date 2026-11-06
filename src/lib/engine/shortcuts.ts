@@ -1,5 +1,6 @@
 import { browser, type Browser } from 'wxt/browser';
 import type { Engine } from './engine';
+import { toggleSidePanel } from './side-panel';
 import { pendingPaletteItem } from './storage';
 
 /** Pages an extension can't run scripts in: the palette opens in the side panel instead. */
@@ -13,6 +14,9 @@ export function listenForShortcuts(engine: Engine): void {
   browser.commands.onCommand.addListener((command, tab) => {
     const windowId = tab?.windowId;
     switch (command) {
+      case 'toggle-sidebar':
+        if (windowId !== undefined) toggleSidePanel(windowId);
+        break;
       case 'open-palette':
         openPalette(tab);
         break;

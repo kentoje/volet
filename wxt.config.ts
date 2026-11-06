@@ -34,7 +34,7 @@ export default defineConfig({
     // An action is required so clicking the toolbar icon can open the side panel.
     action: { default_title: 'Open Spaces' },
     commands: {
-      _execute_action: { suggested_key: { default: 'Alt+S' }, description: 'Open the sidebar' },
+      'toggle-sidebar': { suggested_key: { default: 'Alt+S' }, description: 'Show or hide the sidebar' },
       'open-palette': { suggested_key: { default: 'Alt+T' }, description: 'Search tabs, pins and archived tabs' },
       'next-space': { description: 'Switch to the next Space' },
       'previous-space': { description: 'Switch to the previous Space' },

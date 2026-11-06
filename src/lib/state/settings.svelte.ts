@@ -8,8 +8,11 @@ export interface Shortcut {
   keys: string;
 }
 
-/** Shortcuts listed in this order (Chrome returns them in no particular one). */
-const SHORTCUT_ORDER = ['_execute_action', 'open-palette', 'next-space', 'previous-space', 'toggle-pin'];
+/**
+ * The shortcuts the manifest declares, listed in this order (Chrome returns them in no particular one). Chrome also
+ * lists `_execute_action` (clicking the toolbar icon), which the sidebar shortcut already covers.
+ */
+const SHORTCUT_ORDER = ['toggle-sidebar', 'open-palette', 'next-space', 'previous-space', 'toggle-pin'];
 
 /** The settings page's data: preferences, shortcuts, the archive. Preferences are written directly. */
 export class SettingsStore {
@@ -26,9 +29,10 @@ export class SettingsStore {
     this.archiveAfterHours = settings.archiveAfterHours;
     this.archivedCount = archive.length;
     this.shortcuts = commands
+      .filter((command) => SHORTCUT_ORDER.includes(command.name ?? ''))
       .map((command) => ({
         name: command.name ?? '',
-        description: command.description || 'Open the sidebar',
+        description: command.description ?? '',
         keys: command.shortcut ?? '',
       }))
       .sort((a, b) => SHORTCUT_ORDER.indexOf(a.name) - SHORTCUT_ORDER.indexOf(b.name));

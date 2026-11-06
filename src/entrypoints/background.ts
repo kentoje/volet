@@ -3,6 +3,7 @@ import { Engine } from '@/lib/engine/engine';
 import { listenForMessages } from '@/lib/engine/messaging';
 import { listenForShortcuts } from '@/lib/engine/shortcuts';
 import { forgetGroup, forgetTab, forgetWindow, replaceTab, stampActivity } from '@/lib/engine/session';
+import { trackSidePanels } from '@/lib/engine/side-panel';
 
 const ARCHIVE_ALARM = 'archive-idle-tabs';
 
@@ -28,6 +29,7 @@ export default defineBackground(() => {
 
   listenForMessages(engine);
   listenForShortcuts(engine);
+  trackSidePanels();
 
   browser.tabs.onCreated.addListener((tab) => {
     queue('stamp', () => stampActivity([tab.id!]));
