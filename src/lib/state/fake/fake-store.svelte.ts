@@ -177,6 +177,13 @@ export class FakeSidebarStore implements SidebarStore {
     if (tabId !== undefined) this.spaces = tree.placeTemporary(this.spaces, tabId, this.activeSpaceId);
   }
 
+  setFavoriteHome(favoriteId: string) {
+    const favorite = this.favorites.find((candidate) => candidate.id === favoriteId);
+    const tab = favorite?.tabId !== undefined ? this.tabs.get(favorite.tabId) : undefined;
+    if (!tab) return;
+    this.favorites = this.favorites.map((f) => (f.id === favoriteId ? { ...f, url: tab.url, title: tab.title } : f));
+  }
+
   // ───────────────────────────── Spaces ─────────────────────────────
 
   switchSpace(spaceId: SpaceId) {

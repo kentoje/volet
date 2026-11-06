@@ -36,6 +36,11 @@ export function refreshedTitle({ bookmark, tab, named }: TitleInput): string | u
   return title;
 }
 
+/** Whether the user chose this bookmark's title. */
+export async function isNamed(bookmark: { url: string; title: string }): Promise<boolean> {
+  return (await namedTitlesItem.getValue()).includes(titleSignature(bookmark.url, bookmark.title));
+}
+
 /** Remember titles the user chose, so pages never replace them. */
 export async function markNamed(bookmarks: { url: string; title: string }[]): Promise<void> {
   if (bookmarks.length === 0) return;

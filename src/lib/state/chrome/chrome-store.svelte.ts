@@ -142,7 +142,7 @@ export class ChromeSidebarStore implements SidebarStore {
   }
 
   async setPinHome(pinId: string) {
-    await this.#run({ type: 'setPinHome', windowId: this.windowId, pinId });
+    await this.#run({ type: 'setHome', windowId: this.windowId, id: pinId });
   }
 
   async pinTab(tabId: TabId, parentId: string, index?: number) {
@@ -241,6 +241,10 @@ export class ChromeSidebarStore implements SidebarStore {
       this.favorites = this.favorites.filter((favorite) => favorite.id !== favoriteId);
       if (tabId !== undefined) this.spaces = tree.placeTemporary(this.spaces, tabId, this.activeSpaceId);
     });
+  }
+
+  async setFavoriteHome(favoriteId: string) {
+    await this.#run({ type: 'setHome', windowId: this.windowId, id: favoriteId });
   }
 
   // ───────────────────────────── Spaces ─────────────────────────────

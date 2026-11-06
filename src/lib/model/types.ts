@@ -110,6 +110,8 @@ export interface SidebarStore {
   favoritePin(pinId: string, index?: number): Done;
   moveFavorite(favoriteId: string, index: number): Done;
   removeFavorite(favoriteId: string): Done;
+  /** Make the page a favorite's tab is on its new home. */
+  setFavoriteHome(favoriteId: string): Done;
 
   // Spaces
   switchSpace(spaceId: SpaceId): Done;

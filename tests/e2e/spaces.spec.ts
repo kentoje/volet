@@ -407,3 +407,38 @@ test('"Clear" shows whenever there are tabs to clear, beside the line', async ({
   await expect(panel.getByRole('list', { name: 'Favorites' }).getByRole('button')).toHaveCount(1);
   await expect(clear).toHaveCount(0);
 });
+
+test("a favorite whose tab moved can take the current page as its own", async ({ worker, windowId, panel }) => {
+  const origin = `chrome-extension://${new URL(worker.url()).host}`;
+  const tabId = await worker.evaluate(
+    async ({ id, url }) => (await chrome.tabs.create({ windowId: id, url, pinned: true })).id!,
+    { id: windowId, url: `${origin}/options.html` },
+  );
+  const tile = panel.getByRole('list', { name: 'Favorites' }).getByRole('button');
+  await expect(tile).toHaveCount(1);
+  const favorite = () =>
+    worker.evaluate(async () => {
+      const { root } = (await chrome.storage.local.get('root')) as { root: { favoritesId: string } };
+      const [node] = await chrome.bookmarks.getChildren(root.favoritesId);
+      return { url: node!.url, title: node!.title };
+    });
+  const replace = panel.getByRole('menuitem', { name: 'Favorite this page instead' });
+
+  // On its own page: nothing to replace.
+  await tile.click({ button: 'right' });
+  await expect(panel.getByRole('menuitem', { name: 'Remove from favorites' })).toBeVisible();
+  await expect(replace).toHaveCount(0);
+  await panel.keyboard.press('Escape');
+
+  await worker.evaluate(async ({ id, url }) => chrome.tabs.update(id, { url }), { id: tabId, url: `${origin}/import.html` });
+  await expect
+    .poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).status, tabId))
+    .toBe('complete');
+  await tile.click({ button: 'right' });
+  await replace.click();
+  await expect.poll(favorite).toEqual({ url: `${origin}/import.html`, title: 'Import from Arc' });
+
+  await tile.click({ button: 'right' });
+  await expect(panel.getByRole('menuitem', { name: 'Remove from favorites' })).toBeVisible();
+  await expect(replace).toHaveCount(0);
+});

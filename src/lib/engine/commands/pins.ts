@@ -93,14 +93,6 @@ export const pinHandlers = {
     if (bound?.id !== undefined && pin?.url) await browser.tabs.update(bound.id, { url: pin.url });
   },
 
-  /** Make the page the pin's tab is on its new home. */
-  async setPinHome({ windowId, pinId }) {
-    const ctx = await loadContext(windowId);
-    const bound = boundTab(ctx, pinId);
-    const url = bound && tabUrl(bound);
-    if (url) await browser.bookmarks.update(pinId, { url });
-  },
-
   async togglePin({ windowId, tabId }) {
     const ctx = await loadContext(windowId);
     const binding = ctx.bindings[tabId];

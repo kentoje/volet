@@ -1,12 +1,12 @@
 import { browser } from 'wxt/browser';
-import { boundTabIds, loadContext } from '../context';
+import { boundTab, boundTabIds, loadContext, tabUrl } from '../context';
 import { groupTabs } from '../groups';
 import { retry } from '../retry';
 import { ensureRoot } from '../root';
 import { setBinding } from '../session';
 import { findBookmark, pinsIn, spaceOfBookmark } from '../snapshot';
 import { bindingsItem } from '../storage';
-import { markNamed } from '../titles';
+import { isNamed, markNamed, refreshBoundTitle } from '../titles';
 import type { CommandOf, Handlers } from './types';
 
 /** Move a pin, folder, favorite or Space. `index` is the final position among its new siblings. */
@@ -59,6 +59,19 @@ async function regroupBoundTabs(bookmarkId: string): Promise<void> {
 export const bookmarkHandlers = {
   moveBookmark,
   deleteBookmark,
+
+  /** Make the page a pin's or favorite's tab is on its new home (Arc's "Replace pinned URL with current"). */
+  async setHome({ windowId, id }) {
+    const ctx = await loadContext(windowId);
+    const bound = boundTab(ctx, id);
+    const url = bound && tabUrl(bound);
+    const [before] = await browser.bookmarks.get(id).catch(() => []);
+    if (!url || bound.id === undefined || !before?.url) return;
+    await browser.bookmarks.update(id, { url });
+    // A name the user chose stays theirs at the new address; otherwise it takes the page's title.
+    if (await isNamed({ url: before.url, title: before.title })) await markNamed([{ url, title: before.title }]);
+    else await refreshBoundTitle(bound.id);
+  },
 
   async renameBookmark({ id, title }) {
     const renamed = await browser.bookmarks.update(id, { title });
