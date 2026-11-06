@@ -60,7 +60,15 @@ test('dragging a tab into the pinned area pins it, and back out unpins it', asyn
   await openTabs(worker, windowId, ['Keeper']);
   await expect(row(panel, 'Keeper')).toBeVisible();
   const hint = visiblePage(panel).getByText('Drag tabs here to pin them');
-  await drag(panel, row(panel, 'Keeper'), hint);
+  await drag(panel, row(panel, 'Keeper'), hint, {
+    beforeDrop: async () => {
+      // The empty list lights up exactly where its dotted hint is.
+      const lit = visiblePage(panel).locator('.bg-hover', { has: panel.getByText('Drag tabs here to pin them') });
+      await expect(lit).toHaveCount(1);
+      const [a, b] = [(await lit.boundingBox())!, (await hint.boundingBox())!];
+      expect([a.x, a.y, a.width, a.height]).toEqual([b.x, b.y, b.width, b.height]);
+    },
+  });
   await expect
     .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => c.title))
     .toEqual(['Keeper']);
