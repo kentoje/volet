@@ -47,8 +47,8 @@ test('importing an Arc sidebar creates its Spaces, pins, folders and favorites',
     buffer: Buffer.from(JSON.stringify(arcFile)),
   });
   await expect(page.getByRole('checkbox', { name: /Studio/ })).toBeChecked();
-  await page.getByRole('button', { name: 'Import 1 Space' }).click();
-  await expect(page.getByRole('status')).toContainText('Imported 1 Space with 2 pins, and 1 favorite');
+  await page.getByRole('button', { name: 'Import 1 Volet' }).click();
+  await expect(page.getByRole('status')).toContainText('Imported 1 Volet with 2 pins, and 1 favorite');
 
   const tree = await bookmarkTree(worker);
   expect(tree.children).toEqual([

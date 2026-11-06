@@ -34,12 +34,12 @@
     {/if}
   </div>
   <p class="mt-4 text-[13px] leading-relaxed text-ink-muted">
-    Spaces are added next to your current ones. Arc's unpinned tabs aren't imported.
+    Each Arc Space becomes a Volet next to your current ones. Arc's unpinned tabs aren't imported.
   </p>
   <div class="mt-4 flex justify-end gap-2">
     <Button onclick={() => importer.restart()}>Choose another file</Button>
     <Button primary disabled={count === 0 && !importer.includeFavorites} onclick={() => void importer.run()}>
-      {count ? `Import ${plural(count, 'Space')}` : 'Import favorites'}
+      {count ? `Import ${plural(count, 'Volet')}` : 'Import favorites'}
     </Button>
   </div>
 </Card>

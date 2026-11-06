@@ -5,8 +5,8 @@ import { chromium } from '@playwright/test';
 import { command, expect, extensionPath, stripState, test } from './fixtures';
 
 test('each window shows its own Space', async ({ context, worker, windowId, panel }) => {
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(panel.locator('section:not([inert])').getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(panel.locator('section:not([inert])').getByRole('heading')).toHaveText('Volet 2');
 
   // A second window, with its own panel, stays on Home.
   const secondWindow = await worker.evaluate(async () => {
@@ -19,15 +19,15 @@ test('each window shows its own Space', async ({ context, worker, windowId, pane
   }, secondWindow);
   const secondPanel = await opened;
 
-  await expect(secondPanel.locator('section:not([inert])').getByRole('heading')).toHaveText(/Home|Space 2/);
+  await expect(secondPanel.locator('section:not([inert])').getByRole('heading')).toHaveText(/Home|Volet 2/);
   await expect
     .poll(async () => (await stripState(worker, secondWindow)).every((tab) => tab.group !== null))
     .toBe(true);
-  await secondPanel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home' }).click();
+  await secondPanel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Home' }).click();
   await expect(secondPanel.locator('section:not([inert])').getByRole('heading')).toHaveText('Home');
 
   // Switching the second window doesn't move the first one.
-  await expect(panel.locator('section:not([inert])').getByRole('heading')).toHaveText('Space 2');
+  await expect(panel.locator('section:not([inert])').getByRole('heading')).toHaveText('Volet 2');
   const active = await worker.evaluate(async () => (await chrome.storage.session.get('activeSpaces')).activeSpaces);
   expect(Object.keys(active as object)).toEqual(expect.arrayContaining([String(windowId), String(secondWindow)]));
 });

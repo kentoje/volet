@@ -139,3 +139,7 @@ Engine specifics:
 ## Writing style
 
 Never use the em dash character in code, comments, docs, UI copy or commit messages. Use a colon, parentheses, a comma, or separate sentences. UI copy is sentence case and names what the user controls.
+
+In UI copy, a Space is called a Volet (plural Volets), like the extension itself: "New Volet", "Move to Volet".
+Code, comments and docs keep "Space", and so does the `Spaces` bookmarks root folder (the engine finds it by that
+title). Copy about Arc's own data keeps Arc's word ("Bring your Arc Spaces").

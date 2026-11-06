@@ -17,7 +17,7 @@
 {#snippet editor()}
   <RenameField
     value={space.name}
-    label="Space name"
+    label="Volet name"
     oncommit={(name) => {
       rename.stop();
       void sidebar.renameSpace(space.id, name);

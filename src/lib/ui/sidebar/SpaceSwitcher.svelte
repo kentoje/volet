@@ -18,7 +18,7 @@
   const order = getSpaceOrder();
 </script>
 
-<nav class="relative flex h-11 flex-none items-center px-2.5" aria-label="Spaces">
+<nav class="relative flex h-11 flex-none items-center px-2.5" aria-label="Volets">
   {#if palette}
     <div class="absolute left-2.5">
       <IconButton label="Search tabs and pins (⌘K)" onclick={() => palette.show()}>
@@ -55,7 +55,7 @@
     </ul>
   </TooltipGroup>
   <div class="absolute right-2.5">
-    <IconButton label="New Space" onclick={() => sidebar.createSpace()}>
+    <IconButton label="New Volet" onclick={() => sidebar.createSpace()}>
       <Plus size={16} strokeWidth={2} />
     </IconButton>
   </div>

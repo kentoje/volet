@@ -7,7 +7,7 @@ const menuItem = (panel: Page, name: string) => panel.getByRole('menuitem', { na
 test('renaming a Space renames its bookmark folder and tab group', async ({ worker, windowId, panel }) => {
   // One click on the name starts renaming.
   await visiblePage(panel).getByRole('heading').click();
-  const field = panel.getByRole('textbox', { name: 'Space name' });
+  const field = panel.getByRole('textbox', { name: 'Volet name' });
   await field.fill('Studio');
   await field.press('Enter');
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Studio');
@@ -30,12 +30,12 @@ test('the Space menu recolors the Space and its tab group', async ({ worker, win
 });
 
 test('deleting a Space asks first, then closes its tabs', async ({ worker, windowId, panel }) => {
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
   await visiblePage(panel).getByRole('heading').click({ button: 'right' });
-  await menuItem(panel, 'Delete Space').click();
-  await expect(panel.getByRole('alertdialog')).toContainText('Delete “Space 2”?');
-  await panel.getByRole('button', { name: 'Delete Space' }).click();
+  await menuItem(panel, 'Delete Volet').click();
+  await expect(panel.getByRole('alertdialog')).toContainText('Delete “Volet 2”?');
+  await panel.getByRole('button', { name: 'Delete Volet' }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
   await expect.poll(async () => (await bookmarkTree(worker)).children!.map((c) => c.title)).toEqual(['Favorites', 'Home']);
   await expect.poll(async () => (await stripState(worker, windowId)).every((tab) => tab.group === 'Home')).toBe(true);
@@ -123,10 +123,10 @@ test('a row keeps its hover look while its menu is open', async ({ worker, panel
 
 test('menus stay inside a narrow panel, even from its corner', async ({ panel }) => {
   await panel.setViewportSize({ width: 300, height: 500 });
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
   // The last dot sits near the bottom-right corner.
-  await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Space 2' }).click({ button: 'right' });
+  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Volet 2' }).click({ button: 'right' });
   const menu = panel.getByRole('menu');
   await expect(menu).toBeVisible();
   const box = (await menu.boundingBox())!;
@@ -138,8 +138,8 @@ test('menus stay inside a narrow panel, even from its corner', async ({ panel })
 
 test('a submenu expands in place, without covering the items below it', async ({ worker, windowId, panel }) => {
   await panel.setViewportSize({ width: 300, height: 600 });
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
   await panel.getByRole('button', { name: 'Home', exact: true }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
   const tabId = await worker.evaluate(
@@ -149,14 +149,14 @@ test('a submenu expands in place, without covering the items below it', async ({
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Report');
   await visiblePage(panel).getByRole('button', { name: 'Report', exact: true }).click({ button: 'right' });
 
-  const move = menuItem(panel, 'Move to Space');
+  const move = menuItem(panel, 'Move to Volet');
   const close = menuItem(panel, 'Close tab');
   const closeBefore = (await close.boundingBox())!;
   await move.click();
   await expect(move).toHaveAttribute('aria-expanded', 'true');
-  const target = menuItem(panel, 'Space 2');
+  const target = menuItem(panel, 'Volet 2');
   await expect(target).toBeVisible();
-  // Its items sit between "Move to Space" and the items after it, which moved down and stay visible.
+  // Its items sit between "Move to Volet" and the items after it, which moved down and stay visible.
   const [moveBox, targetBox] = [(await move.boundingBox())!, (await target.boundingBox())!];
   await expect.poll(async () => (await close.boundingBox())!.y).toBeGreaterThan(closeBefore.y);
   const closeAfter = (await close.boundingBox())!;
@@ -164,22 +164,22 @@ test('a submenu expands in place, without covering the items below it', async ({
   expect(closeAfter.y).toBeGreaterThanOrEqual(targetBox.y + targetBox.height);
 
   await target.click();
-  await expect.poll(async () => (await stripState(worker, windowId)).find((tab) => tab.id === tabId)?.group).toBe('Space 2');
+  await expect.poll(async () => (await stripState(worker, windowId)).find((tab) => tab.id === tabId)?.group).toBe('Volet 2');
 });
 
 test('a submenu opens and closes with the arrow keys', async ({ panel }) => {
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
-  await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home', exact: true }).click();
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Home', exact: true }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
   // A Space's menu has no submenu, a folder's or a tab's does: use the New tab row's tab.
   await visiblePage(panel).getByRole('button', { name: 'about:blank' }).click({ button: 'right' });
-  const move = menuItem(panel, 'Move to Space');
+  const move = menuItem(panel, 'Move to Volet');
   await move.focus();
   await panel.keyboard.press('ArrowRight');
   await expect(move).toHaveAttribute('aria-expanded', 'true');
-  await expect(menuItem(panel, 'Space 2')).toBeVisible();
-  await menuItem(panel, 'Space 2').focus();
+  await expect(menuItem(panel, 'Volet 2')).toBeVisible();
+  await menuItem(panel, 'Volet 2').focus();
   await panel.keyboard.press('ArrowLeft');
   await expect(move).toHaveAttribute('aria-expanded', 'false');
   await expect(move).toBeFocused();
@@ -217,7 +217,7 @@ test('a menu closes when the pointer leaves an unfocused panel, unless it comes 
 
 test('menu items highlight on hover even when the panel has no focus', async ({ panel }) => {
   await visiblePage(panel).getByRole('heading').click({ button: 'right' });
-  const rename = menuItem(panel, 'Rename Space');
+  const rename = menuItem(panel, 'Rename Volet');
   await expect(rename).toBeVisible();
   // As after a right-click from the web page: the panel has no focus, and focusing the
   // hovered item (what Bits UI does to highlight it) has no effect.
@@ -238,7 +238,7 @@ test('menu items highlight on hover even when the panel has no focus', async ({ 
 });
 
 test('hovering a Space dot shows its name', async ({ panel }) => {
-  await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home' }).hover();
+  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Home' }).hover();
   await expect(panel.locator('[data-tooltip-content]')).toHaveText('Home');
 });
 
@@ -261,8 +261,8 @@ const watchTooltips = (panel: Page) =>
 const tooltipLog = (panel: Page) => panel.evaluate(() => (window as unknown as { tooltipLog: string[] }).tooltipLog);
 
 test('the Space dots share one tooltip, which moves to the hovered dot', async ({ panel }) => {
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  const dots = panel.getByRole('navigation', { name: 'Spaces' }).locator('li button');
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  const dots = panel.getByRole('navigation', { name: 'Volets' }).locator('li button');
   await expect(dots).toHaveCount(2);
   // (The New Space button's own tooltip may still be fading out.)
   const tooltip = panel.locator('[data-tooltip-content]:not([data-state="closed"])');

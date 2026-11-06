@@ -13,9 +13,9 @@ export interface CandidateInput {
 }
 
 const ACTIONS: PaletteItem[] = [
-  { id: 'action:new-tab', kind: 'action', title: 'New tab', detail: 'In this Space', ref: 'new-tab' },
-  { id: 'action:new-space', kind: 'action', title: 'New Space', ref: 'new-space' },
-  { id: 'action:clear-tabs', kind: 'action', title: 'Clear unpinned tabs', detail: 'In this Space', ref: 'clear-tabs' },
+  { id: 'action:new-tab', kind: 'action', title: 'New tab', detail: 'In this Volet', ref: 'new-tab' },
+  { id: 'action:new-space', kind: 'action', title: 'New Volet', ref: 'new-space' },
+  { id: 'action:clear-tabs', kind: 'action', title: 'Clear unpinned tabs', detail: 'In this Volet', ref: 'clear-tabs' },
   { id: 'action:settings', kind: 'action', title: 'Settings', detail: 'Archiving and shortcuts', ref: 'settings' },
   { id: 'action:import-arc', kind: 'action', title: 'Import from Arc', ref: 'import-arc' },
 ];

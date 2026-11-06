@@ -162,8 +162,8 @@ test('dragging a tab to the favorites area makes it a favorite', async ({ worker
 });
 
 test('dropping a tab on a Space dot moves it to that Space', async ({ worker, windowId, panel }) => {
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
   await panel.getByRole('button', { name: 'Home', exact: true }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
   await openTabs(worker, windowId, ['Traveler']);
@@ -172,12 +172,12 @@ test('dropping a tab on a Space dot moves it to that Space', async ({ worker, wi
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)
     .toBe('Home');
-  const dot = panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Space 2', exact: true });
+  const dot = panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Volet 2', exact: true });
   // Release only once the dot shows it's the drop target, as a person would.
   await drag(panel, row(panel, 'Traveler'), dot, { beforeDrop: () => expect(dot).toHaveClass(/scale-125/) });
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)
-    .toBe('Space 2');
+    .toBe('Volet 2');
 });
 
 /** Pin data: URL tabs in Home, in order, once their titles have loaded. */
@@ -301,9 +301,9 @@ test('a closed pin can be dragged to the favorites too', async ({ worker, window
 });
 
 test('holding a tab over a Space dot switches to it, so the tab can be placed there', async ({ worker, windowId, panel }) => {
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
-  await panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Home' }).click();
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Home' }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Home');
   await openTabs(worker, windowId, ['Mover']);
   const mover = row(panel, 'Mover');
@@ -312,34 +312,34 @@ test('holding a tab over a Space dot switches to it, so the tab can be placed th
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Mover'))?.group)
     .toBe('Home');
 
-  // Grab the tab, hold it over Space 2's dot until Space 2 shows, then drop it on Space 2's pinned area.
-  const dot = panel.getByRole('navigation', { name: 'Spaces' }).getByRole('button', { name: 'Space 2' });
+  // Grab the tab, hold it over Volet 2's dot until Volet 2 shows, then drop it on Volet 2's pinned area.
+  const dot = panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Volet 2' });
   const a = (await mover.boundingBox())!;
   const d = (await dot.boundingBox())!;
   await panel.mouse.move(a.x + 30, a.y + a.height / 2);
   await panel.mouse.down();
   await panel.mouse.move(a.x + 30, a.y + a.height / 2 + 10, { steps: 4 });
   await panel.mouse.move(d.x + d.width / 2, d.y + d.height / 2, { steps: 15 });
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
   await panel.waitForTimeout(600); // the pages finish sliding
-  const hint = visiblePage(panel).getByText('Drag tabs here to pin them to Space 2');
+  const hint = visiblePage(panel).getByText('Drag tabs here to pin them to Volet 2');
   const h = (await hint.boundingBox())!;
   await panel.mouse.move(h.x + 40, h.y + h.height / 2, { steps: 15 });
   await panel.waitForTimeout(200);
   await panel.mouse.up();
 
   await expect
-    .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Space 2')!.children!.map((c) => c.title))
+    .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Volet 2')!.children!.map((c) => c.title))
     .toEqual(['Mover']);
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Mover'))?.group)
-    .toBe('Space 2');
+    .toBe('Volet 2');
 });
 
 test('dragging a Space dot reorders the Spaces', async ({ worker, panel }) => {
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
-  const dots = panel.getByRole('navigation', { name: 'Spaces' }).locator('li button');
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  const dots = panel.getByRole('navigation', { name: 'Volets' }).locator('li button');
   await expect(dots).toHaveCount(2);
 
   // Drag the second dot onto the left half of the first.
@@ -352,8 +352,8 @@ test('dragging a Space dot reorders the Spaces', async ({ worker, panel }) => {
   await panel.waitForTimeout(100);
   await panel.mouse.up();
 
-  await expect(dots.nth(0)).toHaveAttribute('aria-label', 'Space 2');
-  await expect.poll(async () => (await bookmarkTree(worker)).children!.map((c) => c.title)).toEqual(['Favorites', 'Space 2', 'Home']);
+  await expect(dots.nth(0)).toHaveAttribute('aria-label', 'Volet 2');
+  await expect.poll(async () => (await bookmarkTree(worker)).children!.map((c) => c.title)).toEqual(['Favorites', 'Volet 2', 'Home']);
   // Still on the same Space.
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
 });

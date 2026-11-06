@@ -18,7 +18,7 @@
     pin: 'Pinned',
     favorite: 'Favorite',
     archived: 'Archived',
-    space: 'Space',
+    space: 'Volet',
   };
   const ACTION_ICON = {
     'new-tab': Plus,

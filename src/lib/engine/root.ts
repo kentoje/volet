@@ -41,6 +41,6 @@ async function storageFolder() {
   const top = tree?.children ?? [];
   const others = top.filter((node) => node.folderType === 'other');
   const folder = others.find((node) => node.syncing) ?? others[0] ?? top[1] ?? top[0];
-  if (!folder) throw new Error('No bookmark folder to store Spaces in');
+  if (!folder) throw new Error('No bookmark folder to store Volets in');
   return folder;
 }

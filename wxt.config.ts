@@ -32,12 +32,12 @@ export default defineConfig({
     // The in-page palette shows favicons from Chrome's cache, served from the extension's origin.
     web_accessible_resources: [{ resources: ['_favicon/*'], matches: ['<all_urls>'] }],
     // An action is required so clicking the toolbar icon can open the side panel.
-    action: { default_title: 'Open Spaces' },
+    action: { default_title: 'Open Volet' },
     commands: {
       'toggle-sidebar': { suggested_key: { default: 'Alt+S' }, description: 'Show or hide the sidebar' },
       'open-palette': { suggested_key: { default: 'Alt+T' }, description: 'Search tabs, pins and archived tabs' },
-      'next-space': { description: 'Switch to the next Space' },
-      'previous-space': { description: 'Switch to the previous Space' },
+      'next-space': { description: 'Switch to the next Volet' },
+      'previous-space': { description: 'Switch to the previous Volet' },
       'toggle-pin': { suggested_key: { default: 'Alt+P' }, description: 'Pin or unpin the current tab' },
     },
   },

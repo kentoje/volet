@@ -32,14 +32,14 @@ test('tabs opened outside the sidebar join the active Space', async ({ worker, w
 });
 
 test('creating and switching Spaces collapses the other groups', async ({ worker, windowId, panel }) => {
-  await panel.getByRole('button', { name: 'New Space' }).click();
-  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Space 2');
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
   await expect
     .poll(async () => {
       const strip = await stripState(worker, windowId);
       return {
         home: strip.filter((tab) => tab.group === 'Home').every((tab) => tab.collapsed),
-        second: strip.some((tab) => tab.group === 'Space 2' && tab.active && !tab.collapsed),
+        second: strip.some((tab) => tab.group === 'Volet 2' && tab.active && !tab.collapsed),
       };
     })
     .toEqual({ home: true, second: true });
@@ -52,7 +52,7 @@ test('creating and switching Spaces collapses the other groups', async ({ worker
       return strip.find((tab) => tab.active)?.group;
     })
     .toBe('Home');
-  expect((await stripState(worker, windowId)).filter((tab) => tab.group === 'Space 2').every((t) => t.collapsed)).toBe(
+  expect((await stripState(worker, windowId)).filter((tab) => tab.group === 'Volet 2').every((t) => t.collapsed)).toBe(
     true,
   );
 });
@@ -154,7 +154,7 @@ test('a pin that moved to another page offers a way back', async ({ worker, wind
     id: windowId,
     url: `${origin}/options.html`,
   });
-  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Spaces settings');
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Volet settings');
   const homeId = await worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
     return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
@@ -162,14 +162,14 @@ test('a pin that moved to another page offers a way back', async ({ worker, wind
   await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
 
   const page = visiblePage(panel);
-  await expect(page.getByRole('button', { name: 'Spaces settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Volet settings', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Back to the pinned page' })).toHaveCount(0); // not moved yet
   await worker.evaluate(async ({ id, url }) => chrome.tabs.update(id, { url }), { id: tabId, url: `${origin}/import.html` });
   const row = page.getByRole('listitem').filter({ has: panel.getByRole('button', { name: 'Import from Arc' }) });
   await expect(row).toContainText('/');
   await row.hover();
   await row.getByRole('button', { name: 'Back to the pinned page' }).click();
-  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Spaces settings');
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Volet settings');
   await expect(page.getByRole('button', { name: 'Back to the pinned page' })).toHaveCount(0);
 });
 

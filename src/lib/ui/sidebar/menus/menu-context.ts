@@ -32,11 +32,11 @@ export function newFolder(menus: MenuContext, spaceId: SpaceId | undefined): Men
   return { kind: 'action', label: 'New folder', icon: FolderPlus, onSelect: () => createAndRename(menus, spaceId) };
 }
 
-/** "Move to Space" submenu listing every other Space, each with its color. */
+/** "Move to Volet" submenu listing every other Space, each with its color. */
 export function moveToSpace(store: SidebarStore, current: SpaceId | undefined, move: (spaceId: SpaceId) => void): MenuItem {
   return {
     kind: 'submenu',
-    label: 'Move to Space',
+    label: 'Move to Volet',
     icon: ArrowRightLeft,
     items: store.spaces
       .filter((space) => space.id !== current)

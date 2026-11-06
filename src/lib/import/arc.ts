@@ -64,7 +64,7 @@ export function parseArcSidebar(json: unknown): ImportedSidebar {
     const pinnedContainer = typeof pinnedId === 'string' ? items.get(pinnedId) : undefined;
     const tone = space.customInfo?.windowTheme?.primaryColorPalette?.midTone;
     const hue = tone ? rgbToHue(tone.red ?? 0, tone.green ?? 0, tone.blue ?? 0) : undefined;
-    return { name: space.title?.trim() || 'Space', hue, pinned: toNodes(pinnedContainer?.childrenIds, new Set()) };
+    return { name: space.title?.trim() || 'Volet', hue, pinned: toNodes(pinnedContainer?.childrenIds, new Set()) };
   });
 
   const topAppsId = (container.topAppsContainerIDs ?? []).find((entry): entry is string => typeof entry === 'string');

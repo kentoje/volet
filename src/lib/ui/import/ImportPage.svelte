@@ -30,7 +30,7 @@
   {:else if importer.result}
     <Card title="Done">
       <p class="text-[14px] leading-relaxed" role="status">
-        Imported {plural(importer.result.spaces, 'Space')} with {plural(importer.result.pins, 'pin')}{importer.result
+        Imported {plural(importer.result.spaces, 'Volet')} with {plural(importer.result.pins, 'pin')}{importer.result
           .favorites
           ? `, and ${plural(importer.result.favorites, 'favorite')}`
           : ''}. Open the sidebar to see them.

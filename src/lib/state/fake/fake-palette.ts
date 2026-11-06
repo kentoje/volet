@@ -28,8 +28,8 @@ export function fakePaletteClient(store: SidebarStore): PaletteClient {
         list.push({ id: `space:${space.id}`, kind: 'space', title: `Switch to ${space.name}`, hue: space.hue, ref: space.id });
       }
     }
-    list.push({ id: 'action:new-tab', kind: 'action', title: 'New tab', detail: 'In this Space', ref: 'new-tab' });
-    list.push({ id: 'action:new-space', kind: 'action', title: 'New Space', ref: 'new-space' });
+    list.push({ id: 'action:new-tab', kind: 'action', title: 'New tab', detail: 'In this Volet', ref: 'new-tab' });
+    list.push({ id: 'action:new-space', kind: 'action', title: 'New Volet', ref: 'new-space' });
     return list;
   };
 

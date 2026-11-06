@@ -189,7 +189,7 @@ export class FakeSidebarStore implements SidebarStore {
   createSpace() {
     const id = `space-${this.#nextId++}`;
     const hue = nextHue(this.spaces.map((space) => space.hue));
-    this.spaces = [...this.spaces, { id, name: `Space ${this.spaces.length + 1}`, hue, pinned: [], tabIds: [] }];
+    this.spaces = [...this.spaces, { id, name: `Volet ${this.spaces.length + 1}`, hue, pinned: [], tabIds: [] }];
     this.switchSpace(id);
   }
 

@@ -11,7 +11,7 @@ export function spaceMenu(space: Space, menus: MenuContext): MenuItem[] {
   const index = store.spaces.findIndex((s) => s.id === space.id);
   const last = store.spaces.length - 1;
   return tidy([
-    { kind: 'action', label: 'Rename Space', icon: PencilLine, onSelect: () => rename.start(spaceKey(space.id)) },
+    { kind: 'action', label: 'Rename Volet', icon: PencilLine, onSelect: () => rename.start(spaceKey(space.id)) },
     {
       kind: 'swatches',
       label: 'Color',
@@ -31,7 +31,7 @@ export function spaceMenu(space: Space, menus: MenuContext): MenuItem[] {
     separator,
     {
       kind: 'action',
-      label: 'Delete Space',
+      label: 'Delete Volet',
       icon: Trash,
       destructive: true,
       disabled: store.spaces.length < 2,
@@ -39,7 +39,7 @@ export function spaceMenu(space: Space, menus: MenuContext): MenuItem[] {
         const confirmed = await confirm.ask({
           title: `Delete “${space.name}”?`,
           description: 'Its pins and folders will be deleted, and its open tabs closed.',
-          confirmLabel: 'Delete Space',
+          confirmLabel: 'Delete Volet',
         });
         if (confirmed) await store.deleteSpace(space.id);
       },

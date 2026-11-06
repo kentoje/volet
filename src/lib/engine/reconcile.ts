@@ -39,7 +39,7 @@ async function mapGroupsToSpaces(ctx: Context): Promise<void> {
     let spaceId = spaceOfGroup(group.id, ctx.groups, ctx.groupSpaces, ctx.spaces);
     if (spaceId === undefined) {
       const title = uniqueName(
-        group.title?.trim() || `Space ${ctx.spaces.length + 1}`,
+        group.title?.trim() || `Volet ${ctx.spaces.length + 1}`,
         ctx.spaces.map((space) => space.title),
       );
       const folder = await browser.bookmarks.create({ parentId: ctx.ids.rootId, title });

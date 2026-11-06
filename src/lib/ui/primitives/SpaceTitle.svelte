@@ -3,7 +3,7 @@
 
   interface Props {
     name: string;
-    /** Starts renaming (a click on the name; the Space menu offers "Rename Space" too). */
+    /** Starts renaming (a click on the name; the Space menu offers "Rename Volet" too). */
     onrename?: () => void;
     /** Replaces the name with an editor (e.g. a rename field). */
     editor?: Snippet;

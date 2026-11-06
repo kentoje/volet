@@ -68,7 +68,7 @@ describe('parseArcSidebar', () => {
         ],
       },
     ]);
-    expect(untitled).toEqual({ name: 'Space', hue: undefined, pinned: [] });
+    expect(untitled).toEqual({ name: 'Volet', hue: undefined, pinned: [] });
   });
 
   it('skips the unpinned (temporary) tabs', () => {

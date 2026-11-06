@@ -54,7 +54,7 @@ export const spaceHandlers = {
   async createSpace({ windowId, name, hue }) {
     const ctx = await loadContext(windowId);
     const title = uniqueName(
-      name?.trim() || `Space ${ctx.spaces.length + 1}`,
+      name?.trim() || `Volet ${ctx.spaces.length + 1}`,
       ctx.spaces.map((space) => space.title),
     );
     const color = hue ?? nextHue(ctx.spaces.map((space) => hueOf(ctx, space.id)));
@@ -104,7 +104,7 @@ export const spaceHandlers = {
     const index = ctx.spaces.findIndex((space) => space.id === spaceId);
     const others = ctx.spaces.filter((space) => space.id !== spaceId);
     if (index === -1) return;
-    if (others.length === 0) throw new Error('Keep at least one Space');
+    if (others.length === 0) throw new Error('Keep at least one Volet');
     const fallback = (others[index] ?? others[index - 1] ?? others[0])!;
 
     for (const window of await browser.windows.getAll({ windowTypes: ['normal'] })) {

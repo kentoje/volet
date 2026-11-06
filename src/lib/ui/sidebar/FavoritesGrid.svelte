@@ -27,6 +27,6 @@
       {/each}
     </ul>
   {:else}
-    <DropHint>Drag a tab here to make it a favorite, shared by all Spaces.</DropHint>
+    <DropHint>Drag a tab here to make it a favorite, shared by all Volets.</DropHint>
   {/if}
 </DropZone>
