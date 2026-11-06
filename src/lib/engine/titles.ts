@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { sameUrl } from '../model/url';
-import { tabUrl } from './context';
+import { tabUrl } from './snapshot';
 import { autoTitlesItem, bindingsItem } from './storage';
 
 /*

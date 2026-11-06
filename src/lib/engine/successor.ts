@@ -1,5 +1,6 @@
 import { isNewTabPage } from '../model/url';
-import { type Tab, tabUrl } from './context';
+import type { Tab } from './context';
+import { tabUrl } from './snapshot';
 
 /**
  * What to bring to the front when the active tab leaves its Space: another tab, a new tab in the

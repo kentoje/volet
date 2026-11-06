@@ -1,9 +1,8 @@
 import { browser, type Browser } from 'wxt/browser';
 import { groupColorFor } from './colors';
-import { type Context, activeSpaceOf, findSpace, groupOf, hueOf } from './context';
+import { type Context, activeSpaceOf, findSpace, groupOf, groupSpaceOf, hueOf } from './context';
 import { retry } from './retry';
 import { setGroupSpace } from './session';
-import { spaceOfGroup } from './snapshot';
 import { groupSpacesItem } from './storage';
 
 /** Put tabs into the Space's tab group in this window, creating the group if needed. */
@@ -43,7 +42,7 @@ export async function groupTabs(ctx: Context, spaceId: string, tabIds: number[])
 export async function collapseOtherSpaces(ctx: Context, activeSpaceId: string): Promise<void> {
   const [front] = await browser.tabs.query({ windowId: ctx.windowId, active: true });
   for (const group of ctx.groups) {
-    const spaceId = spaceOfGroup(group.id, ctx.groups, ctx.groupSpaces, ctx.spaces);
+    const spaceId = groupSpaceOf(ctx, group.id);
     if (spaceId === undefined) continue;
     const collapsed = spaceId !== activeSpaceId && group.id !== front?.groupId;
     if (group.collapsed !== collapsed) await retry(() => browser.tabGroups.update(group.id, { collapsed }));

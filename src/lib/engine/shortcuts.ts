@@ -38,6 +38,7 @@ export function listenForShortcuts(engine: Engine): void {
 /** Show the palette over the page (the shortcut grants temporary access), or in the side panel. */
 function openPalette(tab: Browser.tabs.Tab | undefined): void {
   if (tab?.windowId === undefined) return;
+  // The committed URL on purpose, not `tabUrl()`: the script runs in the page showing, not one still loading.
   const url = tab.url ?? '';
   if (tab.id === undefined || !url || NO_SCRIPTS.test(url) || WEB_STORE.test(url)) {
     openInPanel(tab.windowId); // synchronous: sidePanel.open only works during the shortcut's gesture

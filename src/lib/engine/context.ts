@@ -1,6 +1,6 @@
 import { browser, type Browser } from 'wxt/browser';
-import { defaultHue } from './colors';
-import { ensureRoot } from './root';
+import { spaceHue } from './colors';
+import { loadRoot } from './root';
 import { type BookmarkNode, findBookmark, spaceFolders, spaceOfBookmark, spaceOfGroup } from './snapshot';
 import {
   type Binding,
@@ -33,17 +33,15 @@ export interface Context {
 }
 
 export async function loadContext(windowId: number): Promise<Context> {
-  const ids = await ensureRoot();
-  const [tabs, groups, subtree, bindings, groupSpaces, activeSpaces, spaceMeta] = await Promise.all([
+  const [{ ids, root }, tabs, groups, bindings, groupSpaces, activeSpaces, spaceMeta] = await Promise.all([
+    loadRoot(),
     browser.tabs.query({ windowId }),
     browser.tabGroups.query({ windowId }),
-    browser.bookmarks.getSubTree(ids.rootId),
     bindingsItem.getValue(),
     groupSpacesItem.getValue(),
     activeSpacesItem.getValue(),
     spaceMetaItem.getValue(),
   ]);
-  const root = subtree[0]!;
   return {
     windowId,
     ids,
@@ -59,23 +57,24 @@ export async function loadContext(windowId: number): Promise<Context> {
 }
 
 export async function reloadRoot(ctx: Context): Promise<void> {
-  ctx.root = (await browser.bookmarks.getSubTree(ctx.ids.rootId))[0]!;
-  ctx.spaces = spaceFolders(ctx.root, ctx.ids.favoritesId);
+  const [root] = await browser.bookmarks.getSubTree(ctx.ids.rootId);
+  if (!root) throw new Error('The Volet bookmark folder is gone');
+  ctx.root = root;
+  ctx.spaces = spaceFolders(root, ctx.ids.favoritesId);
 }
 
 export async function reloadTabs(ctx: Context): Promise<void> {
   ctx.tabs = (await browser.tabs.query({ windowId: ctx.windowId })).sort((a, b) => a.index - b.index);
 }
 
-/** A tab's URL. Chrome leaves `url` empty until the first navigation commits. */
-export function tabUrl(tab: Tab): string | undefined {
-  return tab.url || tab.pendingUrl || undefined;
-}
-
 export function hueOf(ctx: Context, spaceId: string): number {
   const index = ctx.spaces.findIndex((space) => space.id === spaceId);
-  const space = ctx.spaces[index];
-  return (space && ctx.spaceMeta[space.title]?.hue) ?? defaultHue(Math.max(0, index));
+  return spaceHue(ctx.spaceMeta, ctx.spaces[index]?.title, index);
+}
+
+/** The Space a tab group stands for (see `spaceOfGroup`). */
+export function groupSpaceOf(ctx: Context, groupId: number): string | undefined {
+  return spaceOfGroup(groupId, ctx.groups, ctx.groupSpaces, ctx.spaces);
 }
 
 /** The tab's binding, if the pin or favorite it points to still exists. */
@@ -90,7 +89,7 @@ export function spaceOfTab(ctx: Context, tab: Tab): string | undefined {
   const binding = liveBinding(ctx, tab.id);
   if (binding?.kind === 'favorite' || tab.pinned) return undefined;
   if (binding?.kind === 'pin') return spaceOfBookmark(ctx.root, binding.id);
-  return spaceOfGroup(tab.groupId, ctx.groups, ctx.groupSpaces, ctx.spaces);
+  return groupSpaceOf(ctx, tab.groupId);
 }
 
 export function activeSpaceOf(ctx: Context): string {
@@ -108,7 +107,7 @@ export function activeSpaceOf(ctx: Context): string {
 
 /** The Space's tab group in this window, if it has one. */
 export function groupOf(ctx: Context, spaceId: string): number | undefined {
-  return ctx.groups.find((group) => spaceOfGroup(group.id, ctx.groups, ctx.groupSpaces, ctx.spaces) === spaceId)?.id;
+  return ctx.groups.find((group) => groupSpaceOf(ctx, group.id) === spaceId)?.id;
 }
 
 /** Tabs that make up a Space in this window (temporary and pinned), in strip order. */

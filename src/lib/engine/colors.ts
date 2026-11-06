@@ -1,8 +1,15 @@
+import type { SpaceMeta } from './schema';
+
 /** Hues given to Spaces that have no saved color, in order. */
 const DEFAULT_HUES = [268, 152, 42, 330, 205, 100, 15, 295];
 
 export function defaultHue(index: number): number {
   return DEFAULT_HUES[index % DEFAULT_HUES.length]!;
+}
+
+/** A Space's hue: its saved color (colors are kept by name), else the default for its place. */
+export function spaceHue(meta: Record<string, SpaceMeta>, title: string | undefined, index: number): number {
+  return (title !== undefined ? meta[title]?.hue : undefined) ?? defaultHue(Math.max(0, index));
 }
 
 /** Next hue for a new Space: step around the wheel by the golden angle from the last one. */

@@ -1,8 +1,8 @@
 import { browser } from 'wxt/browser';
-import { countPins, type ImportResult, type ImportedNode } from '../../import/types';
+import { countPins, type ImportResult, type ImportedLink, type ImportedNode, type ImportedSpace } from '../../import/types';
 import { nextHue } from '../colors';
-import { ensureRoot } from '../root';
-import { spaceFolders } from '../snapshot';
+import { loadRoot } from '../root';
+import { type BookmarkNode, favoritesFolder, spaceFolders } from '../snapshot';
 import { uniqueName } from '../space-names';
 import { arcInviteItem, collapsedItem, importedArcSpacesItem, spaceMetaItem } from '../storage';
 import { rememberAutoTitles } from '../titles';
@@ -28,42 +28,61 @@ async function createNodes(parentId: string, nodes: ImportedNode[], created: Cre
   }
 }
 
+/** Add each Space next to the existing ones (names made unique), with its color. Returns their ids. */
+async function importSpaces(
+  root: BookmarkNode,
+  favoritesId: string,
+  spaces: ImportedSpace[],
+  created: Created,
+): Promise<string[]> {
+  const taken = spaceFolders(root, favoritesId).map((space) => space.title);
+  const meta = { ...(await spaceMetaItem.getValue()) };
+  const hues = Object.values(meta).map((m) => m.hue);
+  const spaceIds: string[] = [];
+  for (const space of spaces) {
+    const title = uniqueName(space.name, taken);
+    taken.push(title);
+    const hue = space.hue ?? nextHue(hues);
+    hues.push(hue);
+    meta[title] = { hue };
+    // Color first, so the Space appears in its color right away.
+    await spaceMetaItem.setValue(meta);
+    const folder = await browser.bookmarks.create({ parentId: root.id, title });
+    spaceIds.push(folder.id);
+    await createNodes(folder.id, space.pinned, created);
+  }
+  return spaceIds;
+}
+
+/** Add the favorites not there yet (same URL). Returns how many were added. */
+async function importFavorites(
+  root: BookmarkNode,
+  favoritesId: string,
+  favorites: ImportedLink[],
+  created: Created,
+): Promise<number> {
+  const known = new Set((favoritesFolder(root, favoritesId)?.children ?? []).map((node) => node.url));
+  let added = 0;
+  for (const favorite of favorites) {
+    if (known.has(favorite.url)) continue;
+    known.add(favorite.url);
+    const bookmark = await browser.bookmarks.create({ parentId: favoritesId, title: favorite.title, url: favorite.url });
+    if (!favorite.named) created.auto.push(bookmark);
+    added++;
+  }
+  return added;
+}
+
 export const importHandlers = {
   /**
    * New Spaces are added next to the existing ones (names made unique); favorites skip duplicates.
    * Resolves with what was imported, and the new Spaces' ids.
    */
   async importSidebar({ sidebar }): Promise<ImportResult> {
-    const ids = await ensureRoot();
-    const root = (await browser.bookmarks.getSubTree(ids.rootId))[0]!;
-    const taken = spaceFolders(root, ids.favoritesId).map((space) => space.title);
-    const meta = { ...(await spaceMetaItem.getValue()) };
-    const hues = Object.values(meta).map((m) => m.hue);
-
+    const { ids, root } = await loadRoot();
     const created: Created = { auto: [], folderIds: [] };
-    const spaceIds: string[] = [];
-    for (const space of sidebar.spaces) {
-      const title = uniqueName(space.name, taken);
-      taken.push(title);
-      const hue = space.hue ?? nextHue(hues);
-      hues.push(hue);
-      meta[title] = { hue };
-      // Color first, so the Space appears in its color right away.
-      await spaceMetaItem.setValue(meta);
-      const folder = await browser.bookmarks.create({ parentId: ids.rootId, title });
-      spaceIds.push(folder.id);
-      await createNodes(folder.id, space.pinned, created);
-    }
-
-    const known = new Set((root.children?.find((n) => n.id === ids.favoritesId)?.children ?? []).map((n) => n.url));
-    let favorites = 0;
-    for (const favorite of sidebar.favorites) {
-      if (known.has(favorite.url)) continue;
-      known.add(favorite.url);
-      const bookmark = await browser.bookmarks.create({ parentId: ids.favoritesId, title: favorite.title, url: favorite.url });
-      if (!favorite.named) created.auto.push(bookmark);
-      favorites++;
-    }
+    const spaceIds = await importSpaces(root, ids.favoritesId, sidebar.spaces, created);
+    const favorites = await importFavorites(root, ids.favoritesId, sidebar.favorites, created);
 
     await rememberAutoTitles(created.auto);
     // Imported folders start closed, so a big Arc sidebar arrives tidy.

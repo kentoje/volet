@@ -13,10 +13,11 @@ import {
 import { collapseOtherSpaces, updateSpaceGroups } from '../groups';
 import { retry } from '../retry';
 import { ensureRoot } from '../root';
+import { isSpaceFolder } from '../snapshot';
 import { lastActiveTab, park, rememberActive, setActiveSpace, unpark } from '../session';
-import { uniqueName } from '../space-names';
+import { newSpaceName, uniqueName } from '../space-names';
 import { spaceMetaItem } from '../storage';
-import { openTabIn } from '../tab-ops';
+import { activate, openTabIn } from '../tab-ops';
 import { moveBookmark } from './bookmarks';
 import type { Handlers } from './types';
 
@@ -40,7 +41,7 @@ export async function switchSpace(ctx: Context, spaceId: string, { open = false 
   const target = tabs.find((tab) => tab.id === remembered) ?? temporaryTabs(ctx, spaceId).at(-1) ?? tabs.at(-1);
   if (target?.id !== undefined) {
     await unpark(ctx.windowId);
-    await retry(() => browser.tabs.update(target.id!, { active: true }));
+    await activate(target.id);
   } else if (open || activeTab?.id === undefined) {
     await openTabIn(ctx, spaceId);
   } else {
@@ -63,8 +64,8 @@ export const spaceHandlers = {
 
   async createSpace({ windowId, name, hue }) {
     const ctx = await loadContext(windowId);
-    const title = uniqueName(
-      name?.trim() || `Volet ${ctx.spaces.length + 1}`,
+    const title = newSpaceName(
+      name,
       ctx.spaces.map((space) => space.title),
     );
     const color = hue ?? nextHue(ctx.spaces.map((space) => hueOf(ctx, space.id)));
@@ -103,7 +104,7 @@ export const spaceHandlers = {
   async moveSpace({ spaceId, index }) {
     const ids = await ensureRoot();
     const children = await browser.bookmarks.getChildren(ids.rootId);
-    const spaces = children.filter((node) => node.url === undefined && node.id !== ids.favoritesId);
+    const spaces = children.filter((node) => isSpaceFolder(node, ids.favoritesId));
     const target = spaces[index];
     if (!target || target.id === spaceId) return;
     await moveBookmark({ type: 'moveBookmark', id: spaceId, parentId: ids.rootId, index: target.index });

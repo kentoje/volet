@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { type BookmarkNode, isSpaceFolder } from './snapshot';
 import { DEFAULT_SPACE_NAME, FAVORITES_TITLE, ROOT_TITLE, type RootIds, rootItem } from './storage';
 
 /** Find or create the root "Volet" folder, its Favorites folder, and at least one Space. */
@@ -21,7 +22,7 @@ export async function ensureRoot(): Promise<RootIds> {
   const favorites =
     rootChildren.find((node) => node.url === undefined && node.title === FAVORITES_TITLE) ??
     (await browser.bookmarks.create({ parentId: root.id, title: FAVORITES_TITLE, index: 0 }));
-  if (!rootChildren.some((node) => node.url === undefined && node.id !== favorites.id)) {
+  if (!rootChildren.some((node) => isSpaceFolder(node, favorites.id))) {
     await browser.bookmarks.create({ parentId: root.id, title: DEFAULT_SPACE_NAME });
   }
 
@@ -30,11 +31,19 @@ export async function ensureRoot(): Promise<RootIds> {
   return ids;
 }
 
+/** The root folder and its whole tree (made first if needed, see `ensureRoot`). */
+export async function loadRoot(): Promise<{ ids: RootIds; root: BookmarkNode }> {
+  const ids = await ensureRoot();
+  const [root] = await browser.bookmarks.getSubTree(ids.rootId);
+  if (!root) throw new Error('The Volet bookmark folder is gone');
+  return { ids, root };
+}
+
 /** The saved root folder, if it's still there with its Favorites folder inside. */
 async function savedRoot(ids: RootIds) {
   try {
-    const [root] = await browser.bookmarks.get(ids.rootId);
-    const [favorites] = await browser.bookmarks.get(ids.favoritesId);
+    // Both in one call (this runs before every command): it fails if either is gone.
+    const [root, favorites] = await browser.bookmarks.get([ids.rootId, ids.favoritesId]);
     return root && favorites?.parentId === root.id ? root : undefined;
   } catch {
     return undefined; // deleted

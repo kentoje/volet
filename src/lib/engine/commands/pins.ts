@@ -1,18 +1,10 @@
 import { browser } from 'wxt/browser';
-import {
-  activeSpaceOf,
-  boundTab,
-  boundTabIds,
-  loadContext,
-  reloadRoot,
-  spaceOfTab,
-  tabUrl,
-} from '../context';
+import { activeSpaceOf, boundTab, boundTabIds, groupSpaceOf, loadContext, reloadRoot, spaceOfTab } from '../context';
 import { collapseOtherSpaces, groupTabs } from '../groups';
 import { retry } from '../retry';
 import { setActiveSpace, setBinding } from '../session';
-import { findBookmark, spaceOfBookmark, spaceOfGroup } from '../snapshot';
-import { keepActiveInSpace, placeTab, releaseFavorite } from '../tab-ops';
+import { findBookmark, spaceOfBookmark, tabUrl } from '../snapshot';
+import { activate, keepActiveInSpace, leaveFavorites, placeTab } from '../tab-ops';
 import { rememberAutoTitles } from '../titles';
 import { deleteBookmark } from './bookmarks';
 import type { CommandOf, Handlers } from './types';
@@ -23,15 +15,14 @@ export async function pinTab({ windowId, tabId, parentId, index }: CommandOf<'pi
   const tab = ctx.tabs.find((t) => t.id === tabId);
   const url = tab && tabUrl(tab);
   if (!tab || !url) return;
-  await releaseFavorite(ctx, tabId);
-  if (tab.pinned) await retry(() => browser.tabs.update(tabId, { pinned: false }));
+  await leaveFavorites(ctx, tab);
   const pin = await browser.bookmarks.create({ parentId, index, title: tab.title || url, url });
   await rememberAutoTitles([pin]);
   await setBinding(ctx, tabId, { kind: 'pin', id: pin.id });
   await reloadRoot(ctx);
   const spaceId = spaceOfBookmark(ctx.root, pin.id);
   // Compare with the tab's actual group: asking spaceOfTab would answer through the new pin.
-  const groupSpace = spaceOfGroup(tab.groupId, ctx.groups, ctx.groupSpaces, ctx.spaces);
+  const groupSpace = groupSpaceOf(ctx, tab.groupId);
   if (spaceId && spaceId !== groupSpace) await groupTabs(ctx, spaceId, [tabId]);
   return pin.id;
 }
@@ -57,10 +48,10 @@ export const pinHandlers = {
   /** Focus the pin's tab, or open it (switching to the pin's Space if needed). */
   async openPin({ windowId, pinId }) {
     const ctx = await loadContext(windowId);
-    const bound = boundTab(ctx, pinId);
-    if (bound?.id !== undefined) {
-      await retry(() => browser.tabs.update(bound.id!, { active: true }));
-      return bound.id;
+    const boundId = boundTab(ctx, pinId)?.id;
+    if (boundId !== undefined) {
+      await activate(boundId);
+      return boundId;
     }
     const pin = findBookmark(ctx.root, pinId);
     const spaceId = spaceOfBookmark(ctx.root, pinId);
@@ -90,9 +81,9 @@ export const pinHandlers = {
   /** Navigate the pin's tab back to its home URL. */
   async resetPin({ windowId, pinId }) {
     const ctx = await loadContext(windowId);
-    const bound = boundTab(ctx, pinId);
-    const pin = findBookmark(ctx.root, pinId);
-    if (bound?.id !== undefined && pin?.url) await browser.tabs.update(bound.id, { url: pin.url });
+    const tabId = boundTab(ctx, pinId)?.id;
+    const url = findBookmark(ctx.root, pinId)?.url;
+    if (tabId !== undefined && url) await retry(() => browser.tabs.update(tabId, { url }));
   },
 
   async togglePin({ windowId, tabId }) {

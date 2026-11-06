@@ -4,11 +4,9 @@ import type { Engine } from './engine';
 import { searchPalette } from './palette/search';
 import { toCommand } from './palette/to-command';
 import type { CommandResult, RuntimeMessage } from './protocol';
+import { errorMessage } from './retry';
 
-const failure = (error: unknown): CommandResult => ({
-  ok: false,
-  error: String((error as Error)?.message ?? error),
-});
+const failure = (error: unknown): CommandResult => ({ ok: false, error: errorMessage(error) });
 
 /** Answer messages from side panels and the in-page palette. */
 export function listenForMessages(engine: Engine): void {

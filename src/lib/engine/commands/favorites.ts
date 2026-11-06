@@ -1,9 +1,10 @@
 import { browser } from 'wxt/browser';
-import { type Context, boundTab, boundTabIds, loadContext, tabUrl } from '../context';
+import { type Context, boundTab, boundTabIds, loadContext } from '../context';
 import { ensureRoot } from '../root';
 import { retry } from '../retry';
 import { setBinding } from '../session';
-import { findBookmark } from '../snapshot';
+import { findBookmark, tabUrl } from '../snapshot';
+import { activate } from '../tab-ops';
 import { rememberAutoTitles } from '../titles';
 import { deleteBookmark, moveBookmark } from './bookmarks';
 import type { CommandOf, Handlers } from './types';
@@ -22,10 +23,10 @@ async function favoritePin(ctx: Context, { pinId, index }: Omit<CommandOf<'favor
 export const favoriteHandlers = {
   async openFavorite({ windowId, favoriteId }) {
     const ctx = await loadContext(windowId);
-    const bound = boundTab(ctx, favoriteId);
-    if (bound?.id !== undefined) {
-      await retry(() => browser.tabs.update(bound.id!, { active: true }));
-      return bound.id;
+    const boundId = boundTab(ctx, favoriteId)?.id;
+    if (boundId !== undefined) {
+      await activate(boundId);
+      return boundId;
     }
     const favorite = findBookmark(ctx.root, favoriteId);
     if (!favorite?.url) return;

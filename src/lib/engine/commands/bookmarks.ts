@@ -1,10 +1,10 @@
 import { browser } from 'wxt/browser';
-import { boundTab, boundTabIds, loadContext, tabUrl } from '../context';
+import { boundTab, boundTabIds, loadContext } from '../context';
 import { groupTabs } from '../groups';
 import { retry } from '../retry';
-import { ensureRoot } from '../root';
+import { loadRoot } from '../root';
 import { setBinding } from '../session';
-import { findBookmark, pinsIn, spaceOfBookmark } from '../snapshot';
+import { findBookmark, pinsIn, spaceOfBookmark, tabUrl } from '../snapshot';
 import { bindingsItem } from '../storage';
 import { hasAutoTitle, refreshBoundTitle } from '../titles';
 import type { CommandOf, Handlers } from './types';
@@ -41,16 +41,20 @@ export async function deleteBookmark({ windowId, id }: CommandOf<'deleteBookmark
 
 /** After a pin or folder moves to another Space, move its open tabs into that Space's group. */
 async function regroupBoundTabs(bookmarkId: string): Promise<void> {
-  const ids = await ensureRoot();
-  const root = (await browser.bookmarks.getSubTree(ids.rootId))[0]!;
+  const { root } = await loadRoot();
   const moved = findBookmark(root, bookmarkId);
   const spaceId = spaceOfBookmark(root, bookmarkId);
   if (!moved || !spaceId) return;
   const pinIds = new Set(moved.url !== undefined ? [moved.id] : pinsIn(moved).map((pin) => pin.id));
+  const bound = Object.entries(await bindingsItem.getValue()).filter(
+    ([, binding]) => binding.kind === 'pin' && pinIds.has(binding.id),
+  );
+  if (bound.length === 0) return;
+  // One query for every window, instead of one call per bound tab.
+  const tabs = new Map((await browser.tabs.query({})).map((tab) => [tab.id, tab]));
   const byWindow = new Map<number, number[]>();
-  for (const [tabId, binding] of Object.entries(await bindingsItem.getValue())) {
-    if (binding.kind !== 'pin' || !pinIds.has(binding.id)) continue;
-    const tab = await browser.tabs.get(Number(tabId)).catch(() => undefined);
+  for (const [tabId] of bound) {
+    const tab = tabs.get(Number(tabId));
     if (tab?.id !== undefined) byWindow.set(tab.windowId, [...(byWindow.get(tab.windowId) ?? []), tab.id]);
   }
   for (const [windowId, tabIds] of byWindow) await groupTabs(await loadContext(windowId), spaceId, tabIds);

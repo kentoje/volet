@@ -1,10 +1,9 @@
 import { browser, type Browser } from 'wxt/browser';
 import { isNewTabPage } from '../model/url';
-import { tabUrl } from './context';
 import { retry } from './retry';
-import { ensureRoot } from './root';
+import { loadRoot } from './root';
 import { stampActivity } from './session';
-import { type BookmarkNode, type GroupInfo, spaceFolders, spaceOfGroup } from './snapshot';
+import { type GroupInfo, spaceFolders, spaceOfGroup, tabUrl } from './snapshot';
 import {
   ARCHIVE_LIMIT,
   type ArchiveEntry,
@@ -38,12 +37,13 @@ export function idleTabs({ tabs, activity, bindings, limitMs, now }: IdleInput):
 /** Close temporary tabs idle for longer than the setting, saving them to the archive. */
 export async function archiveIdleTabs(now = Date.now()): Promise<void> {
   const tabs = await browser.tabs.query({});
-  // The tabs in front of the user count as in use right now.
-  await stampActivity(tabs.filter((tab) => tab.active).map((tab) => tab.id!), now);
-
   const activity = await tabActivityItem.getValue();
-  // First sighting of a tab starts its clock.
-  await stampActivity(tabs.filter((tab) => tab.id !== undefined && activity[tab.id] === undefined).map((t) => t.id!), now);
+  // The tabs in front of the user count as in use right now, and a tab's first sighting starts its clock.
+  // (The idle check below reads `activity` from before: neither kind can be idle.)
+  const fresh = tabs.flatMap((tab) =>
+    tab.id !== undefined && (tab.active || activity[tab.id] === undefined) ? [tab.id] : [],
+  );
+  await stampActivity(fresh, now);
 
   const { archiveAfterHours } = await settingsItem.getValue();
   if (!archiveAfterHours) return;
@@ -70,8 +70,7 @@ export async function archiveIdleTabs(now = Date.now()): Promise<void> {
 }
 
 async function spaceNamer(): Promise<(groupId: number) => string> {
-  const ids = await ensureRoot();
-  const root: BookmarkNode = (await browser.bookmarks.getSubTree(ids.rootId))[0]!;
+  const { ids, root } = await loadRoot();
   const spaces = spaceFolders(root, ids.favoritesId);
   const groups: GroupInfo[] = await browser.tabGroups.query({});
   const groupSpaces = await groupSpacesItem.getValue();

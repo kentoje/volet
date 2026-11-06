@@ -52,9 +52,19 @@ export interface Snapshot {
 
 export const NO_GROUP = -1;
 
+/** A tab's URL. Chrome leaves `url` empty until the first navigation commits. */
+export function tabUrl(tab: Pick<TabInfo, 'url' | 'pendingUrl'>): string | undefined {
+  return tab.url || tab.pendingUrl || undefined;
+}
+
+/** Whether a child of the root is a Space: any folder but Favorites. */
+export function isSpaceFolder(node: BookmarkNode, favoritesId: string | undefined): boolean {
+  return node.url === undefined && node.id !== favoritesId;
+}
+
 /** Space folders: every folder in the root except Favorites, in bookmark order. */
 export function spaceFolders(root: BookmarkNode | undefined, favoritesId: string | undefined): BookmarkNode[] {
-  return (root?.children ?? []).filter((node) => node.url === undefined && node.id !== favoritesId);
+  return (root?.children ?? []).filter((node) => isSpaceFolder(node, favoritesId));
 }
 
 export function favoritesFolder(root: BookmarkNode | undefined, favoritesId: string | undefined) {
@@ -72,22 +82,44 @@ export function bookmarkIds(root: BookmarkNode | undefined): Set<string> {
   return ids;
 }
 
-export function findBookmark(root: BookmarkNode | undefined, id: string): BookmarkNode | undefined {
-  if (!root) return undefined;
-  if (root.id === id) return root;
-  for (const child of root.children ?? []) {
-    const found = findBookmark(child, id);
-    if (found) return found;
+interface BookmarkIndex {
+  /** Every bookmark in the tree, the tree's own node included. */
+  nodes: Map<string, BookmarkNode>;
+  /** The folder among the tree's direct children (a Space, or Favorites) each bookmark is in. */
+  folders: Map<string, string>;
+}
+
+const bookmarkIndexes = new WeakMap<BookmarkNode, BookmarkIndex>();
+
+/**
+ * Where everything is in a bookmark tree, built on first use: commands and reconcile look up a
+ * bookmark for each tab, and walking the tree each time adds up. Trees are never changed once
+ * read from Chrome (a new read makes a new tree). The first match wins, as a walk would find it.
+ */
+function indexOf(tree: BookmarkNode): BookmarkIndex {
+  const cached = bookmarkIndexes.get(tree);
+  if (cached) return cached;
+  const index: BookmarkIndex = { nodes: new Map([[tree.id, tree]]), folders: new Map() };
+  const visit = (node: BookmarkNode, folderId: string) => {
+    if (!index.nodes.has(node.id)) index.nodes.set(node.id, node);
+    if (!index.folders.has(node.id)) index.folders.set(node.id, folderId);
+    node.children?.forEach((child) => visit(child, folderId));
+  };
+  for (const child of tree.children ?? []) {
+    if (child.url === undefined) visit(child, child.id);
+    else if (!index.nodes.has(child.id)) index.nodes.set(child.id, child);
   }
-  return undefined;
+  bookmarkIndexes.set(tree, index);
+  return index;
+}
+
+export function findBookmark(root: BookmarkNode | undefined, id: string): BookmarkNode | undefined {
+  return root && indexOf(root).nodes.get(id);
 }
 
 /** The Space folder (direct child of the root) that contains a bookmark. */
 export function spaceOfBookmark(root: BookmarkNode | undefined, id: string): string | undefined {
-  for (const space of root?.children ?? []) {
-    if (space.url === undefined && findBookmark(space, id)) return space.id;
-  }
-  return undefined;
+  return root && indexOf(root).folders.get(id);
 }
 
 /** All pins (bookmarks with a URL) inside a folder, depth-first. */

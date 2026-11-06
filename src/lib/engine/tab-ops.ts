@@ -5,6 +5,11 @@ import { retry } from './retry';
 import { setBinding } from './session';
 import { successorOf } from './successor';
 
+/** Bring a tab to the front of its window. */
+export function activate(tabId: number): Promise<unknown> {
+  return retry(() => browser.tabs.update(tabId, { active: true }));
+}
+
 /** Open a tab inside a Space (in its tab group). */
 export async function openTabIn(ctx: Context, spaceId: string, url?: string, active = true): Promise<Tab> {
   const tab = await browser.tabs.create({ windowId: ctx.windowId, url, active });
@@ -27,7 +32,7 @@ export async function keepActiveInSpace(ctx: Context, leaving: number[]): Promis
     spaceTabs: spaceTabs(ctx, spaceId),
     favorites: ctx.tabs.filter((tab) => tab.pinned),
   });
-  if (next.kind === 'tab') await retry(() => browser.tabs.update(next.tabId, { active: true }));
+  if (next.kind === 'tab') await activate(next.tabId);
   else if (next.kind === 'new-tab') await openTabIn(ctx, spaceId);
 }
 
@@ -48,10 +53,17 @@ export async function placeTab(ctx: Context, tabId: number, spaceId: string, ind
   if (target !== moving.index) await retry(() => browser.tabs.move(tabId, { index: target }));
 }
 
-/** A favorite's tab that moves into a Space (as a pin or temporary tab) is no longer a favorite. */
-export async function releaseFavorite(ctx: Context, tabId: number): Promise<void> {
+/**
+ * A tab that moves into a Space (as a pin or temporary tab) is no longer a favorite, nor one of
+ * Chrome's pinned tabs.
+ */
+export async function leaveFavorites(ctx: Context, tab: Tab): Promise<void> {
+  const tabId = tab.id;
+  if (tabId === undefined) return;
   const binding = ctx.bindings[tabId];
-  if (binding?.kind !== 'favorite') return;
-  await setBinding(ctx, tabId, undefined);
-  await browser.bookmarks.remove(binding.id).catch(() => undefined);
+  if (binding?.kind === 'favorite') {
+    await setBinding(ctx, tabId, undefined);
+    await browser.bookmarks.remove(binding.id).catch(() => undefined);
+  }
+  if (tab.pinned) await retry(() => browser.tabs.update(tabId, { pinned: false }));
 }

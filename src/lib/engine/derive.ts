@@ -1,5 +1,5 @@
 import type { Favorite, LiveTab, PinnedNode, Space, SpaceId, TabId } from '../model/types';
-import { defaultHue } from './colors';
+import { spaceHue } from './colors';
 import {
   type BookmarkNode,
   type Snapshot,
@@ -8,6 +8,7 @@ import {
   favoritesFolder,
   spaceFolders,
   spaceOfGroup,
+  tabUrl,
 } from './snapshot';
 
 export interface SidebarState {
@@ -30,7 +31,7 @@ export const EMPTY_STATE: Readonly<SidebarState> = Object.freeze({
 });
 
 export function toLiveTab(tab: TabInfo & { id: number }): LiveTab {
-  const url = tab.url || tab.pendingUrl || '';
+  const url = tabUrl(tab) ?? '';
   return {
     id: tab.id,
     title: tab.title || url || 'New Tab',
@@ -64,7 +65,7 @@ export function derive(snapshot: Snapshot): SidebarState {
   const spaces: Space[] = folders.map((folder, index) => ({
     id: folder.id,
     name: folder.title,
-    hue: snapshot.spaceMeta[folder.title]?.hue ?? defaultHue(index),
+    hue: spaceHue(snapshot.spaceMeta, folder.title, index),
     pinned: toPinnedNodes(folder.children ?? [], boundTabs),
     tabIds: [],
   }));

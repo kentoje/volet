@@ -5,18 +5,19 @@ import {
   type Context,
   activeSpaceOf,
   boundIdsInWindow,
+  findSpace,
+  groupSpaceOf,
   hueOf,
   liveBinding,
   loadContext,
   spaceOfTab,
   spaceTabs,
-  tabUrl,
 } from './context';
 import { collapseOtherSpaces, groupTabs } from './groups';
 import { retry } from './retry';
 import { parkedTab, setActiveSpace, setBinding, setGroupSpace } from './session';
-import { NO_GROUP, bookmarkIds, findBookmark, pinsIn, spaceOfBookmark, spaceOfGroup } from './snapshot';
-import { uniqueName } from './space-names';
+import { NO_GROUP, bookmarkIds, favoritesFolder, pinsIn, spaceOfBookmark, tabUrl } from './snapshot';
+import { newSpaceName } from './space-names';
 import { rememberAutoTitles } from './titles';
 
 /**
@@ -37,20 +38,21 @@ export async function reconcile(windowId: number, options: { recover?: boolean }
 /** Every tab group is a Space. Groups made in Chrome's own UI become new Spaces. */
 async function mapGroupsToSpaces(ctx: Context): Promise<void> {
   for (const group of ctx.groups) {
-    let spaceId = spaceOfGroup(group.id, ctx.groups, ctx.groupSpaces, ctx.spaces);
-    if (spaceId === undefined) {
-      const title = uniqueName(
-        group.title?.trim() || `Volet ${ctx.spaces.length + 1}`,
-        ctx.spaces.map((space) => space.title),
+    const mapped = groupSpaceOf(ctx, group.id);
+    let space = mapped === undefined ? undefined : findSpace(ctx, mapped);
+    if (!space) {
+      const title = newSpaceName(
+        group.title,
+        ctx.spaces.map((s) => s.title),
       );
       const folder = await browser.bookmarks.create({ parentId: ctx.ids.rootId, title });
-      ctx.spaces.push({ id: folder.id, title, children: [] });
-      spaceId = folder.id;
+      space = { id: folder.id, title, children: [] };
+      ctx.spaces.push(space);
     }
-    await setGroupSpace(ctx, group.id, spaceId);
+    await setGroupSpace(ctx, group.id, space.id);
     // One-way: the Space's name and color win over edits made in the tab strip.
-    const title = ctx.spaces.find((space) => space.id === spaceId)!.title;
-    const color = groupColorFor(hueOf(ctx, spaceId));
+    const title = space.title;
+    const color = groupColorFor(hueOf(ctx, space.id));
     if (group.title !== title || group.color !== color) {
       await retry(() => browser.tabGroups.update(group.id, { title, color }));
     }
@@ -60,7 +62,7 @@ async function mapGroupsToSpaces(ctx: Context): Promise<void> {
 /** Favorites are Chrome's native pinned tabs: adopt new native pins, release unpinned ones. */
 async function syncFavorites(ctx: Context): Promise<void> {
   const liveIds = bookmarkIds(ctx.root);
-  const favorites = (findBookmark(ctx.root, ctx.ids.favoritesId)?.children ?? []).filter((node) => node.url);
+  const favorites = (favoritesFolder(ctx.root, ctx.ids.favoritesId)?.children ?? []).filter((node) => node.url);
   for (const tab of ctx.tabs) {
     if (tab.id === undefined) continue;
     const binding = ctx.bindings[tab.id];

@@ -1,6 +1,6 @@
 import { hostOf } from '../../model/url';
 import type { ArchiveEntry } from '../schema';
-import { type BookmarkNode, findBookmark, pinsIn } from '../snapshot';
+import { type BookmarkNode, pinsIn } from '../snapshot';
 import type { PaletteItem } from './types';
 
 export interface CandidateInput {
@@ -66,9 +66,4 @@ export function candidates(input: CandidateInput): PaletteItem[] {
     });
   }
   return items;
-}
-
-/** True if a bookmark id is a pin or favorite under the root (used to skip bound tabs). */
-export function isSaved(root: BookmarkNode | undefined, id: string | undefined): boolean {
-  return id !== undefined && findBookmark(root, id) !== undefined;
 }
