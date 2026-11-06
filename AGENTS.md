@@ -41,6 +41,10 @@ Three layers, each with a single job. Dependencies point downward only.
 
 - **Reads are local, writes are central.** Each side panel derives its state from Chrome's events. Every change is a `Command` (see `engine/commands.ts`) sent to the service worker, which runs commands one at a time through a serial queue and retries calls Chrome rejects while the user drags a tab.
 - **Bookmarks are the source of truth**: the `Volet` folder holds `Favorites` and one folder per Space; pins are bookmarks. Session-only links (tab to pin, group to Space, active Space per window) live in `chrome.storage.session` and are rebuilt after restarts.
+- **Switching to a Space with no open tab opens none**: the page in front stays (it's parked, `parkedTabsItem`), and
+  the sidebar doesn't follow it back to its own Space; picking any other tab ends that. A new Volet still starts with a
+  new tab. Never collapse the group holding the active tab (`collapseOtherSpaces` skips it): Chrome would pick, or
+  open, another tab.
 - **Pin titles follow the page**: when a pin's or favorite's tab finishes loading the bookmark's own URL, the engine
   gives the bookmark the page's title (`engine/titles.ts`), unless the user named it (renamed in Volet, or a custom
   name in Arc). Named titles are kept as signatures of URL and title (`namedTitlesItem`, synced), not bookmark ids.

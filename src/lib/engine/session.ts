@@ -5,6 +5,7 @@ import {
   bindingsItem,
   groupSpacesItem,
   lastActiveItem,
+  parkedTabsItem,
   tabActivityItem,
 } from './storage';
 
@@ -41,6 +42,22 @@ export async function lastActiveTab(windowId: number, spaceId: string): Promise<
   return (await lastActiveItem.getValue())[windowId]?.[spaceId];
 }
 
+/** Leave `tabId` in front while the window shows another Space (see `parkedTabsItem`). */
+export async function park(windowId: number, tabId: number): Promise<void> {
+  await parkedTabsItem.setValue({ ...(await parkedTabsItem.getValue()), [windowId]: tabId });
+}
+
+export async function parkedTab(windowId: number): Promise<number | undefined> {
+  return (await parkedTabsItem.getValue())[windowId];
+}
+
+/** Stop leaving a tab in front of another Space. Returns the tab that was parked, if any. */
+export async function unpark(windowId: number): Promise<number | undefined> {
+  const parked = await parkedTab(windowId);
+  if (parked !== undefined) await removeKey(parkedTabsItem, windowId);
+  return parked;
+}
+
 export async function stampActivity(tabIds: number[], now = Date.now()): Promise<void> {
   if (tabIds.length === 0) return;
   const activity = await tabActivityItem.getValue();
@@ -68,6 +85,7 @@ export async function forgetGroup(groupId: number): Promise<void> {
 export async function forgetWindow(windowId: number): Promise<void> {
   await removeKey(activeSpacesItem, windowId);
   await removeKey(lastActiveItem, windowId);
+  await removeKey(parkedTabsItem, windowId);
 }
 
 async function removeKey<T>(

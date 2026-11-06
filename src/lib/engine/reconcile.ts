@@ -14,7 +14,7 @@ import {
 } from './context';
 import { collapseOtherSpaces, groupTabs } from './groups';
 import { retry } from './retry';
-import { setActiveSpace, setBinding, setGroupSpace } from './session';
+import { parkedTab, setActiveSpace, setBinding, setGroupSpace } from './session';
 import { NO_GROUP, bookmarkIds, findBookmark, pinsIn, spaceOfBookmark, spaceOfGroup } from './snapshot';
 import { uniqueName } from './space-names';
 
@@ -94,12 +94,16 @@ async function recoverPins(ctx: Context): Promise<void> {
   }
 }
 
-/** The sidebar follows the active tab when it lives in another Space. Returns the active Space. */
+/**
+ * The sidebar follows the active tab when it lives in another Space, unless that tab was left in
+ * front of the Space shown (parked, see `switchSpace`). Returns the active Space.
+ */
 async function followActiveTab(ctx: Context): Promise<string> {
   let activeSpace = activeSpaceOf(ctx);
   const activeTab = ctx.tabs.find((tab) => tab.active);
   const tabSpace = activeTab ? spaceOfTab(ctx, activeTab) : undefined;
-  if (tabSpace && tabSpace !== activeSpace) {
+  const parked = activeTab?.id !== undefined && activeTab.id === (await parkedTab(ctx.windowId));
+  if (tabSpace && tabSpace !== activeSpace && !parked) {
     activeSpace = tabSpace;
     await collapseOtherSpaces(ctx, activeSpace);
   }

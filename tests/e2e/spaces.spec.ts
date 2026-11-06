@@ -442,3 +442,42 @@ test("a favorite whose tab moved can take the current page as its own", async ({
   await expect(panel.getByRole('menuitem', { name: 'Remove from favorites' })).toBeVisible();
   await expect(replace).toHaveCount(0);
 });
+
+test("switching to a Volet with no open tab doesn't open one: the page in front stays", async ({
+  worker,
+  windowId,
+  panel,
+}) => {
+  const origin = `chrome-extension://${new URL(worker.url()).host}`;
+  // A second Volet with a pin and no open tab (like one just brought in from Arc).
+  await worker.evaluate(async (url) => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    const space = await chrome.bookmarks.create({ parentId: root.rootId, title: 'Reading' });
+    await chrome.bookmarks.create({ parentId: space.id, title: 'Settings', url });
+  }, `${origin}/options.html`);
+  const before = await stripState(worker, windowId);
+  const front = before.find((tab) => tab.active)!;
+
+  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Reading', exact: true }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Reading');
+  // Something that makes the engine tidy the window: a tab opened in the background joins Reading.
+  await worker.evaluate(async (id) => {
+    await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Later</title>', active: false });
+  }, windowId);
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Later'))?.group)
+    .toBe('Reading');
+  const after = await stripState(worker, windowId);
+  expect(after).toHaveLength(before.length + 1); // no new tab besides that one
+  expect(after.find((tab) => tab.active)?.id).toBe(front.id); // the same page in front
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Reading'); // and the sidebar stays
+
+  // Opening its pin shows it in Reading, and the first Volet folds away in the tab strip.
+  await visiblePage(panel).getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect.poll(async () => (await stripState(worker, windowId)).find((tab) => tab.active)?.group).toBe('Reading');
+  await expect
+    .poll(async () =>
+      (await stripState(worker, windowId)).filter((tab) => tab.group === 'Volet 1 (click to rename)').every((tab) => tab.collapsed),
+    )
+    .toBe(true);
+});

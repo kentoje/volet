@@ -21,6 +21,11 @@ export const tabActivityItem = storage.defineItem<Record<string, number>>('sessi
 export const pendingPaletteItem = storage.defineItem<Record<string, boolean>>('session:pendingPalette', {
   fallback: {},
 });
+/**
+ * windowId → the tab left in front when switching to a Space with no open tab: the sidebar stays
+ * on that Space while it shows, instead of following it back to its own.
+ */
+export const parkedTabsItem = storage.defineItem<Record<string, number>>('session:parkedTabs', { fallback: {} });
 /** windowId → true while that window shows the side panel */
 export const openPanelsItem = storage.defineItem<Record<string, true>>('session:openPanels', { fallback: {} });
 

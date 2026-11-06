@@ -13,15 +13,19 @@ import {
 import { collapseOtherSpaces, updateSpaceGroups } from '../groups';
 import { retry } from '../retry';
 import { ensureRoot } from '../root';
-import { lastActiveTab, rememberActive, setActiveSpace } from '../session';
+import { lastActiveTab, park, rememberActive, setActiveSpace, unpark } from '../session';
 import { uniqueName } from '../space-names';
 import { spaceMetaItem } from '../storage';
 import { openTabIn } from '../tab-ops';
 import { moveBookmark } from './bookmarks';
 import type { Handlers } from './types';
 
-/** Show a Space in a window: activate its last used tab and collapse the other Spaces. */
-export async function switchSpace(ctx: Context, spaceId: string): Promise<void> {
+/**
+ * Show a Space in a window: activate its last used tab and collapse the other Spaces. A Space with
+ * no open tab (only pins, say) gets none: the page in front stays there (`park`) until another tab
+ * is picked, unless `open` asks for a new tab (a new Space, or when the page in front is closing).
+ */
+export async function switchSpace(ctx: Context, spaceId: string, { open = false } = {}): Promise<void> {
   if (!findSpace(ctx, spaceId)) return;
   const previous = activeSpaceOf(ctx);
   const activeTab = ctx.tabs.find((tab) => tab.active);
@@ -34,8 +38,14 @@ export async function switchSpace(ctx: Context, spaceId: string): Promise<void> 
   const tabs = spaceTabs(ctx, spaceId);
   const remembered = await lastActiveTab(ctx.windowId, spaceId);
   const target = tabs.find((tab) => tab.id === remembered) ?? temporaryTabs(ctx, spaceId).at(-1) ?? tabs.at(-1);
-  if (target?.id !== undefined) await retry(() => browser.tabs.update(target.id!, { active: true }));
-  else await openTabIn(ctx, spaceId);
+  if (target?.id !== undefined) {
+    await unpark(ctx.windowId);
+    await retry(() => browser.tabs.update(target.id!, { active: true }));
+  } else if (open || activeTab?.id === undefined) {
+    await openTabIn(ctx, spaceId);
+  } else {
+    await park(ctx.windowId, activeTab.id);
+  }
   await collapseOtherSpaces(ctx, spaceId);
 }
 
@@ -60,7 +70,8 @@ export const spaceHandlers = {
     const color = hue ?? nextHue(ctx.spaces.map((space) => hueOf(ctx, space.id)));
     await spaceMetaItem.setValue({ ...ctx.spaceMeta, [title]: { hue: color } });
     const folder = await browser.bookmarks.create({ parentId: ctx.ids.rootId, title });
-    await switchSpace(await loadContext(windowId), folder.id);
+    // A new Volet starts with a new tab.
+    await switchSpace(await loadContext(windowId), folder.id, { open: true });
     return folder.id;
   },
 
@@ -109,7 +120,8 @@ export const spaceHandlers = {
 
     for (const window of await browser.windows.getAll({ windowTypes: ['normal'] })) {
       const wctx = await loadContext(window.id!);
-      if (activeSpaceOf(wctx) === spaceId) await switchSpace(wctx, fallback.id);
+      // The tabs in front are about to close: the fallback needs one of its own.
+      if (activeSpaceOf(wctx) === spaceId) await switchSpace(wctx, fallback.id, { open: true });
       const doomed = spaceTabs(await loadContext(window.id!), spaceId).map((tab) => tab.id!);
       if (doomed.length) await retry(() => browser.tabs.remove(doomed));
     }
