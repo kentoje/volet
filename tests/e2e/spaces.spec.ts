@@ -4,7 +4,7 @@ const visiblePage = (panel: import('@playwright/test').Page) => panel.locator('s
 
 test('first run creates the bookmark folders and adopts open tabs into the first Volet', async ({ worker, windowId, panel }) => {
   expect(await bookmarkTree(worker)).toEqual({
-    title: 'Spaces',
+    title: 'Volet',
     children: [
       { title: 'Favorites', children: [] },
       { title: 'Volet 1 (click to rename)', children: [] },
@@ -327,4 +327,14 @@ test("a pin takes its page's title when its tab loads, unless the user named it"
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).status, tabId)).toBe('complete');
   await panel.waitForTimeout(300);
   expect(await pinTitle()).toBe('My settings');
+});
+
+test("the bookmark folder keeps the extension's name", async ({ worker }) => {
+  // As an install from before the rename (or a rename in the bookmark manager) would have it.
+  const rootId = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    await chrome.bookmarks.update(root.rootId, { title: 'Spaces' });
+    return root.rootId;
+  });
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.bookmarks.get(id))[0]!.title, rootId)).toBe('Volet');
 });

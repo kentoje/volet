@@ -74,7 +74,7 @@ export function stripState(worker: Worker, windowId: number) {
   }, windowId);
 }
 
-/** The root "Spaces" bookmark folder as a plain title tree. */
+/** The root "Volet" bookmark folder as a plain title tree. */
 export function bookmarkTree(worker: Worker) {
   return worker.evaluate(async () => {
     const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };

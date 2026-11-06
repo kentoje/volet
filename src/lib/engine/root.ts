@@ -1,10 +1,15 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_SPACE_NAME, FAVORITES_TITLE, ROOT_TITLE, type RootIds, rootItem } from './storage';
 
-/** Find or create the root "Spaces" folder, its Favorites folder, and at least one Space. */
+/** Find or create the root "Volet" folder, its Favorites folder, and at least one Space. */
 export async function ensureRoot(): Promise<RootIds> {
   const saved = await rootItem.getValue();
-  if (saved && (await isValid(saved))) return saved;
+  const current = saved && (await savedRoot(saved));
+  if (saved && current) {
+    // The folder used to be called "Spaces": give it the extension's name.
+    if (current.title !== ROOT_TITLE) await browser.bookmarks.update(current.id, { title: ROOT_TITLE });
+    return saved;
+  }
 
   const parent = await storageFolder();
   const children = await browser.bookmarks.getChildren(parent.id);
@@ -25,13 +30,14 @@ export async function ensureRoot(): Promise<RootIds> {
   return ids;
 }
 
-async function isValid(ids: RootIds): Promise<boolean> {
+/** The saved root folder, if it's still there with its Favorites folder inside. */
+async function savedRoot(ids: RootIds) {
   try {
     const [root] = await browser.bookmarks.get(ids.rootId);
     const [favorites] = await browser.bookmarks.get(ids.favoritesId);
-    return Boolean(root && favorites?.parentId === root.id);
+    return root && favorites?.parentId === root.id ? root : undefined;
   } catch {
-    return false; // deleted
+    return undefined; // deleted
   }
 }
 

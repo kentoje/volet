@@ -40,7 +40,7 @@ export interface Snapshot {
   /** Tabs of this window, in tab strip order. */
   tabs: TabInfo[];
   groups: GroupInfo[];
-  /** The root "Spaces" bookmark folder, with its whole subtree. */
+  /** The root "Volet" bookmark folder, with its whole subtree. */
   root: BookmarkNode | undefined;
   favoritesId: string | undefined;
   bindings: Record<string, Binding>;

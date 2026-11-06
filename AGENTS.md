@@ -40,7 +40,7 @@ Three layers, each with a single job. Dependencies point downward only.
 | Business logic | `src/lib/engine/` | Pure derivation (`derive.ts`, `snapshot.ts`, `schema.ts`, `colors.ts`) and the service worker engine: `engine.ts` (queue), `commands/` (one file per area), `reconcile.ts`, `groups.ts`, `tab-ops.ts`, `session.ts`. The only code that writes to Chrome. |
 
 - **Reads are local, writes are central.** Each side panel derives its state from Chrome's events. Every change is a `Command` (see `engine/commands.ts`) sent to the service worker, which runs commands one at a time through a serial queue and retries calls Chrome rejects while the user drags a tab.
-- **Bookmarks are the source of truth**: the `Spaces` folder holds `Favorites` and one folder per Space; pins are bookmarks. Session-only links (tab to pin, group to Space, active Space per window) live in `chrome.storage.session` and are rebuilt after restarts.
+- **Bookmarks are the source of truth**: the `Volet` folder holds `Favorites` and one folder per Space; pins are bookmarks. Session-only links (tab to pin, group to Space, active Space per window) live in `chrome.storage.session` and are rebuilt after restarts.
 - **Pin titles follow the page**: when a pin's or favorite's tab finishes loading the bookmark's own URL, the engine
   gives the bookmark the page's title (`engine/titles.ts`), unless the user named it (renamed in Volet, or a custom
   name in Arc). Named titles are kept as signatures of URL and title (`namedTitlesItem`, synced), not bookmark ids.
@@ -155,5 +155,6 @@ Engine specifics:
 Never use the em dash character in code, comments, docs, UI copy or commit messages. Use a colon, parentheses, a comma, or separate sentences. UI copy is sentence case and names what the user controls.
 
 In UI copy, a Space is called a Volet (plural Volets), like the extension itself: "New Volet", "Move to Volet".
-Code, comments and docs keep "Space", and so does the `Spaces` bookmarks root folder (the engine finds it by that
-title). Copy about Arc's own data keeps Arc's word ("Bring your Arc Spaces").
+Code, comments and docs keep "Space". The bookmarks root folder is named `Volet` (`ROOT_TITLE`), after the
+extension, so it's clear what it's for; the engine names it back if it's renamed. Copy about Arc's own data keeps
+Arc's word ("Bring your Arc Spaces").
