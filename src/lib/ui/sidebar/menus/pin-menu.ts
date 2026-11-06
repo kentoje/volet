@@ -2,7 +2,7 @@ import { CornerUpLeft, House, PencilLine, PinOff, Star, X } from '@lucide/svelte
 import { type MenuItem, separator, tidy } from '@/lib/model/menu';
 import type { Pin } from '@/lib/model/types';
 import { spaceOfNode } from '@/lib/state/tree';
-import { type MenuContext, moveToSpace } from './menu-context';
+import { type MenuContext, moveToSpace, newFolder } from './menu-context';
 
 /** Right-click menu of a pin. `away`: its tab has left the pin's home page. */
 export function pinMenu(pin: Pin, away: boolean, { store, rename }: MenuContext): MenuItem[] {
@@ -14,6 +14,7 @@ export function pinMenu(pin: Pin, away: boolean, { store, rename }: MenuContext)
     away && { kind: 'action', label: 'Pin this page instead', icon: House, onSelect: () => store.setPinHome(pin.id) },
     { kind: 'action', label: 'Add to favorites', icon: Star, onSelect: () => store.favoritePin(pin.id) },
     moveToSpace(store, space?.id, (spaceId) => store.moveNode(pin.id, spaceId)),
+    newFolder(store, space?.id),
     separator,
     space && {
       kind: 'action',

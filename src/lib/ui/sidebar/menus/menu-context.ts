@@ -1,4 +1,4 @@
-import { ArrowRightLeft } from '@lucide/svelte';
+import { ArrowRightLeft, FolderPlus } from '@lucide/svelte';
 import { getSidebar } from '@/lib/model/context';
 import type { MenuItem } from '@/lib/model/menu';
 import type { SidebarStore, SpaceId } from '@/lib/model/types';
@@ -18,6 +18,12 @@ export interface MenuContext {
 /** Call during component setup (it reads contexts). */
 export function getMenuContext(): MenuContext {
   return { store: getSidebar(), rename: getRename(), confirm: getConfirm(), selection: getSelection() };
+}
+
+/** "New folder" at the top of a Space's pins (never inside another folder). */
+export function newFolder(store: SidebarStore, spaceId: SpaceId | undefined): MenuItem | false {
+  if (spaceId === undefined) return false;
+  return { kind: 'action', label: 'New folder', icon: FolderPlus, onSelect: () => store.createFolder(spaceId) };
 }
 
 /** "Move to Space" submenu listing every other Space, each with its color. */

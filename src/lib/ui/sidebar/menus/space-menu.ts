@@ -1,9 +1,9 @@
-import { ArrowLeft, ArrowRight, FolderPlus, PencilLine, Trash } from '@lucide/svelte';
+import { ArrowLeft, ArrowRight, PencilLine, Trash } from '@lucide/svelte';
 import { HUE_SWATCHES } from '@/lib/engine/colors';
 import { type MenuItem, separator, tidy } from '@/lib/model/menu';
 import type { Space } from '@/lib/model/types';
 import { spaceKey } from '../editing/rename-state.svelte';
-import type { MenuContext } from './menu-context';
+import { type MenuContext, newFolder } from './menu-context';
 
 /** Right-click menu of a Space (its title or its dot in the switcher). */
 export function spaceMenu(space: Space, { store, rename, confirm }: MenuContext): MenuItem[] {
@@ -18,7 +18,7 @@ export function spaceMenu(space: Space, { store, rename, confirm }: MenuContext)
       selected: space.hue,
       onSelect: (hue) => store.setSpaceHue(space.id, hue),
     },
-    { kind: 'action', label: 'New folder', icon: FolderPlus, onSelect: () => store.createFolder(space.id) },
+    newFolder(store, space.id),
     separator,
     index > 0 && { kind: 'action', label: 'Move left', icon: ArrowLeft, onSelect: () => store.moveSpace(space.id, index - 1) },
     index < last && {

@@ -67,6 +67,29 @@ test('pins can be renamed and folders created from menus', async ({ worker, wind
   await expect(visiblePage(panel).getByRole('button', { name: 'New folder' })).toBeVisible();
 });
 
+test('"New folder" on a folder or a tab adds a folder at the top of the Space, not inside', async ({
+  worker,
+  windowId,
+  panel,
+}) => {
+  const home = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+  });
+  await command(panel, { type: 'createFolder', parentId: home, index: 0, title: 'Docs' });
+  await worker.evaluate((id) => chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Loose</title>' }), windowId);
+  const homeOutline = async () =>
+    (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => [c.title, c.children?.length]);
+
+  await visiblePage(panel).getByRole('button', { name: 'Docs', exact: true }).click({ button: 'right' });
+  await menuItem(panel, 'New folder').click();
+  await expect.poll(homeOutline).toEqual([['New folder', 0], ['Docs', 0]]);
+
+  await visiblePage(panel).getByRole('button', { name: 'Loose', exact: true }).click({ button: 'right' });
+  await menuItem(panel, 'New folder').click();
+  await expect.poll(homeOutline).toEqual([['New folder', 0], ['New folder', 0], ['Docs', 0]]);
+});
+
 test('menus stay inside a narrow panel, even from its corner', async ({ panel }) => {
   await panel.setViewportSize({ width: 300, height: 500 });
   await panel.getByRole('button', { name: 'New Space' }).click();

@@ -2,7 +2,7 @@ import { FolderPlus, PencilLine, Trash } from '@lucide/svelte';
 import { type MenuItem, separator, tidy } from '@/lib/model/menu';
 import type { Folder, PinnedNode } from '@/lib/model/types';
 import { spaceOfNode } from '@/lib/state/tree';
-import { type MenuContext, moveToSpace } from './menu-context';
+import { type MenuContext, moveToSpace, newFolder } from './menu-context';
 
 const countPins = (nodes: PinnedNode[]): number =>
   nodes.reduce((total, node) => total + (node.kind === 'pin' ? 1 : countPins(node.children)), 0);
@@ -13,6 +13,7 @@ export function folderMenu(folder: Folder, { store, rename, confirm }: MenuConte
   const pins = countPins(folder.children);
   return tidy([
     { kind: 'action', label: 'Rename', icon: PencilLine, onSelect: () => rename.start(folder.id) },
+    newFolder(store, space?.id),
     {
       kind: 'action',
       label: 'New folder inside',
