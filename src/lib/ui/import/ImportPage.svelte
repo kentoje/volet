@@ -8,6 +8,7 @@
   const importer = new ImportState();
   void importer.start();
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const saved = $derived(importer.saved);
 </script>
 
 <PageShell
@@ -22,8 +23,8 @@
 
   {#if importer.step === 'choose'}
     <ImportChoose
-      onfile={(file, handle) => void importer.readFile(file, handle)}
-      onremembered={importer.remembered ? () => void importer.readRemembered() : undefined}
+      onfile={(file) => void importer.readFile(file)}
+      saved={saved ? { spaces: saved.spaces.length, onreview: () => importer.review(saved) } : undefined}
     />
   {:else if importer.step === 'review'}
     <ImportReview {importer} />

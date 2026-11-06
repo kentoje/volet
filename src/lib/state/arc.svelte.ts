@@ -2,17 +2,16 @@ import { arcInviteItem, arcSidebarItem, importedArcSpacesItem } from '@/lib/engi
 import { parseArcSidebar } from '@/lib/import/arc';
 import type { ImportedSidebar } from '@/lib/import/types';
 import { type ArcClient, arcOffers } from '@/lib/model/arc';
-import { forgetArcFile, loadArcFile, readArcFile, saveArcFile } from './arc-file';
 import { sendCommand } from './chrome/command-client';
 
 /**
- * Read Arc's sidebar file and remember what's in it (and where it is, when the browser says),
- * so the sidebar can offer its Spaces later. Throws if it isn't Arc's file.
+ * Read Arc's sidebar file and remember what's in it, so the import page and the sidebar can offer
+ * its Spaces later without the file. (Not the file itself: Chrome won't hand out a lasting handle to
+ * anything under ~/Library, where Arc keeps it.) Throws if it isn't Arc's file.
  */
-export async function rememberArcFile(file: File, handle?: FileSystemFileHandle): Promise<ImportedSidebar> {
+export async function rememberArcFile(file: File): Promise<ImportedSidebar> {
   const sidebar = parseArcSidebar(JSON.parse(await file.text()));
   await arcSidebarItem.setValue(sidebar);
-  if (handle) await saveArcFile(handle).catch(() => undefined);
   return sidebar;
 }
 
@@ -35,14 +34,6 @@ export class ChromeArcClient implements ArcClient {
     arcInviteItem.watch((next) => (this.invite = next));
     arcSidebarItem.watch((next) => (this.#sidebar = next));
     importedArcSpacesItem.watch((next) => (this.#imported = next));
-    void this.#reread();
-  }
-
-  /** Pick up changes made in Arc since: re-read the file if the browser still lets us, without asking. */
-  async #reread(): Promise<void> {
-    const handle = await loadArcFile();
-    const file = handle && (await readArcFile(handle, false));
-    if (file) await rememberArcFile(file).catch(() => undefined);
   }
 
   openImport(): void {
@@ -66,6 +57,5 @@ export class ChromeArcClient implements ArcClient {
   forget(): void {
     this.#sidebar = null;
     void arcSidebarItem.setValue(null);
-    void forgetArcFile().catch(() => undefined);
   }
 }

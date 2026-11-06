@@ -27,8 +27,14 @@ const ARC = arcFile([
   { id: 'S3', title: 'Side project', pins: ['Repo'] },
 ]);
 
+/**
+ * Click the drop zone and pick the file, as a user would. It must open the classic file chooser: Chrome's File
+ * System Access picker refuses files under ~/Library, where Arc keeps its sidebar.
+ */
 async function chooseArcFile(page: Page) {
-  await page.locator('input[type=file]').setInputFiles({
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByText('Drop StorableSidebar.json here').click();
+  await (await chooser).setFiles({
     name: 'StorableSidebar.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(ARC)),
@@ -88,34 +94,18 @@ test('Arc Spaces left out of an import are offered by the New Volet button', asy
   await expect(page.getByRole('checkbox', { name: /Side project/ })).toBeChecked();
 });
 
-test('the import page reads a remembered Arc file again, without the file picker', async ({ context, worker }) => {
+test('the import page offers the Arc Spaces read last time, without the file', async ({ context, worker }) => {
   const page = await context.newPage();
   await page.goto(extensionPage(worker, 'import.html'));
   await expect(page.getByRole('heading', { name: "Find Arc's sidebar file" })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Use your Arc file' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Review your Arc Spaces' })).toHaveCount(0);
+  await chooseArcFile(page);
+  await expect(page.getByRole('checkbox', { name: /Reading/ })).toBeVisible();
 
-  // Remember a file as the picker would: a handle in IndexedDB (here, one from the page's private file system).
-  await page.evaluate(async (json) => {
-    const directory = await navigator.storage.getDirectory();
-    const handle = await directory.getFileHandle('StorableSidebar.json', { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(json);
-    await writable.close();
-    await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.open('volet', 1);
-      request.onupgradeneeded = () => request.result.createObjectStore('files');
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const transaction = request.result.transaction('files', 'readwrite');
-        transaction.objectStore('files').put(handle, 'arc-sidebar');
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
-      };
-    });
-  }, JSON.stringify(ARC));
-
+  // Coming back later: no need to find the file again.
   await page.reload();
-  await page.getByRole('button', { name: 'Use your Arc file' }).click();
+  await expect(page.getByText('Volet kept the 3 Spaces from your Arc file')).toBeVisible();
+  await page.getByRole('button', { name: 'Review your Arc Spaces' }).click();
   await expect(page.getByRole('checkbox', { name: /Reading/ })).toBeChecked();
   await expect(page.getByRole('button', { name: 'Import 3 Volets' })).toBeVisible();
 });

@@ -1,7 +1,6 @@
-import { importedArcSpacesItem } from '@/lib/engine/storage';
+import { arcSidebarItem, importedArcSpacesItem } from '@/lib/engine/storage';
 import { ArcImportError } from '@/lib/import/arc';
 import type { ImportedSidebar } from '@/lib/import/types';
-import { type ArcFileHandle, loadArcFile, readArcFile } from './arc-file';
 import { rememberArcFile } from './arc.svelte';
 import { sendCommand } from './chrome/command-client';
 import { range, toggled } from './tree';
@@ -22,27 +21,25 @@ export class ImportState {
   chosen = $state.raw<ReadonlySet<number>>(range(0));
   includeFavorites = $state(true);
   result = $state.raw<ImportResult>();
-  /** Arc's file, if it was chosen before: it can be read again without the file picker. */
-  remembered = $state.raw<ArcFileHandle>();
+  /** What Arc's file held the last time it was chosen: it can be reviewed again without the file. */
+  saved = $state.raw<ImportedSidebar | null>(null);
   /** Ids of the Arc Spaces already imported (they start unchecked). */
   imported = $state.raw<readonly string[]>([]);
 
   async start(): Promise<void> {
-    this.remembered = await loadArcFile();
+    this.saved = await arcSidebarItem.getValue();
     this.imported = await importedArcSpacesItem.getValue();
   }
 
-  async readFile(file: File, handle?: FileSystemFileHandle): Promise<void> {
+  async readFile(file: File): Promise<void> {
     this.error = undefined;
     try {
-      const sidebar = await rememberArcFile(file, handle);
+      const sidebar = await rememberArcFile(file);
       if (sidebar.spaces.length === 0 && sidebar.favorites.length === 0) {
         throw new ArcImportError('This file has no Spaces or favorites to import.');
       }
-      if (handle) this.remembered = handle;
-      this.sidebar = sidebar;
-      this.chosen = range(sidebar.spaces.length, (index) => !this.isImported(index));
-      this.step = 'review';
+      this.saved = sidebar;
+      this.review(sidebar);
     } catch (error) {
       this.error =
         error instanceof ArcImportError
@@ -51,12 +48,12 @@ export class ImportState {
     }
   }
 
-  /** Read the remembered file again (Chrome may ask for permission first: call it from a click). */
-  async readRemembered(): Promise<void> {
-    if (!this.remembered) return;
-    const file = await readArcFile(this.remembered, true);
-    if (file) await this.readFile(file, this.remembered);
-    else this.error = "Couldn't open Arc's file this time. Choose it below.";
+  /** Review a sidebar: the Spaces not imported yet start checked. */
+  review(sidebar: ImportedSidebar): void {
+    this.error = undefined;
+    this.sidebar = sidebar;
+    this.chosen = range(sidebar.spaces.length, (index) => !this.isImported(index));
+    this.step = 'review';
   }
 
   isImported(index: number): boolean {

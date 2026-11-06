@@ -44,9 +44,10 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Pin titles follow the page**: when a pin's or favorite's tab finishes loading the bookmark's own URL, the engine
   gives the bookmark the page's title (`engine/titles.ts`), unless the user named it (renamed in Volet, or a custom
   name in Arc). Named titles are kept as signatures of URL and title (`namedTitlesItem`, synced), not bookmark ids.
-- **Arc import**: `import/arc.ts` parses Arc's `StorableSidebar.json` (pure). The import page remembers the file (a
-  handle in IndexedDB, `state/arc-file.ts`) and what's in it (`arcSidebarItem`); the engine records which Arc Spaces
-  came in (`importedArcSpacesItem`). The side panel gets an `ArcClient` (`model/arc.ts`, passed to `Sidebar` like the
+- **Arc import**: `import/arc.ts` parses Arc's `StorableSidebar.json` (pure). The import page reads it with a plain
+  file input (Chrome's File System Access picker refuses anything under `~/Library`, where Arc keeps it, so no lasting
+  file handle either) and remembers what's in it (`arcSidebarItem`), to review again without the file; the engine
+  records which Arc Spaces came in (`importedArcSpacesItem`). The side panel gets an `ArcClient` (`model/arc.ts`, passed to `Sidebar` like the
   palette client): while Arc Spaces are left, the New Volet button opens a menu offering them, and after install a
   "Coming from Arc?" card (`ArcInvite`, `arcInviteItem`) opens the import until it's dismissed or used.
 - **Pure logic is kept pure** (`derive.ts`, `snapshot.ts`, `colors.ts`, importers, search ranking) so it can be unit tested without Chrome.
