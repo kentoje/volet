@@ -357,6 +357,34 @@ test("the bookmark folder keeps the extension's name", async ({ worker }) => {
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.bookmarks.get(id))[0]!.title, rootId)).toBe('Volet');
 });
 
+test('removing every Volet folder in Chrome\'s bookmarks leaves a fresh first Volet', async ({ worker, windowId, panel }) => {
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 1 (click to rename)');
+  // No tab group left to turn back into a Volet, then every Volet folder removed (Favorites stays).
+  await worker.evaluate(async (id) => {
+    const tabs = await chrome.tabs.query({ windowId: id });
+    await chrome.tabs.ungroup(tabs.map((tab) => tab.id!) as [number, ...number[]]);
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string; favoritesId: string } };
+    for (const child of await chrome.bookmarks.getChildren(root.rootId)) {
+      if (child.id !== root.favoritesId) await chrome.bookmarks.removeTree(child.id);
+    }
+  }, windowId);
+
+  // As on a first run: one empty Volet, holding the open tabs, and everything works again.
+  await expect
+    .poll(() => bookmarkTree(worker))
+    .toEqual({
+      title: 'Volet',
+      children: [
+        { title: 'Favorites', children: [] },
+        { title: 'Volet 1 (click to rename)', children: [] },
+      ],
+    });
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 1 (click to rename)');
+  await expect.poll(async () => (await stripState(worker, windowId)).every((tab) => tab.group === 'Volet 1 (click to rename)')).toBe(true);
+  expect(await command(panel, { type: 'newTab', windowId })).toMatchObject({ ok: true });
+  await expect.poll(async () => (await stripState(worker, windowId)).length).toBe(2);
+});
+
 test('a new active tab at the end of a long list scrolls into view; one opened in the background does not', async ({
   worker,
   windowId,

@@ -102,7 +102,10 @@ export function activeSpaceOf(ctx: Context): string {
   if (known(fromTab)) return fromTab;
   const last = ctx.activeSpaces[LAST_SPACE_KEY];
   if (known(last)) return last;
-  return ctx.spaces[0]!.id;
+  const first = ctx.spaces[0];
+  // Never happens: loadRoot makes a Space whenever there is none.
+  if (!first) throw new Error('There is no Volet');
+  return first.id;
 }
 
 /** The Space's tab group in this window, if it has one. */

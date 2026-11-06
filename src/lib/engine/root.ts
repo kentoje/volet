@@ -2,7 +2,10 @@ import { browser } from 'wxt/browser';
 import { type BookmarkNode, isSpaceFolder } from './snapshot';
 import { DEFAULT_SPACE_NAME, FAVORITES_TITLE, ROOT_TITLE, type RootIds, rootItem } from './storage';
 
-/** Find or create the root "Volet" folder, its Favorites folder, and at least one Space. */
+/**
+ * Find or create the root "Volet" folder and its Favorites folder (and a first Space when making
+ * them; `loadRoot` keeps one there after that).
+ */
 export async function ensureRoot(): Promise<RootIds> {
   const saved = await rootItem.getValue();
   const current = saved && (await savedRoot(saved));
@@ -31,12 +34,35 @@ export async function ensureRoot(): Promise<RootIds> {
   return ids;
 }
 
-/** The root folder and its whole tree (made first if needed, see `ensureRoot`). */
+/**
+ * The root folder and its whole tree (made first if needed, see `ensureRoot`), with at least one
+ * Space in it: someone may have removed them all in Chrome's bookmarks, or sync may have.
+ */
 export async function loadRoot(): Promise<{ ids: RootIds; root: BookmarkNode }> {
   const ids = await ensureRoot();
-  const [root] = await browser.bookmarks.getSubTree(ids.rootId);
+  const root = await subtree(ids.rootId);
+  if (root.children?.some((node) => isSpaceFolder(node, ids.favoritesId))) return { ids, root };
+  await addFirstSpace(ids);
+  return { ids, root: await subtree(ids.rootId) };
+}
+
+async function subtree(rootId: string): Promise<BookmarkNode> {
+  const [root] = await browser.bookmarks.getSubTree(rootId);
   if (!root) throw new Error('The Volet bookmark folder is gone');
-  return { ids, root };
+  return root;
+}
+
+/** The Space being made after they were all removed, while it's on its way (one, however many tasks ask). */
+let adding: Promise<unknown> | undefined;
+
+/** Make the first Space again, as a first run does, unless it's there by now. */
+function addFirstSpace(ids: RootIds): Promise<unknown> {
+  adding ??= (async () => {
+    const children = await browser.bookmarks.getChildren(ids.rootId);
+    if (children.some((node) => isSpaceFolder(node, ids.favoritesId))) return;
+    await browser.bookmarks.create({ parentId: ids.rootId, title: DEFAULT_SPACE_NAME });
+  })().finally(() => (adding = undefined));
+  return adding;
 }
 
 /** The saved root folder, if it's still there with its Favorites folder inside. */
