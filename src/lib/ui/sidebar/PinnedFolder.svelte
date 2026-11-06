@@ -56,7 +56,6 @@
         ontoggle={(event) => {
           if (!selection.click(entry, event)) sidebar.toggleFolder(folder.id);
         }}
-        ondblclick={() => rename.start(folder.id)}
       />
     </ContextMenu>
   </div>

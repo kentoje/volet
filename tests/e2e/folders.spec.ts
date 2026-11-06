@@ -46,3 +46,30 @@ test('a collapsed folder still shows its open tabs', async ({ worker, windowId, 
   await expect(row(panel, 'Alpha')).toBeVisible();
   await expect(row(panel, 'Beta')).toBeVisible();
 });
+
+test("double-clicking a folder doesn't rename it; its menu does", async ({ worker, windowId, panel }) => {
+  const tabId = await worker.evaluate(
+    async (id) => (await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Inside</title>' })).id!,
+    windowId,
+  );
+  await expect(row(panel, 'Inside')).toBeVisible();
+  const home = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
+  });
+  await command(panel, { type: 'createFolderWith', windowId, parentId: home, title: 'Dashboard', items: [{ kind: 'tab', id: tabId }] });
+  const folder = row(panel, 'Dashboard');
+  const field = visiblePage(panel).getByRole('textbox', { name: 'Folder name' });
+
+  // Opening and closing it quickly is a double-click: it just toggles.
+  await folder.dblclick();
+  await expect(field).toHaveCount(0);
+  await expect(folder).toHaveAttribute('aria-expanded', 'true');
+
+  await folder.click({ button: 'right' });
+  await panel.getByRole('menuitem', { name: 'Rename' }).click();
+  await expect(field).toBeFocused();
+  await field.fill('Reports');
+  await field.press('Enter');
+  await expect(row(panel, 'Reports')).toBeVisible();
+});
