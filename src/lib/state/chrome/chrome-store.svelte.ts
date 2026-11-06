@@ -84,7 +84,7 @@ export class ChromeSidebarStore implements SidebarStore {
     } catch (error) {
       console.error(`Command ${command.type} failed:`, error);
     }
-    await this.#gate.request();
+    await this.#gate.settled();
     return value;
   }
 

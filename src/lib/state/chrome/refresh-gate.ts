@@ -26,6 +26,14 @@ export class RefreshGate<T> {
     return this.#running;
   }
 
+  /**
+   * Resolves once the refresh under way (if any) has been applied. Unlike `request`, it asks for
+   * no new pass: after a command, `during` has already asked for the one that shows its result.
+   */
+  settled(): Promise<void> {
+    return this.#running ?? Promise.resolve();
+  }
+
   /** Run a command; refreshes are held until it (and any others) finish. */
   async during<R>(work: () => Promise<R>): Promise<R> {
     this.#inFlight++;

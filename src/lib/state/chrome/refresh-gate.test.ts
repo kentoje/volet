@@ -42,4 +42,19 @@ describe('RefreshGate', () => {
     expect(applied).not.toContain(1);
     expect(applied.at(-1)).toBe(2);
   });
+
+  it('loads once after a command, and settles once that load is applied', async () => {
+    let loads = 0;
+    const applied: number[] = [];
+    const gate = new RefreshGate(async () => ++loads, (value) => applied.push(value));
+    await gate.during(async () => undefined);
+    await gate.settled();
+    expect(applied).toEqual([1]);
+    expect(loads).toBe(1);
+  });
+
+  it('settles at once when nothing is loading', async () => {
+    const gate = new RefreshGate(async () => 0, () => undefined);
+    await expect(gate.settled()).resolves.toBeUndefined();
+  });
 });
