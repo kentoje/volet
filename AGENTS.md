@@ -51,6 +51,9 @@ Three layers, each with a single job. Dependencies point downward only.
   Space dot switches to that Space after a short dwell (`drag-state.svelte.ts`), so it can be dropped there.
   The dots are sortable too (`SortableSpaceDot`, type `SPACE_DOT`, reordered by `space-order.svelte.ts`); rows and
   lists refuse them with `accept: notSpaceDot`, so give any new droppable that filter.
+- **Folders**: a collapsed folder keeps rendering its list as `folded` (`PinnedList`): rows without an open tab
+  slide away and the open ones stay in place (`hasOpenTab` in `model/pinned.ts`). Those slides are local
+  transitions on purpose, so rows added or removed for other reasons (drags, optimistic ids) just appear.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`): menus open below the pointer so they can

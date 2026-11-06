@@ -62,7 +62,7 @@ export class Selection {
     const { collapsedFolders, activeTabId } = this.#store;
     const current = activeEntry(space, activeTabId);
     if (event.shiftKey) {
-      const order = pageEntries(space, collapsedFolders, activeTabId);
+      const order = pageEntries(space, collapsedFolders);
       const onPage = (candidate: SpaceItem | undefined) =>
         candidate && order.some((other) => entryKey(other) === entryKey(candidate)) ? candidate : undefined;
       const anchor = onPage(this.#anchor) ?? onPage(current) ?? entry;

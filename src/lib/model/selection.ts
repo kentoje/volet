@@ -1,18 +1,18 @@
 import { type DndLookup, type Entry, buildLists, entryKey, locate, parseList } from './dnd';
-import { activePinsIn } from './pinned';
+import { activePinsIn, openPinsIn } from './pinned';
 import type { PinnedNode, Space, SpaceItem, TabId } from './types';
 
 /**
  * The entries of a Space's page, top to bottom: pins and folders, then temporary tabs.
  * A folder's contents follow it unless it is in `collapsed` (a collapsed folder still shows
- * the pin whose tab is active). Pass no `collapsed` set to list everything.
+ * the pins whose tab is open). Pass no `collapsed` set to list everything.
  */
-export function pageEntries(space: Space, collapsed?: ReadonlySet<string>, activeTabId?: TabId): SpaceItem[] {
+export function pageEntries(space: Space, collapsed?: ReadonlySet<string>): SpaceItem[] {
   const walk = (nodes: PinnedNode[]): SpaceItem[] =>
     nodes.flatMap((node): SpaceItem[] => {
       if (node.kind === 'pin') return [{ kind: 'node', id: node.id }];
       const inside = collapsed?.has(node.id)
-        ? activePinsIn(node.children, activeTabId).map((pin): SpaceItem => ({ kind: 'node', id: pin.id }))
+        ? openPinsIn(node.children).map((pin): SpaceItem => ({ kind: 'node', id: pin.id }))
         : walk(node.children);
       return [{ kind: 'node', id: node.id }, ...inside];
     });

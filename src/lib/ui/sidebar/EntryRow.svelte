@@ -8,8 +8,16 @@
   import PinRow from './PinRow.svelte';
   import TemporaryTabRow from './TemporaryTabRow.svelte';
 
+  interface Props {
+    entry: Entry;
+    depth?: number;
+    /** Inside a collapsed folder (see `PinnedList`). */
+    folded?: boolean;
+    handle?: Attachment<HTMLElement>;
+  }
+
   /** Renders any draggable entry as a row (mid-drag, a list can hold any kind). */
-  let { entry, depth = 0, handle }: { entry: Entry; depth?: number; handle?: Attachment<HTMLElement> } = $props();
+  let { entry, depth = 0, folded = false, handle }: Props = $props();
 
   const sidebar = getSidebar();
   const tab = $derived(entry.kind === 'tab' ? sidebar.tabs.get(entry.id) : undefined);
@@ -24,7 +32,7 @@
 {:else if node?.kind === 'pin'}
   <PinRow pin={node} {depth} {handle} />
 {:else if node?.kind === 'folder'}
-  <PinnedFolder folder={node} {depth} {handle} />
+  <PinnedFolder folder={node} {depth} {folded} {handle} />
 {:else if favorite}
   <FavoriteRow {favorite} {depth} {handle} />
 {/if}

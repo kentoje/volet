@@ -36,8 +36,8 @@ describe('pageEntries', () => {
     expect(pageEntries(space)).toEqual([node('p1'), node('docs'), node('p2'), node('p3'), tab(1), tab(2)]);
   });
 
-  it('shows only the active pin of a collapsed folder', () => {
-    expect(pageEntries(space, new Set(['docs']), 8)).toEqual([node('p1'), node('docs'), node('p2'), tab(1), tab(2)]);
+  it('shows only the open pins of a collapsed folder', () => {
+    expect(pageEntries(space, new Set(['docs']))).toEqual([node('p1'), node('docs'), node('p2'), tab(1), tab(2)]);
   });
 });
 

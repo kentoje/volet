@@ -2,7 +2,6 @@
   import type { Attachment } from 'svelte/attachments';
   import { prefersReducedMotion } from 'svelte/motion';
   import { slide } from 'svelte/transition';
-  import { activePinsIn } from '@/lib/model/pinned';
   import type { Folder, SpaceItem } from '@/lib/model/types';
   import FolderRow from '../primitives/FolderRow.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
@@ -11,17 +10,22 @@
   import { getMenuContext } from './menus/menu-context';
   import { rowMenu } from './menus/selection-menu';
   import PinnedList from './PinnedList.svelte';
-  import PinRow from './PinRow.svelte';
 
-  let { folder, depth = 0, handle }: { folder: Folder; depth?: number; handle?: Attachment<HTMLElement> } = $props();
+  interface Props {
+    folder: Folder;
+    depth?: number;
+    /** Inside a collapsed folder: the row hides, and only its pins with an open tab stay. */
+    folded?: boolean;
+    handle?: Attachment<HTMLElement>;
+  }
+
+  let { folder, depth = 0, folded = false, handle }: Props = $props();
 
   const menus = getMenuContext();
   const { store: sidebar, rename, selection } = menus;
   const entry = $derived<SpaceItem>({ kind: 'node', id: folder.id });
   const open = $derived(!sidebar.collapsedFolders.has(folder.id));
   const duration = $derived(prefersReducedMotion.current ? 0 : 160);
-  /** Arc behavior: a collapsed folder still shows the tab you're on. */
-  const visible = $derived(open ? [] : activePinsIn(folder.children, sidebar.activeTabId));
 </script>
 
 {#snippet editor()}
@@ -36,35 +40,29 @@
   />
 {/snippet}
 
-<ContextMenu items={() => rowMenu(entry, menus, () => folderMenu(folder, menus))}>
-  <FolderRow
-    title={folder.title}
-    {open}
-    selected={selection.has(entry)}
-    {depth}
-    {handle}
-    editor={rename.is(folder.id) ? editor : undefined}
-    ontoggle={(event) => {
-      if (!selection.click(entry, event)) sidebar.toggleFolder(folder.id);
-    }}
-    ondblclick={() => rename.start(folder.id)}
-  />
-</ContextMenu>
-<!-- The same 2px row gap separates the folder from its contents. -->
-{#if open}
-  <div class="pt-0.5" transition:slide={{ duration }}>
-    <PinnedList parentId={folder.id} nodes={folder.children} depth={depth + 1}>
-      {#snippet empty()}
-        <p class="py-1.5 pl-[calc(36px+var(--depth)*16px)] text-[12px] text-ink-muted" style:--depth={depth}>
-          Empty folder
-        </p>
-      {/snippet}
-    </PinnedList>
-  </div>
-{:else if visible.length}
-  <div class="flex flex-col gap-0.5 pt-0.5">
-    {#each visible as pin (pin.id)}
-      <PinRow {pin} depth={depth + 1} />
-    {/each}
+{#if !folded}
+  <div transition:slide={{ duration }}>
+    <ContextMenu items={() => rowMenu(entry, menus, () => folderMenu(folder, menus))}>
+      <FolderRow
+        title={folder.title}
+        {open}
+        selected={selection.has(entry)}
+        {depth}
+        {handle}
+        editor={rename.is(folder.id) ? editor : undefined}
+        ontoggle={(event) => {
+          if (!selection.click(entry, event)) sidebar.toggleFolder(folder.id);
+        }}
+        ondblclick={() => rename.start(folder.id)}
+      />
+    </ContextMenu>
   </div>
 {/if}
+<!-- Collapsed, the folder still shows its pins whose tab is open (Arc shows the tab you're on). -->
+<PinnedList parentId={folder.id} nodes={folder.children} depth={depth + 1} folded={folded || !open}>
+  {#snippet empty()}
+    <p class="py-1.5 pl-[calc(36px+var(--depth)*16px)] text-[12px] text-ink-muted" style:--depth={depth}>
+      Empty folder
+    </p>
+  {/snippet}
+</PinnedList>
