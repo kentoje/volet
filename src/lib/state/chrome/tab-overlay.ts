@@ -12,6 +12,18 @@ export interface TabChange {
 
 type Live = Partial<Pick<LiveTab, 'status' | 'title' | 'url' | 'favIconUrl' | 'audible' | 'muted'>>;
 
+const LIVE_KEYS: ReadonlySet<string> = new Set(['status', 'title', 'url', 'favIconUrl', 'audible', 'mutedInfo']);
+
+/**
+ * Whether an onUpdated change only touches what a tab's row shows (title, icon, loading, page,
+ * sound). Nothing else the sidebar shows depends on those, so the tab can be patched in place
+ * instead of reloading everything (see `TabOverlay.patch`).
+ */
+export function isLiveChange(change: object): boolean {
+  const keys = Object.keys(change);
+  return keys.length > 0 && keys.every((key) => LIVE_KEYS.has(key));
+}
+
 /**
  * Chrome's tabs.query can lag behind its own onUpdated events: right after
  * "status: complete" fires, a query may still say "loading", and on pages like the
@@ -46,5 +58,13 @@ export class TabOverlay {
       if (tab) result.set(tabId, { ...tab, ...live });
     }
     return result;
+  }
+
+  /** `tabs` with one tab's latest event values laid over it (the same Map if it isn't there). */
+  patch(tabs: ReadonlyMap<TabId, LiveTab>, tabId: TabId): ReadonlyMap<TabId, LiveTab> {
+    const tab = tabs.get(tabId);
+    const live = this.#fields.get(tabId);
+    if (!tab || !live) return tabs;
+    return new Map(tabs).set(tabId, { ...tab, ...live });
   }
 }

@@ -9,13 +9,24 @@ import {
   spaceMetaItem,
 } from '@/lib/engine/storage';
 
+/** The storage items a snapshot reads (`area:key`): changes to any other item don't concern the sidebar. */
+const SNAPSHOT_KEYS: ReadonlySet<string> = new Set(
+  [rootItem, bindingsItem, groupSpacesItem, activeSpacesItem, spaceMetaItem, collapsedItem].map((item) => item.key),
+);
+
+/** Whether a `storage.onChanged` event changed something a snapshot reads. */
+export function changesSnapshot(changes: Record<string, unknown>, area: string): boolean {
+  return Object.keys(changes).some((key) => SNAPSHOT_KEYS.has(`${area}:${key}`));
+}
+
 /** Read everything one window's sidebar needs, straight from Chrome. */
 export async function loadSnapshot(windowId: number): Promise<Snapshot> {
-  const ids = await rootItem.getValue();
-  const [tabs, groups, subtree, bindings, groupSpaces, activeSpaces, spaceMeta, collapsed] = await Promise.all([
+  const [[ids, subtree], tabs, groups, bindings, groupSpaces, activeSpaces, spaceMeta, collapsed] = await Promise.all([
+    rootItem
+      .getValue()
+      .then(async (ids) => [ids, ids ? await browser.bookmarks.getSubTree(ids.rootId).catch(() => []) : []] as const),
     browser.tabs.query({ windowId }),
     browser.tabGroups.query({ windowId }),
-    ids ? browser.bookmarks.getSubTree(ids.rootId).catch(() => []) : Promise.resolve([]),
     bindingsItem.getValue(),
     groupSpacesItem.getValue(),
     activeSpacesItem.getValue(),

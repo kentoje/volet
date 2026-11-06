@@ -1,11 +1,15 @@
 import { browser } from 'wxt/browser';
-import type { TabChange } from './tab-overlay';
+import { changesSnapshot } from './load-snapshot';
+import { type TabChange, isLiveChange } from './tab-overlay';
 
 export interface WindowWatchers {
   /** Anything the window's sidebar shows may have changed. */
   onChange: () => void;
-  /** A tab in this window reported new values (before any refresh reads them). */
-  onTabUpdated?: (tabId: number, change: TabChange) => void;
+  /**
+   * A tab in this window reported new values (before any refresh reads them). `live`: the change
+   * only touches what its row shows (see `isLiveChange`), and no refresh follows.
+   */
+  onTabUpdated?: (tabId: number, change: TabChange, live: boolean) => void;
   onTabRemoved?: (tabId: number) => void;
 }
 
@@ -16,8 +20,10 @@ export function watchWindow(windowId: number, { onChange, onTabUpdated, onTabRem
   };
   browser.tabs.onCreated.addListener((tab) => mine(tab.windowId));
   browser.tabs.onUpdated.addListener((tabId, change, tab) => {
-    if (tab.windowId === windowId) onTabUpdated?.(tabId, change);
-    mine(tab.windowId);
+    if (tab.windowId !== windowId) return;
+    const live = isLiveChange(change);
+    onTabUpdated?.(tabId, change, live);
+    if (!live) onChange();
   });
   browser.tabs.onRemoved.addListener((tabId, info) => {
     onTabRemoved?.(tabId);
@@ -40,5 +46,7 @@ export function watchWindow(windowId: number, { onChange, onTabUpdated, onTabRem
   browser.bookmarks.onChanged.addListener(onChange);
   browser.bookmarks.onMoved.addListener(onChange);
   browser.bookmarks.onChildrenReordered.addListener(onChange);
-  browser.storage.onChanged.addListener(onChange);
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (changesSnapshot(changes, area)) onChange();
+  });
 }

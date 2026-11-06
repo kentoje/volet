@@ -43,7 +43,10 @@ export class ChromeSidebarStore implements SidebarStore {
   async start(): Promise<void> {
     watchWindow(this.windowId, {
       onChange: () => this.#scheduleRefresh(),
-      onTabUpdated: (tabId, change) => this.#overlay.record(tabId, change),
+      onTabUpdated: (tabId, change, live) => {
+        this.#overlay.record(tabId, change);
+        if (live) this.tabs = this.#overlay.patch(this.tabs, tabId);
+      },
       onTabRemoved: (tabId) => this.#overlay.forget(tabId),
     });
     await this.#gate.request();
