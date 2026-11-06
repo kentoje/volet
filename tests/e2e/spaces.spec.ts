@@ -520,3 +520,29 @@ test('the Volet title stays at the top while its pins and tabs scroll under it',
   expect((await title.boundingBox())!.y).toBe(top); // it didn't move
   await expect(title).toBeInViewport();
 });
+
+test('double-clicking a closed pin renames it without opening it; a click opens it', async ({ worker, windowId, panel }) => {
+  const url = `chrome-extension://${new URL(worker.url()).host}/options.html`;
+  await worker.evaluate(async (url) => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    const home = (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
+    await chrome.bookmarks.create({ parentId: home, title: 'Settings', url });
+  }, url);
+  const page = visiblePage(panel);
+  const before = (await stripState(worker, windowId)).length;
+
+  // Opening the tab in between would give the keyboard to the page (in a real side panel): it doesn't open.
+  await page.getByRole('button', { name: 'Settings', exact: true }).dblclick();
+  const field = page.getByRole('textbox', { name: 'Pin name' });
+  await expect(field).toBeFocused();
+  await panel.waitForTimeout(500);
+  expect(await stripState(worker, windowId)).toHaveLength(before);
+  await panel.keyboard.type('My settings');
+  await panel.keyboard.press('Enter');
+  const renamed = page.getByRole('button', { name: 'My settings', exact: true });
+  await expect(renamed).toBeVisible();
+
+  await renamed.click();
+  await expect.poll(async () => (await stripState(worker, windowId)).find((tab) => tab.active)?.url).toBe(url);
+  await expect(renamed).toBeVisible(); // and the name the user typed stays
+});
