@@ -74,6 +74,26 @@ test('dragging a tab into the pinned area pins it, and back out unpins it', asyn
   expect((await stripState(worker, windowId)).some((tab) => tab.url.includes('Keeper'))).toBe(true);
 });
 
+test('a pin dropped below the last temporary tab becomes the last one', async ({ worker, windowId, panel }) => {
+  await openTabs(worker, windowId, ['Keeper', 'Other']);
+  await expect(row(panel, 'Other')).toBeVisible();
+  await drag(panel, row(panel, 'Keeper'), visiblePage(panel).getByText('Drag tabs here to pin them'));
+  await expect(visiblePage(panel).getByRole('button', { name: 'Unpin' })).toBeAttached();
+
+  // Its tab still sits before "Other" in Chrome's tab strip: it has to move after it.
+  await drag(panel, row(panel, 'Keeper'), row(panel, 'Other'), { offsetY: 8 });
+  const titled = async () =>
+    (await stripState(worker, windowId)).flatMap((tab) => {
+      const title = tab.url.match(/<title>(\w+)/)?.[1];
+      return title ? [{ title, group: tab.group }] : [];
+    });
+  await expect.poll(titled).toEqual([
+    { title: 'Other', group: 'Home' },
+    { title: 'Keeper', group: 'Home' },
+  ]);
+  await expect(visiblePage(panel).locator('[data-entry]')).toHaveCount(3);
+});
+
 test('dragging a tab to the favorites area makes it a favorite', async ({ worker, windowId, panel }) => {
   await openTabs(worker, windowId, ['Mail']);
   await worker.evaluate(async (id) => {
