@@ -1,5 +1,5 @@
 import { createContext } from 'svelte';
-import { type DndLookup, type Entry, entryKey } from '@/lib/model/dnd';
+import { type DndLookup, type Entry, entryKey, keySet } from '@/lib/model/dnd';
 import { activeEntry, between, outermost, pageEntries } from '@/lib/model/selection';
 import type { SidebarStore, SpaceId, SpaceItem } from '@/lib/model/types';
 import { createLookup } from '@/lib/state/lookup';
@@ -13,7 +13,7 @@ export class Selection {
   #store: SidebarStore;
   #lookup: DndLookup;
   /** Entry keys, replaced wholesale on every change (a selection is a handful of rows). */
-  #keys = $state.raw<readonly string[]>([]);
+  #keys = $state.raw<ReadonlySet<string>>(keySet([]));
   #spaceId = $state<SpaceId | undefined>();
   /** Where Shift+click ranges start. Nothing renders it, so it isn't reactive. */
   #anchor: SpaceItem | undefined;
@@ -28,18 +28,19 @@ export class Selection {
   /** The selected rows still on the page, top to bottom. */
   readonly entries = $derived.by((): SpaceItem[] => {
     const space = this.#space;
-    if (!space || space.id !== this.#spaceId || this.#keys.length === 0) return [];
-    return pageEntries(space).filter((entry) => this.#keys.includes(entryKey(entry)));
+    if (!space || space.id !== this.#spaceId || this.#keys.size === 0) return [];
+    return pageEntries(space).filter((entry) => this.#keys.has(entryKey(entry)));
   });
 
-  #shown = $derived(this.entries.map(entryKey));
+  /** Every row asks whether it's selected: a set answers at once. */
+  #shown = $derived(keySet(this.entries));
 
   get size(): number {
     return this.entries.length;
   }
 
   has(entry: Entry): boolean {
-    return this.#shown.includes(entryKey(entry));
+    return this.#shown.has(entryKey(entry));
   }
 
   /** Several rows are selected, `entry` among them: acting on it acts on all of them. */
@@ -88,12 +89,12 @@ export class Selection {
   }
 
   clear(): void {
-    if (this.#keys.length > 0) this.#keys = [];
+    if (this.#keys.size > 0) this.#keys = keySet([]);
   }
 
   #select(spaceId: SpaceId, entries: SpaceItem[]): void {
     this.#spaceId = spaceId;
-    this.#keys = entries.map(entryKey);
+    this.#keys = keySet(entries);
   }
 }
 

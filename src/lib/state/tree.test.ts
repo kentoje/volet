@@ -3,12 +3,17 @@ import type { Space } from '@/lib/model/types';
 import {
   deleteNode,
   fillNewFolder,
+  findNode,
+  findPin,
   folderContains,
   moveItem,
   moveNode,
   pinTemporary,
   pinToFavorite,
   placeTemporary,
+  renameNode,
+  spaceOfNode,
+  spaceOfTab,
   unpinNode,
 } from './tree';
 
@@ -77,5 +82,29 @@ describe('tree operations', () => {
 
   it('moves list items to a final index', () => {
     expect(moveItem(['a', 'b', 'c'], (x) => x === 'a', 2)).toEqual(['b', 'c', 'a']);
+  });
+});
+
+describe('tree lookups', () => {
+  it('finds pins and folders at any depth, with their Space', () => {
+    const all = spaces();
+    expect(findNode(all, 'p2')).toMatchObject({ kind: 'pin', title: 'B' });
+    expect(findNode(all, 'f1')?.kind).toBe('folder');
+    expect(findPin(all, 'f1')).toBeUndefined();
+    expect(findNode(all, 'nope')).toBeUndefined();
+    expect(spaceOfNode(all, 'p2')?.id).toBe('s1');
+    expect(spaceOfNode(all, 's2')?.id).toBe('s2');
+    expect(spaceOfTab(all, 3)?.id).toBe('s2');
+    expect(spaceOfTab(all, 7)).toBeUndefined(); // a pin's tab isn't a temporary tab
+  });
+
+  it('answers from the content it is given, before and after a change', () => {
+    const before = spaces();
+    expect(findNode(before, 'p2')?.title).toBe('B');
+    const after = renameNode(moveNode(before, 'p2', 's2'), 'p2', 'B2');
+    expect(findNode(after, 'p2')?.title).toBe('B2');
+    expect(spaceOfNode(after, 'p2')?.id).toBe('s2');
+    expect(findNode(before, 'p2')?.title).toBe('B');
+    expect(spaceOfNode(before, 'p2')?.id).toBe('s1');
   });
 });

@@ -4,24 +4,48 @@ import type { Favorite, Folder, Pin, PinnedNode, Space, SpaceId, SpaceItem, TabI
  * Pure, immutable operations on the sidebar's content. The Chrome store uses them
  * for optimistic updates, the fake store as its whole implementation, so both
  * behave the same way.
+ *
+ * A `spaces` array is never changed once made (every operation returns a new one), which lets
+ * lookups index each array once and answer from the index after that.
  */
 
 // ───────────────────────────── lookups ─────────────────────────────
 
-export function findNode(spaces: Space[], id: string): PinnedNode | undefined {
-  const search = (nodes: PinnedNode[]): PinnedNode | undefined => {
+interface SpaceIndex {
+  /** Every pin and folder, with the Space it's in. */
+  nodes: Map<string, { node: PinnedNode; space: Space }>;
+  spaces: Map<SpaceId, Space>;
+  /** The Space each temporary tab is listed in. */
+  tabs: Map<TabId, Space>;
+}
+
+const indexes = new WeakMap<readonly Space[], SpaceIndex>();
+
+/**
+ * Where everything is in `spaces`, built on first use (rows look things up on every render, and
+ * walking the whole tree for each of them adds up). The first match wins, as a walk would find it.
+ */
+function indexOf(spaces: readonly Space[]): SpaceIndex {
+  const cached = indexes.get(spaces);
+  if (cached) return cached;
+  const index: SpaceIndex = { nodes: new Map(), spaces: new Map(), tabs: new Map() };
+  const visit = (nodes: PinnedNode[], space: Space) => {
     for (const node of nodes) {
-      if (node.id === id) return node;
-      const found = node.kind === 'folder' ? search(node.children) : undefined;
-      if (found) return found;
+      if (!index.nodes.has(node.id)) index.nodes.set(node.id, { node, space });
+      if (node.kind === 'folder') visit(node.children, space);
     }
-    return undefined;
   };
   for (const space of spaces) {
-    const found = search(space.pinned);
-    if (found) return found;
+    if (!index.spaces.has(space.id)) index.spaces.set(space.id, space);
+    for (const tabId of space.tabIds) if (!index.tabs.has(tabId)) index.tabs.set(tabId, space);
+    visit(space.pinned, space);
   }
-  return undefined;
+  indexes.set(spaces, index);
+  return index;
+}
+
+export function findNode(spaces: Space[], id: string): PinnedNode | undefined {
+  return indexOf(spaces).nodes.get(id)?.node;
 }
 
 export function findPin(spaces: Space[], pinId: string): Pin | undefined {
@@ -39,12 +63,13 @@ export function findPinByTab(nodes: PinnedNode[], tabId: TabId): Pin[] {
 
 /** The Space whose temporary tabs include `tabId`. */
 export function spaceOfTab(spaces: Space[], tabId: TabId): Space | undefined {
-  return spaces.find((space) => space.tabIds.includes(tabId));
+  return indexOf(spaces).tabs.get(tabId);
 }
 
-/** The Space a pin or folder lives in. */
+/** The Space a pin or folder lives in (or the Space itself, given a Space id). Ids are unique. */
 export function spaceOfNode(spaces: Space[], id: string): Space | undefined {
-  return spaces.find((space) => space.id === id || containsNode(space.pinned, id));
+  const index = indexOf(spaces);
+  return index.spaces.get(id) ?? index.nodes.get(id)?.space;
 }
 
 function containsNode(nodes: PinnedNode[], id: string): boolean {

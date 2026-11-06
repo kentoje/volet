@@ -9,7 +9,7 @@ export function openPinsIn(nodes: PinnedNode[]): Pin[] {
 
 /** Whether a row stays in a collapsed folder: a pin with an open tab, or a folder holding one. */
 export function hasOpenTab(node: PinnedNode): boolean {
-  return node.kind === 'pin' ? node.tabId !== undefined : openPinsIn(node.children).length > 0;
+  return node.kind === 'pin' ? node.tabId !== undefined : node.children.some(hasOpenTab);
 }
 
 /** The pin, at any depth, whose tab is `activeTabId`. */

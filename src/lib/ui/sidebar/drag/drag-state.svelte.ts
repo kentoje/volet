@@ -76,6 +76,9 @@ export class DragState {
     this.#lookup = createLookup(store);
   }
 
+  /** The store's lists, built once per change (the pointer moves far more often than they change). */
+  #lists = $derived.by(() => buildLists(this.#store.spaces, this.#store.favorites));
+
   /** A list's entries: the draft's right after a drop, otherwise `current`. */
   entries(list: ListId, current: () => Entry[]): Entry[] {
     return this.draft?.[list] ?? current();
@@ -141,8 +144,7 @@ export class DragState {
     this.#hover = hover;
     this.#hoverSpace(hover?.kind === 'space' ? hover.spaceId : undefined);
     const slot = this.#slotFor(hover);
-    const lists = buildLists(this.#store.spaces, this.#store.favorites);
-    const drop = slot && resolveDrop(lists, this.group, slot, this.#lookup);
+    const drop = slot && resolveDrop(this.#lists, this.group, slot, this.#lookup);
     if (!sameSlot(drop?.slot, this.drop?.slot)) this.drop = drop;
   }
 
@@ -199,8 +201,7 @@ export class DragState {
     const hover = this.#hover;
     if (hover?.kind === 'space') return this.group.flatMap((entry) => dropOnSpace(entry, hover.spaceId, this.#lookup) ?? []);
     if (!this.drop) return [];
-    const lists = buildLists(this.#store.spaces, this.#store.favorites);
-    const { actions, lists: landed } = groupDrop(lists, this.group, this.drop.list, this.drop.after, this.#lookup);
+    const { actions, lists: landed } = groupDrop(this.#lists, this.group, this.drop.list, this.drop.after, this.#lookup);
     // Show the rows where they land right away; the store catches up behind the draft.
     this.draft = landed;
     return actions;

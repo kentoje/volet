@@ -32,11 +32,12 @@
   const list = $derived(pinsList(parentId));
   const entries = $derived(drag.entries(list, () => nodes.map((node): Entry => ({ kind: 'node', id: node.id }))));
   const duration = $derived(prefersReducedMotion.current ? 0 : 160);
+  const byId = $derived(new Map(nodes.map((node) => [node.id, node])));
 
   /** Rows dragged in from elsewhere always show. */
   function shown(entry: Entry): boolean {
     if (!folded || entry.kind !== 'node') return true;
-    const node = nodes.find((candidate) => candidate.id === entry.id);
+    const node = byId.get(entry.id);
     return !node || hasOpenTab(node);
   }
 </script>

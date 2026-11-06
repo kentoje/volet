@@ -10,6 +10,9 @@ export type Lists = Partial<Record<ListId, Entry[]>>;
 
 export const entryKey = (entry: Entry): string => `${entry.kind}:${entry.id}`;
 
+/** The keys of `entries`, to ask quickly whether an entry is among them. */
+export const keySet = (entries: readonly Entry[]): ReadonlySet<string> => new Set(entries.map(entryKey));
+
 /** The entry a key stands for (the inverse of `entryKey`). */
 export function entryFromKey(key: string): Entry {
   const [kind, ...rest] = key.split(':');
