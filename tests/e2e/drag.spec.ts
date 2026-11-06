@@ -1,5 +1,5 @@
 import type { Locator, Page, Worker } from '@playwright/test';
-import { bookmarkTree, expect, stripState, test } from './fixtures';
+import { bookmarkTree, command, expect, stripState, test } from './fixtures';
 
 const visiblePage = (panel: Page) => panel.locator('section:not([inert])');
 
@@ -33,11 +33,24 @@ async function openTabs(worker: Worker, windowId: number, titles: string[]) {
 
 const row = (panel: Page, name: string) => visiblePage(panel).getByRole('button', { name, exact: true });
 
+/** The row block (`SortableEntry`) holding the row named `name`. */
+const block = (panel: Page, name: string) =>
+  visiblePage(panel).locator('[data-entry]', { has: panel.getByRole('button', { name, exact: true }) });
+
 test('reordering temporary tabs reorders them in Chrome', async ({ worker, windowId, panel }) => {
   await openTabs(worker, windowId, ['Alpha', 'Beta', 'Gamma']);
   await expect(row(panel, 'Gamma')).toBeVisible();
+  const alphaTop = (await row(panel, 'Alpha').boundingBox())!.y;
   // The upper half of a row means "before it".
-  await drag(panel, row(panel, 'Gamma'), row(panel, 'Alpha'), { offsetY: -8 });
+  await drag(panel, row(panel, 'Gamma'), row(panel, 'Alpha'), {
+    offsetY: -8,
+    beforeDrop: async () => {
+      // Mid-drag, nothing moves: a line shows where the tab will go.
+      await expect(block(panel, 'Alpha').locator('[data-drop-line="before"]')).toBeVisible();
+      await expect(panel.locator('[data-drop-line]')).toHaveCount(1);
+      expect((await row(panel, 'Alpha').boundingBox())!.y).toBe(alphaTop);
+    },
+  });
   await expect
     .poll(async () => (await stripState(worker, windowId)).map((tab) => tab.url.match(/<title>(\w+)/)?.[1]).filter(Boolean))
     .toEqual(['Gamma', 'Alpha', 'Beta']);
@@ -127,6 +140,32 @@ test('a tab can be dropped as the last pin', async ({ worker, windowId, panel })
   // The lower half of the last pin means "after it".
   await drag(panel, row(panel, 'Newcomer'), row(panel, 'Second'), { offsetY: 10 });
   await expect.poll(() => homePins(worker)).toEqual(['First', 'Second', 'Newcomer']);
+});
+
+test('dropping a tab on the middle of a folder puts it inside, and the folder lights up meanwhile', async ({
+  worker,
+  windowId,
+  panel,
+}) => {
+  await pinned(worker, windowId, panel, ['Kept']);
+  const home = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+  });
+  await command(panel, { type: 'createFolder', parentId: home, index: 0, title: 'Docs' });
+  await openTabs(worker, windowId, ['Stray']);
+  await expect(row(panel, 'Stray')).toBeVisible();
+  const folder = row(panel, 'Docs');
+  await drag(panel, row(panel, 'Stray'), folder, {
+    beforeDrop: async () => {
+      await expect(folder).toHaveClass(/(^|\s)bg-hover(\s|$)/);
+      await expect(panel.locator('[data-drop-line]')).toHaveCount(0);
+    },
+  });
+  await expect
+    .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => [c.title, c.children?.map((d) => d.title)]))
+    .toEqual([['Docs', ['Stray']], ['Kept', undefined]]);
+  await expect(folder).not.toHaveClass(/(^|\s)bg-hover(\s|$)/);
 });
 
 test('a pin can be moved to the end of the pinned list', async ({ worker, windowId, panel }) => {

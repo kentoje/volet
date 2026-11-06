@@ -9,6 +9,13 @@ export type ListId = `temp:${SpaceId}` | `pins:${string}` | 'favorites';
 export type Lists = Partial<Record<ListId, Entry[]>>;
 
 export const entryKey = (entry: Entry): string => `${entry.kind}:${entry.id}`;
+
+/** The entry a key stands for (the inverse of `entryKey`). */
+export function entryFromKey(key: string): Entry {
+  const [kind, ...rest] = key.split(':');
+  const id = rest.join(':');
+  return kind === 'tab' ? { kind: 'tab', id: Number(id) } : { kind: kind as 'node' | 'favorite', id };
+}
 export const sameEntry = (a: Entry, b: Entry): boolean => a.kind === b.kind && a.id === b.id;
 
 export const tempList = (spaceId: SpaceId): ListId => `temp:${spaceId}`;
@@ -75,25 +82,6 @@ export function locate(lists: Lists, entry: Entry): { list: ListId; index: numbe
   return undefined;
 }
 
-/**
- * Where the dragged entry goes when the pointer is over `target`: just before it, or just
- * after it (`after`, the pointer is past the target's middle). The index is counted
- * without the dragged entry, as `moveEntry` expects.
- */
-export function placeAround(
-  lists: Lists,
-  active: Entry,
-  target: Entry,
-  after: boolean,
-): { list: ListId; index: number } | undefined {
-  if (sameEntry(active, target)) return undefined;
-  const at = locate(lists, target);
-  if (!at) return undefined;
-  const others = lists[at.list]!.filter((entry) => !sameEntry(entry, active));
-  const index = others.findIndex((entry) => sameEntry(entry, target));
-  return { list: at.list, index: after ? index + 1 : index };
-}
-
 /** `items` with `moving` placed just before `target`, or just after it. */
 export function moveAround<T>(items: readonly T[], moving: T, target: T, after: boolean): T[] {
   const others = items.filter((item) => item !== moving);
@@ -101,12 +89,6 @@ export function moveAround<T>(items: readonly T[], moving: T, target: T, after: 
   if (moving === target || at === -1) return [...items];
   others.splice(after ? at + 1 : at, 0, moving);
   return others;
-}
-
-/** The lists without `entry`. */
-export function withoutEntry(lists: Lists, entry: Entry): Lists {
-  const at = locate(lists, entry);
-  return at ? { ...lists, [at.list]: lists[at.list]!.filter((_, i) => i !== at.index) } : lists;
 }
 
 /** Move an entry to `index` in `list` (index counted after removing it from where it was). */
@@ -149,9 +131,10 @@ export function dropAction(entry: Entry, list: ListId, index: number, lookup: Dn
 }
 
 /**
- * The store calls that drop `group` into `list`, in order, right after `after` (at the start
- * when undefined). Each call's index accounts for the moves before it, so the group lands
- * together even when some of it starts in that list. Entries already in place are skipped.
+ * Dropping `group` into `list`, in order, right after `after` (at the start when undefined):
+ * the store calls that do it, and the lists once it is done. Each call's index accounts for
+ * the moves before it, so the group lands together even when some of it starts in that list.
+ * Entries already in place need no call.
  */
 export function groupDrop(
   lists: Lists,
@@ -159,7 +142,7 @@ export function groupDrop(
   list: ListId,
   after: Entry | undefined,
   lookup: DndLookup,
-): DropAction[] {
+): { actions: DropAction[]; lists: Lists } {
   const actions: DropAction[] = [];
   let current = lists;
   let previous = after;
@@ -174,7 +157,83 @@ export function groupDrop(
     current = moveEntry(current, entry, list, index);
     previous = entry;
   }
-  return actions;
+  return { actions, lists: current };
+}
+
+/** Where a drop lands, the way the person sees it while dragging. */
+export type Slot =
+  /** A line just before or after a row (or tile). */
+  | { kind: 'beside'; entry: Entry; side: 'before' | 'after' }
+  /** Into a folder, at its end: the folder row lights up. */
+  | { kind: 'into'; folderId: string }
+  /** An empty list: the list lights up. */
+  | { kind: 'end'; list: ListId };
+
+export function sameSlot(a: Slot | undefined, b: Slot | undefined): boolean {
+  if (!a || !b) return a === b;
+  if (a.kind === 'beside' && b.kind === 'beside') return a.side === b.side && sameEntry(a.entry, b.entry);
+  if (a.kind === 'into' && b.kind === 'into') return a.folderId === b.folderId;
+  return a.kind === 'end' && b.kind === 'end' && a.list === b.list;
+}
+
+/**
+ * Which part of a row the pointer is in, from how far along the row it is (0 at the top,
+ * 1 at the bottom). Rows split in halves; a folder keeps its middle for dropping into it.
+ */
+export function zoneAt(at: number, folder: boolean): 'before' | 'into' | 'after' {
+  if (!folder) return at < 0.5 ? 'before' : 'after';
+  return at < 0.25 ? 'before' : at > 0.75 ? 'after' : 'into';
+}
+
+/**
+ * The slot for the pointer `at` along a row. Right below a folder that shows rows of its own
+ * (`inside`, the first of them), the gap belongs to the folder: the line goes before that row.
+ */
+export function slotAt(entry: Entry, at: number, folder: boolean, inside?: Entry): Slot {
+  const zone = zoneAt(at, folder);
+  if (zone === 'into') return { kind: 'into', folderId: String(entry.id) };
+  if (zone === 'after' && inside) return { kind: 'beside', entry: inside, side: 'before' };
+  return { kind: 'beside', entry, side: zone };
+}
+
+/** A slot that takes the dragged group: the list it lands in, right after `after`. */
+export interface Drop {
+  slot: Slot;
+  list: ListId;
+  /** The entry the group lands right after (not one of its own); undefined for the start. */
+  after: Entry | undefined;
+}
+
+/**
+ * What dropping `group` in `slot` would do. Undefined when the slot can't take all of it,
+ * or when the drop would change nothing (then no line shows either).
+ */
+export function resolveDrop(lists: Lists, group: Entry[], slot: Slot, lookup: DndLookup): Drop | undefined {
+  const place = placeOf(lists, slot);
+  if (!place || !group.every((entry) => canEnter(entry, place.list, lookup))) return undefined;
+  const carried = (entry: Entry) => group.some((other) => sameEntry(other, entry));
+  const after = (lists[place.list] ?? []).slice(0, place.index).findLast((entry) => !carried(entry));
+  if (groupDrop(lists, group, place.list, after, lookup).actions.length === 0) return undefined;
+  return { slot, list: place.list, after };
+}
+
+const atEnd = (lists: Lists, list: ListId) => {
+  const entries = lists[list];
+  return entries && { list, index: entries.length };
+};
+
+/** The list a slot is in, and its position there (counting every entry, carried ones too). */
+function placeOf(lists: Lists, slot: Slot): { list: ListId; index: number } | undefined {
+  switch (slot.kind) {
+    case 'beside': {
+      const at = locate(lists, slot.entry);
+      return at && { list: at.list, index: slot.side === 'before' ? at.index : at.index + 1 };
+    }
+    case 'into':
+      return atEnd(lists, pinsList(slot.folderId));
+    case 'end':
+      return atEnd(lists, slot.list);
+  }
 }
 
 /** Dropping on a Space's dot in the switcher: move the entry to the end of that Space. */

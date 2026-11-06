@@ -2,16 +2,15 @@ import { tick } from 'svelte';
 import { prefersReducedMotion } from 'svelte/motion';
 
 /**
- * Motion for dragging several rows at once (DOM only; the drag state stays pure).
- * Rows are found by their `data-entry` key. The row under the pointer is dnd-kit's
- * (`data-dnd-dragging`) and is left to it.
+ * Motion for drags (DOM only; the drag state stays pure). Rows are found by their
+ * `data-entry` key; the card following the pointer is the drag preview (`data-drag-preview`).
  */
 
 /** How long the selected rows take to fly into the stack. */
-export const GATHER_MS = 220;
+const GATHER_MS = 220;
 /** How long they take to fly out of it onto the list, and the other rows to make room. */
 const LAND_MS = 240;
-/** Stacked cards under the dragged row: how many, and how far apart (matches DragStack). */
+/** Stacked cards under the preview: how many, and how far apart (matches DragStack). */
 const STACK_CARDS = 2;
 const STACK_STEP = 4;
 const STACK_NARROWING = 0.04;
@@ -19,18 +18,18 @@ const STACK_NARROWING = 0.04;
 const EASING = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
-/** Where the `index`th carried row sits in the stack, relative to the dragged row. */
+/** Where the `index`th carried row sits in the stack, relative to the preview's own card. */
 const stackSlot = (index: number) => {
   const card = Math.min(index, STACK_CARDS - 1) + 1;
   return { dy: STACK_STEP * card, scale: 1 - STACK_NARROWING * card };
 };
 
-const floating = () => document.querySelector<HTMLElement>('[data-dnd-dragging]');
+const floating = () => document.querySelector<HTMLElement>('[data-drag-preview]');
 
 /** The rows in the lists, by entry key. */
 function rows(): Map<string, HTMLElement> {
   const found = new Map<string, HTMLElement>();
-  for (const node of document.querySelectorAll<HTMLElement>('[data-entry]:not([data-dnd-dragging])')) {
+  for (const node of document.querySelectorAll<HTMLElement>('[data-entry]')) {
     found.set(node.dataset.entry!, node);
   }
   return found;
@@ -70,8 +69,8 @@ function ghostOf(node: HTMLElement, rect: DOMRect, layer: Element): HTMLElement 
     zIndex: '40',
     pointerEvents: 'none',
     listStyle: 'none',
-    // A card, like the stack's, narrowing around its middle as they do.
-    transformOrigin: 'center top',
+    // A card, like the stack's.
+    transformOrigin: 'left top',
     borderRadius: '10px',
     background: 'var(--menu)',
     boxShadow: 'var(--pill-shadow)',
@@ -85,23 +84,19 @@ function ghostOf(node: HTMLElement, rect: DOMRect, layer: Element): HTMLElement 
 }
 
 /**
- * The carried rows lift off the list and fly into the stack under the pointer (following
- * it as it moves), while the rows left behind close the gaps. `change` removes them from
- * the lists; it runs right away, the motion after.
+ * Copies of the carried rows lift off the list and fly into the stack under the pointer
+ * (following it as it moves); the rows themselves stay in place, faded, until the drop.
+ * `change` starts the drag; it runs right away, the motion after.
  */
-export async function gather(carried: string[], change: () => void): Promise<void> {
+export function gather(carried: string[], change: () => void): void {
   const layer = document.querySelector('[data-overlay-root]');
-  if (prefersReducedMotion.current || !carried.length || !layer) return change();
-  const before = measure();
+  change();
+  if (prefersReducedMotion.current || !carried.length || !layer) return;
   const current = rows();
   const ghosts = carried.flatMap((key) => {
     const node = current.get(key);
-    const from = before.get(key);
-    return node && from ? [{ ghost: ghostOf(node, from, layer), from }] : [];
+    return node ? [{ ghost: ghostOf(node, node.getBoundingClientRect(), layer), from: node.getBoundingClientRect() }] : [];
   });
-  change();
-  await tick();
-  slide(before, new Set(carried), GATHER_MS);
 
   let target = floating()?.getBoundingClientRect();
   const start = performance.now();
@@ -111,10 +106,12 @@ export async function gather(carried: string[], change: () => void): Promise<voi
     // Keep the last known spot if the drag already ended.
     target = floating()?.getBoundingClientRect() ?? target;
     ghosts.forEach(({ ghost, from }, index) => {
+      // Onto its card in the stack: as wide as the preview, narrowed around its middle.
       const slot = stackSlot(index);
-      const dx = target ? target.left - from.left : 0;
+      const width = target ? target.width * slot.scale : from.width;
+      const dx = target ? target.left + (target.width - width) / 2 - from.left : 0;
       const dy = target ? target.top + slot.dy - from.top : 0;
-      ghost.style.transform = `translate(${dx * p}px, ${dy * p}px) scaleX(${1 - (1 - slot.scale) * p})`;
+      ghost.style.transform = `translate(${dx * p}px, ${dy * p}px) scaleX(${1 + (width / from.width - 1) * p})`;
       // Hand over to the stack's own cards as they fade in (see DragStack).
       ghost.style.opacity = String(t < 0.6 ? 1 : (1 - t) / 0.4);
     });
@@ -125,30 +122,35 @@ export async function gather(carried: string[], change: () => void): Promise<voi
 }
 
 /**
- * The carried rows fly out of the stack to their places in the list, while the other rows
- * make room. `change` puts them back in the lists; it runs right away, the motion after.
- * Resolves once they have landed.
+ * The rows move to where they were dropped (or back, when nothing was): the others slide to
+ * make room or close the gap, and the dragged rows fly from the preview's cards to their
+ * places, widening from the card's width to the row's. `change` moves them in the lists; it
+ * runs right away, the motion after. Resolves once they have landed.
  */
-export async function land(carried: string[], change: () => void): Promise<void> {
+export async function land(active: string, carried: string[], change: () => void): Promise<void> {
   const from = floating()?.getBoundingClientRect();
-  if (prefersReducedMotion.current || !carried.length || !from) return change();
+  if (prefersReducedMotion.current || !from) return change();
   const before = measure();
   change();
   await tick();
-  slide(before, new Set(carried), LAND_MS);
+  slide(before, new Set([active, ...carried]), LAND_MS);
   const current = rows();
-  const flights = carried.flatMap((key, index) => {
+  const flights = [active, ...carried].flatMap((key) => {
     const node = current.get(key);
     if (!node) return [];
     const to = node.getBoundingClientRect();
-    const slot = stackSlot(index);
+    const slot = key === active ? { dy: 0, scale: 1 } : stackSlot(carried.indexOf(key));
+    const width = from.width * slot.scale;
+    const left = from.left + (from.width - width) / 2;
+    const hidden = Math.max(0, to.width - width);
     return node.animate(
       [
         {
-          transform: `translate(${from.left - to.left}px, ${from.top + slot.dy - to.top}px) scaleX(${slot.scale})`,
-          opacity: 0.6,
+          transform: `translate(${left - to.left}px, ${from.top + slot.dy - to.top}px)`,
+          clipPath: `inset(0px ${hidden}px 0px 0px round 10px)`,
+          opacity: key === active ? 1 : 0.6,
         },
-        { transform: 'none', opacity: 1 },
+        { transform: 'none', clipPath: 'inset(0px 0px 0px 0px round 10px)', opacity: 1 },
       ],
       { duration: LAND_MS, easing: EASING },
     );

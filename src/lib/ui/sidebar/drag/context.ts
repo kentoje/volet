@@ -17,7 +17,7 @@ export const notSpaceDot = (draggable: { type?: unknown }) => draggable.type !==
 export type DragData =
   /** `axis`: rows stack vertically; favorites tiles sit side by side. */
   | { kind: 'entry'; entry: import('@/lib/model/dnd').Entry; axis: 'x' | 'y' }
-  | { kind: 'list'; list: import('@/lib/model/dnd').ListId }
+  | { kind: 'list'; list: import('@/lib/model/dnd').ListId; axis: 'x' | 'y' }
   | { kind: 'space'; spaceId: string };
 
 /** Collision priority: deeper (more nested) targets win; Space dots beat everything. */

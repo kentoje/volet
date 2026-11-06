@@ -120,9 +120,10 @@ test('dragging one of several selected tabs moves them all, shown as a stack', a
 
   const hint = visiblePage(panel).getByText('Drag tabs here to pin them');
   await drag(panel, row(panel, 'Gamma'), hint, async () => {
-    // Mid-drag: the dragged row carries a count, and the other selected row has left the list.
-    await expect(panel.locator('[data-dnd-dragging]').getByText('2', { exact: true })).toBeVisible();
-    await expect(row(panel, 'Alpha')).toHaveCount(0);
+    // Mid-drag: the dragged row carries a count; the other selected row stays in place, faded.
+    await expect(panel.locator('[data-drag-preview]').getByText('2', { exact: true })).toBeVisible();
+    const alpha = visiblePage(panel).locator('[data-entry]', { has: panel.getByRole('button', { name: 'Alpha', exact: true }) });
+    await expect(alpha).toHaveClass(/opacity-35/);
   });
 
   await expect.poll(() => homeOutline(worker)).toEqual(['Alpha', 'Gamma']);

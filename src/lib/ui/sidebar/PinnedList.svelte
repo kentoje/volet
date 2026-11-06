@@ -19,9 +19,11 @@
     folded?: boolean;
     /** Shown when the list is empty. */
     empty?: Snippet;
+    /** Classes for the list's drop zone. */
+    class?: string;
   }
 
-  let { parentId, nodes, depth = 0, folded = false, empty }: Props = $props();
+  let { parentId, nodes, depth = 0, folded = false, empty, class: className }: Props = $props();
 
   const drag = getDrag();
   const list = $derived(pinsList(parentId));
@@ -41,7 +43,7 @@
   removed for any other reason just appear). The 2px row gap is each row's top padding, so it
   slides away with the row; a folder's first row takes it as its gap below the folder.
 -->
-<DropZone {list} {depth}>
+<DropZone {list} {depth} class={className}>
   <ul class="flex flex-col">
     {#each entries as entry, index (entryKey(entry))}
       {#if shown(entry)}

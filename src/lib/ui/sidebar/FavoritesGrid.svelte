@@ -14,8 +14,8 @@
   );
 </script>
 
-<!-- Always a drop target. Empty, it explains itself; mid-drag, the dragged tab previews as a tile. -->
-<DropZone list={FAVORITES_LIST} class="mx-2.5 mt-2.5">
+<!-- Always a drop target. Empty, it explains itself. -->
+<DropZone list={FAVORITES_LIST} axis="x" class="mx-2.5 mt-2.5">
   {#if entries.length}
     <ul class="grid grid-cols-4 gap-1.5 @md:grid-cols-6" aria-label="Favorites">
       {#each entries as entry, index (entryKey(entry))}

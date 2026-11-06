@@ -1,18 +1,18 @@
 import {
   type DndLookup,
+  type Drop,
   type DropAction,
   type Entry,
   type ListId,
   type Lists,
+  type Slot,
   buildLists,
-  canEnter,
   dropOnSpace,
   groupDrop,
-  locate,
-  moveEntry,
-  placeAround,
+  resolveDrop,
   sameEntry,
-  withoutEntry,
+  sameSlot,
+  slotAt,
 } from '@/lib/model/dnd';
 import type { SidebarStore, SpaceId } from '@/lib/model/types';
 import { createLookup } from '@/lib/state/lookup';
@@ -22,27 +22,34 @@ import type { Selection } from '../selection/selection.svelte';
 const SPACE_DWELL_MS = 450;
 
 /** What the pointer is over during a drag. */
-export type DropTarget =
-  /** `after`: the pointer is past the entry's middle, so the dragged one goes after it. */
-  | { kind: 'entry'; entry: Entry; after: boolean }
-  | { kind: 'list'; list: ListId }
+export type Hover =
+  /**
+   * A row (or tile): `at` is how far along it the pointer is, from 0 (top or left) to 1.
+   * `inside` is the first row shown inside it (a folder's), if any.
+   */
+  | { kind: 'row'; entry: Entry; at: number; inside?: Entry }
+  /** A list, between or around its rows: the slot was found from the rows nearby. */
+  | { kind: 'slot'; slot: Slot }
   | { kind: 'space'; spaceId: SpaceId };
 
 /**
- * Drag-and-drop state. While dragging, lists render from a draft that is
- * reordered live; on drop the draft becomes store actions, and the draft is
- * kept until the store shows the result, so nothing jumps back.
+ * Drag-and-drop state. While dragging, nothing moves: `drop` says where the rows would land
+ * (shown as a line between rows, a lit-up folder or a lit-up empty list). On drop, `draft`
+ * shows the lists as they will be right away, and stays until the store shows the result.
  *
- * Dragging one of several selected rows drags them all: the others leave the
- * lists while the dragged row carries them (shown as a stack), and they land
- * together, in page order, where it is dropped.
+ * Dragging one of several selected rows drags them all: they stay in place, faded, while the
+ * dragged row carries them (shown as a stack), and they land together, in page order.
  */
 export class DragState {
-  /** The lists as they look mid-drag; undefined when not dragging. */
+  /** The lists right after a drop, until the store catches up; undefined otherwise. */
   draft = $state.raw<Lists | undefined>();
   active = $state.raw<Entry | undefined>();
   /** Everything the drag carries, in page order (just the active entry, or the selection). */
   group = $state.raw<Entry[]>([]);
+  /** Where the group would land if dropped now. */
+  drop = $state.raw<Drop | undefined>();
+  /** Let go: the rows are landing (the drag is over, its state stays until they have). */
+  released = $state(false);
 
   /** Called after hovering a dot switched Space: the drop zones moved and need re-measuring. */
   onSpaceSwitched: (() => void) | undefined;
@@ -50,6 +57,7 @@ export class DragState {
   #store: SidebarStore;
   #selection: Selection;
   #lookup: DndLookup;
+  #hover: Hover | undefined;
   #dwell: { spaceId: string; timer: ReturnType<typeof setTimeout> } | undefined;
   #landing: Promise<unknown> | undefined;
 
@@ -59,13 +67,46 @@ export class DragState {
     this.#lookup = createLookup(store);
   }
 
-  /** A list's entries: the draft's while dragging, otherwise `current`. */
+  /** A list's entries: the draft's right after a drop, otherwise `current`. */
   entries(list: ListId, current: () => Entry[]): Entry[] {
     return this.draft?.[list] ?? current();
   }
 
   isActive(entry: Entry): boolean {
     return this.active !== undefined && sameEntry(this.active, entry);
+  }
+
+  /** Whether the drag carries `entry` (the dragged row, or one of the selection it drags along). */
+  carries(entry: Entry): boolean {
+    return this.group.some((other) => sameEntry(other, entry));
+  }
+
+  /** Carried rows stay in place, faded, until they are let go. */
+  faded(entry: Entry): boolean {
+    return !this.released && this.carries(entry);
+  }
+
+  /** The side of `entry` the drop line is on, when the drop goes right next to it. */
+  lineAt(entry: Entry): 'before' | 'after' | undefined {
+    const slot = this.drop?.slot;
+    return slot?.kind === 'beside' && sameEntry(slot.entry, entry) ? slot.side : undefined;
+  }
+
+  /** Whether the drop goes into this folder. */
+  isInto(folderId: string): boolean {
+    const slot = this.drop?.slot;
+    return slot?.kind === 'into' && slot.folderId === folderId;
+  }
+
+  /** Whether the drop goes into this (empty) list. */
+  fills(list: ListId): boolean {
+    const slot = this.drop?.slot;
+    return slot?.kind === 'end' && slot.list === list;
+  }
+
+  /** Whether the pointer is over a Space dot: dropped there, the rows leave this page. */
+  get overSpace(): boolean {
+    return this.#hover?.kind === 'space';
   }
 
   /** What dragging `entry` carries: the selection when it is one of several selected rows. */
@@ -78,20 +119,24 @@ export class DragState {
   start(entry: Entry): void {
     this.group = this.groupFor(entry);
     if (!this.#selection.has(entry)) this.#selection.clear();
-    const lists = buildLists(this.#store.spaces, this.#store.favorites);
-    this.draft = this.group.reduce((draft, other) => (sameEntry(other, entry) ? draft : withoutEntry(draft, other)), lists);
     this.active = entry;
   }
 
-  over(target: DropTarget): void {
-    const { draft, active } = this;
-    if (!draft || !active) return;
-    this.#hoverSpace(target.kind === 'space' ? target.spaceId : undefined);
-    const place = this.#placeFor(draft, active, target);
-    if (!place || !this.group.every((entry) => canEnter(entry, place.list, this.#lookup))) return;
-    const current = locate(draft, active);
-    if (current?.list === place.list && current.index === place.index) return;
-    this.draft = moveEntry(draft, active, place.list, place.index);
+  over(hover: Hover | undefined): void {
+    if (!this.active) return;
+    this.#hover = hover;
+    this.#hoverSpace(hover?.kind === 'space' ? hover.spaceId : undefined);
+    const slot = this.#slotFor(hover);
+    const lists = buildLists(this.#store.spaces, this.#store.favorites);
+    const drop = slot && resolveDrop(lists, this.group, slot, this.#lookup);
+    if (!sameSlot(drop?.slot, this.drop?.slot)) this.drop = drop;
+  }
+
+  #slotFor(hover: Hover | undefined): Slot | undefined {
+    if (hover?.kind === 'slot') return hover.slot;
+    if (hover?.kind !== 'row') return undefined;
+    const folder = hover.entry.kind === 'node' && this.#lookup.node(hover.entry.id)?.kind === 'folder';
+    return slotAt(hover.entry, hover.at, folder, hover.inside);
   }
 
   /**
@@ -110,17 +155,22 @@ export class DragState {
     this.#dwell = { spaceId, timer };
   }
 
-  async end(options: { canceled: boolean; target?: DropTarget }): Promise<void> {
+  /** Make the drop real. The draft is set before the first await, so callers can measure the result. */
+  async end(canceled: boolean): Promise<void> {
     this.#hoverSpace(undefined);
-    const actions = options.canceled ? [] : this.#actionsFor(options.target);
+    this.released = true;
+    const actions = canceled ? [] : this.#actions();
+    this.drop = undefined;
     if (actions.length && this.group.length > 1) this.#selection.clear();
     for (const action of actions) await this.#perform(action);
     // Rows still flying into place keep the draft's identity (a tab doesn't turn into a pin mid-flight).
     await this.#landing;
     this.#landing = undefined;
+    this.#hover = undefined;
     this.draft = undefined;
     this.active = undefined;
     this.group = [];
+    this.released = false;
   }
 
   /** Keep showing the draft after a drop until `landing` settles (rows animating into place). */
@@ -128,27 +178,15 @@ export class DragState {
     this.#landing = landing;
   }
 
-  #placeFor(draft: Lists, active: Entry, target: DropTarget): { list: ListId; index: number } | undefined {
-    if (target.kind === 'entry') return placeAround(draft, active, target.entry, target.after);
-    if (target.kind === 'list') {
-      // Over a list's empty area: go to its end.
-      const others = (draft[target.list] ?? []).filter((entry) => !sameEntry(entry, active));
-      return { list: target.list, index: others.length };
-    }
-    return undefined;
-  }
-
-  #actionsFor(target: DropTarget | undefined): DropAction[] {
-    const { draft, active, group } = this;
-    if (!draft || !active) return [];
-    if (target?.kind === 'space') return group.flatMap((entry) => dropOnSpace(entry, target.spaceId, this.#lookup) ?? []);
-    const at = locate(draft, active);
-    if (!at) return [];
-    const list = draft[at.list]!;
-    // Show the group where it lands right away; the store catches up behind the draft.
-    this.draft = { ...draft, [at.list]: [...list.slice(0, at.index), ...group, ...list.slice(at.index + 1)] };
+  #actions(): DropAction[] {
+    const hover = this.#hover;
+    if (hover?.kind === 'space') return this.group.flatMap((entry) => dropOnSpace(entry, hover.spaceId, this.#lookup) ?? []);
+    if (!this.drop) return [];
     const lists = buildLists(this.#store.spaces, this.#store.favorites);
-    return groupDrop(lists, group, at.list, list[at.index - 1], this.#lookup);
+    const { actions, lists: landed } = groupDrop(lists, this.group, this.drop.list, this.drop.after, this.#lookup);
+    // Show the rows where they land right away; the store catches up behind the draft.
+    this.draft = landed;
+    return actions;
   }
 
   #perform(action: DropAction) {

@@ -5,11 +5,15 @@ import {
   canEnter,
   dropAction,
   dropOnSpace,
+  entryFromKey,
+  entryKey,
   groupDrop,
   moveAround,
   moveEntry,
-  placeAround,
+  resolveDrop,
+  slotAt,
   tempList,
+  zoneAt,
 } from './dnd';
 import type { Favorite, PinnedNode, Space } from './types';
 
@@ -68,27 +72,6 @@ describe('moveEntry', () => {
   });
 });
 
-describe('placeAround', () => {
-  const lists = buildLists(spaces, favorites);
-  const tab = (id: number) => ({ kind: 'tab', id }) as const;
-
-  it('goes before or after the hovered entry depending on the pointer', () => {
-    expect(placeAround(lists, tab(4), { kind: 'node', id: 'docs' }, false)).toEqual({ list: 'pins:s1', index: 1 });
-    expect(placeAround(lists, tab(4), { kind: 'node', id: 'docs' }, true)).toEqual({ list: 'pins:s1', index: 2 });
-  });
-
-  it('can reach the end of a list, which "take its place" alone never could', () => {
-    const place = placeAround(lists, tab(1), tab(3), true)!;
-    expect(moveEntry(lists, tab(1), place.list, place.index)['temp:s1']!.map((e) => e.id)).toEqual([2, 3, 1]);
-  });
-
-  it('counts positions without the dragged entry when moving within a list', () => {
-    expect(placeAround(lists, tab(1), tab(2), false)).toEqual({ list: 'temp:s1', index: 0 });
-    expect(placeAround(lists, tab(1), tab(2), true)).toEqual({ list: 'temp:s1', index: 1 });
-    expect(placeAround(lists, tab(1), tab(1), true)).toBeUndefined();
-  });
-});
-
 describe('canEnter', () => {
   it('keeps folders among pins and out of themselves', () => {
     const folder = { kind: 'node', id: 'docs' } as const;
@@ -132,23 +115,88 @@ describe('groupDrop', () => {
   it('lands the group together, in order, even when it starts around the target', () => {
     // [1, 2, 3, 4, 5], drop 2 and 4 after 5: they end up [1, 3, 5, 2, 4].
     const lists = buildLists([{ id: 's', name: 'S', hue: 0, pinned: [], tabIds: [1, 2, 3, 4, 5] }], []);
-    expect(groupDrop(lists, [tab(2), tab(4)], tempList('s'), tab(5), lookup)).toEqual([
+    const drop = groupDrop(lists, [tab(2), tab(4)], tempList('s'), tab(5), lookup);
+    expect(drop.actions).toEqual([
       { type: 'moveTab', tabId: 2, spaceId: 's', index: 4 },
       { type: 'moveTab', tabId: 4, spaceId: 's', index: 4 },
     ]);
+    expect(drop.lists['temp:s']!.map((entry) => entry.id)).toEqual([1, 3, 5, 2, 4]);
   });
 
   it('skips entries already in place', () => {
-    expect(groupDrop(buildLists(spaces, favorites), [tab(1), tab(3)], tempList('s1'), tab(2), lookup)).toEqual([
+    expect(groupDrop(buildLists(spaces, favorites), [tab(1), tab(3)], tempList('s1'), tab(2), lookup).actions).toEqual([
       { type: 'moveTab', tabId: 1, spaceId: 's1', index: 1 },
     ]);
   });
 
   it('pins tabs one after the other, from the start of a list', () => {
-    expect(groupDrop(buildLists(spaces, favorites), [tab(2), tab(3)], 'pins:s1', undefined, lookup)).toEqual([
+    expect(groupDrop(buildLists(spaces, favorites), [tab(2), tab(3)], 'pins:s1', undefined, lookup).actions).toEqual([
       { type: 'pinTab', tabId: 2, parentId: 's1', index: 0 },
       { type: 'pinTab', tabId: 3, parentId: 's1', index: 1 },
     ]);
+  });
+});
+
+describe('entryFromKey', () => {
+  it('reads back what entryKey wrote', () => {
+    for (const entry of [{ kind: 'tab', id: 12 }, { kind: 'node', id: 'docs' }, { kind: 'favorite', id: 'f1' }] as const) {
+      expect(entryFromKey(entryKey(entry))).toEqual(entry);
+    }
+  });
+});
+
+describe('zoneAt and slotAt', () => {
+  const docs = { kind: 'node' as const, id: 'docs' };
+
+  it('splits rows in halves, and keeps a folder its middle', () => {
+    expect([0.2, 0.6].map((at) => zoneAt(at, false))).toEqual(['before', 'after']);
+    expect([0.2, 0.5, 0.9].map((at) => zoneAt(at, true))).toEqual(['before', 'into', 'after']);
+  });
+
+  it('puts the line below a folder before its first row, when it shows rows', () => {
+    const wiki = { kind: 'node' as const, id: 'p2' };
+    expect(slotAt(docs, 0.5, true, wiki)).toEqual({ kind: 'into', folderId: 'docs' });
+    expect(slotAt(docs, 0.9, true, wiki)).toEqual({ kind: 'beside', entry: wiki, side: 'before' });
+    expect(slotAt(docs, 0.9, true)).toEqual({ kind: 'beside', entry: docs, side: 'after' });
+    expect(slotAt({ kind: 'tab', id: 1 }, 0.7, false)).toEqual({ kind: 'beside', entry: { kind: 'tab', id: 1 }, side: 'after' });
+  });
+});
+
+describe('resolveDrop', () => {
+  const lists = buildLists(spaces, favorites);
+  const tab = (id: number) => ({ kind: 'tab' as const, id });
+  const beside = (entry: { kind: 'tab'; id: number } | { kind: 'node'; id: string }, side: 'before' | 'after') =>
+    ({ kind: 'beside', entry, side }) as const;
+
+  it('lands right after the entry before the line', () => {
+    expect(resolveDrop(lists, [tab(3)], beside(tab(1), 'before'), lookup)).toMatchObject({ list: 'temp:s1', after: undefined });
+    expect(resolveDrop(lists, [tab(1)], beside(tab(3), 'after'), lookup)).toMatchObject({ list: 'temp:s1', after: tab(3) });
+  });
+
+  it('shows nothing where the drop would change nothing', () => {
+    expect(resolveDrop(lists, [tab(1)], beside(tab(1), 'after'), lookup)).toBeUndefined();
+    expect(resolveDrop(lists, [tab(1)], beside(tab(2), 'before'), lookup)).toBeUndefined();
+  });
+
+  it('skips the carried rows when finding where the group lands', () => {
+    // [1, 2, 3]: 1 and 3 dropped after 2 land as [2, 1, 3].
+    expect(resolveDrop(lists, [tab(1), tab(3)], beside(tab(2), 'after'), lookup)).toMatchObject({ after: tab(2) });
+  });
+
+  it('drops into a folder at its end, and into empty lists', () => {
+    expect(resolveDrop(lists, [tab(2)], { kind: 'into', folderId: 'docs' }, lookup)).toMatchObject({
+      list: 'pins:docs',
+      after: { kind: 'node', id: 'deep' },
+    });
+    expect(resolveDrop(lists, [tab(2)], { kind: 'end', list: 'pins:s2' }, lookup)).toMatchObject({ list: 'pins:s2', after: undefined });
+  });
+
+  it('refuses what the list does not take', () => {
+    const docs = { kind: 'node' as const, id: 'docs' };
+    expect(resolveDrop(lists, [docs], { kind: 'into', folderId: 'deep' }, lookup)).toBeUndefined();
+    expect(resolveDrop(lists, [docs], beside({ kind: 'node', id: 'p2' }, 'after'), lookup)).toBeUndefined();
+    expect(resolveDrop(lists, [docs], beside(tab(1), 'before'), lookup)).toBeUndefined();
+    expect(resolveDrop(lists, [{ kind: 'favorite', id: 'f2' }], beside(tab(1), 'before'), lookup)).toBeUndefined();
   });
 });
 

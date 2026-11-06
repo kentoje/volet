@@ -6,7 +6,8 @@
   let { space }: { space: Space } = $props();
 </script>
 
-<PinnedList parentId={space.id} nodes={space.pinned}>
+<!-- The strip below the last pin (above the divider) drops at the end, even after an open folder. -->
+<PinnedList parentId={space.id} nodes={space.pinned} class="pb-2">
   {#snippet empty()}
     <DropHint>Drag tabs here to pin them to {space.name}.</DropHint>
   {/snippet}

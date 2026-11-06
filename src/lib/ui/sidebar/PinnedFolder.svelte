@@ -6,6 +6,7 @@
   import FolderRow from '../primitives/FolderRow.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
   import RenameField from '../primitives/RenameField.svelte';
+  import { getDrag } from './drag/context';
   import { folderMenu } from './menus/folder-menu';
   import { getMenuContext } from './menus/menu-context';
   import { rowMenu } from './menus/selection-menu';
@@ -22,6 +23,7 @@
   let { folder, depth = 0, folded = false, handle }: Props = $props();
 
   const menus = getMenuContext();
+  const drag = getDrag();
   const { store: sidebar, rename, selection } = menus;
   const entry = $derived<SpaceItem>({ kind: 'node', id: folder.id });
   const open = $derived(!sidebar.collapsedFolders.has(folder.id));
@@ -47,6 +49,7 @@
         title={folder.title}
         {open}
         selected={selection.has(entry)}
+        dropTarget={drag.isInto(folder.id)}
         {depth}
         {handle}
         editor={rename.is(folder.id) ? editor : undefined}

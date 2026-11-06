@@ -8,6 +8,8 @@
     open: boolean;
     /** Part of a multi-row selection. */
     selected?: boolean;
+    /** Something dragged over it would drop into it: it shows its hover state. */
+    dropTarget?: boolean;
     depth?: number;
     /** A click on the row (the event tells whether a modifier key was held). */
     ontoggle: (event: MouseEvent) => void;
@@ -18,11 +20,12 @@
     editor?: Snippet;
   }
 
-  let { title, open, selected = false, depth = 0, ontoggle, ondblclick, handle, editor }: Props = $props();
+  let { title, open, selected = false, dropTarget = false, depth = 0, ontoggle, ondblclick, handle, editor }: Props =
+    $props();
 
   const rowClass = $derived([
     'flex h-[34px] w-full items-center gap-2.5 rounded-[10px] pr-3 pl-[calc(10px+var(--depth)*16px)] text-left text-[13px] transition-colors duration-100',
-    selected ? 'bg-selected' : 'hover:bg-hover',
+    selected ? 'bg-selected' : dropTarget ? 'bg-hover' : 'hover:bg-hover',
   ]);
 </script>
 

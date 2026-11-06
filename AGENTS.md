@@ -45,10 +45,18 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Entry points** (`src/entrypoints/`): `background.ts` (the engine), `sidepanel/` (the sidebar), `palette.ts`
   (unlisted script injected into the current page by the palette shortcut, rendered in a shadow root),
   `options/` (settings) and `import/` (Arc import).
-- **Drag and drop**: lists render from `DragState`'s draft while dragging (`ui/sidebar/drag/`); the rules and the
-  drop-to-action mapping are pure (`model/dnd.ts`). dnd-kit's DOM-moving sorting is off so Svelte owns the DOM.
-  Row buttons are the drag handles; give action buttons and inputs `data-no-drag`. Holding a dragged row over a
-  Space dot switches to that Space after a short dwell (`drag-state.svelte.ts`), so it can be dropped there.
+- **Drag and drop** (`ui/sidebar/drag/`): nothing moves while dragging. `DragState.drop` is where the rows would
+  land, shown as a line in the gap next to a row (`DropLine`, drawn by `SortableEntry`), a lit-up folder row (its
+  middle drops into it) or a lit-up empty list (`DropZone`). Hit testing is by pointer only (`pointerIntersection`),
+  and a row's drop target is its row button (`attachTarget`), so a folder's contents don't count as the folder;
+  between rows, `drop-geometry.ts` picks the closest row from the DOM (`data-entry`, `data-list`). The slot rules
+  (`zoneAt`, `slotAt`, `resolveDrop`) and the drop-to-action mapping (`groupDrop`) are pure (`model/dnd.ts`). On
+  drop, the draft shows the result at once and `group-motion.ts` slides the rows into place. dnd-kit shows no
+  feedback (`feedback: 'none'`, its DOM-moving sorting is off too): `DragPreview` is a copy of the row hanging below
+  the pointer, so the row it points at stays visible, and DragLayer hands its shape to dnd-kit each frame (dnd-kit
+  only re-checks collisions when the dragged shape changes, and reports moves before updating the pointer). Row
+  buttons are the drag handles; give action buttons and inputs `data-no-drag`. Holding a dragged row over a Space
+  dot switches to that Space after a short dwell (`drag-state.svelte.ts`), so it can be dropped there.
   The dots are sortable too (`SortableSpaceDot`, type `SPACE_DOT`, reordered by `space-order.svelte.ts`); rows and
   lists refuse them with `accept: notSpaceDot`, so give any new droppable that filter.
 - **Folders**: a collapsed folder keeps rendering its list as `folded` (`PinnedList`): rows without an open tab
@@ -73,8 +81,8 @@ Three layers, each with a single job. Dependencies point downward only.
   Cmd/Ctrl+click, Chrome's tab strip model). Rows ask it first on click (`selection.click`), menus switch to the
   selection's menu through `rowMenu`, and a drag that starts on a selected row carries the whole selection
   (`DragState.group`, landed in order by the pure `groupDrop`). `drag/group-motion.ts` animates it (DOM only, rows
-  found by `data-entry`): the rows fly into the stack on grab and out of it on drop, and `DragState.hold` keeps the
-  draft until they have landed. Page order and placement rules are pure
+  found by `data-entry`): copies of the rows fly into the preview's stack on grab (the rows stay in place, faded),
+  and the rows fly out of it on drop; `DragState.hold` keeps the draft until they have landed. Page order and placement rules are pure
   (`model/selection.ts`). `SelectionDismiss` clears it on a click outside the selected rows, on panel blur, and on
   an Escape nothing else handled. Mark new menus or dialogs' containers so they stay inside `[data-overlay-root]`.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`

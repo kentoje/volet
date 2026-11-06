@@ -10,7 +10,8 @@
   let { action }: { action?: Action } = $props();
 </script>
 
-<div class="group/divider relative my-2 flex h-5 items-center px-2.5">
+<!-- No top margin: the list above ends with its own drop strip, the same height. -->
+<div class="group/divider relative mb-2 flex h-5 items-center px-2.5">
   <span class="h-px flex-1 bg-rule"></span>
   {#if action}
     <button
