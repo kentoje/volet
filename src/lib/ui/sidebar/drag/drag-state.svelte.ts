@@ -21,6 +21,9 @@ import type { Selection } from '../selection/selection.svelte';
 /** How long a dragged entry must hover another Space's dot before switching to that Space. */
 const SPACE_DWELL_MS = 450;
 
+/** What the rows show: the sidebar's tabs, pins and favorites. */
+export type SidebarContent = Pick<SidebarStore, 'spaces' | 'favorites' | 'tabs'>;
+
 /** What the pointer is over during a drag. */
 export type Hover =
   /**
@@ -35,7 +38,8 @@ export type Hover =
 /**
  * Drag-and-drop state. While dragging, nothing moves: `drop` says where the rows would land
  * (shown as a line between rows, a lit-up folder or a lit-up empty list). On drop, `draft`
- * shows the lists as they will be right away, and stays until the store shows the result.
+ * shows the lists as they will be right away, and stays until the store shows the result and
+ * the dragged rows have flown into their places in it (`hold`).
  *
  * Dragging one of several selected rows drags them all: they stay in place, faded, while the
  * dragged row carries them (shown as a stack), and they land together, in page order.
@@ -50,6 +54,11 @@ export class DragState {
   drop = $state.raw<Drop | undefined>();
   /** Let go: the rows are landing (the drag is over, its state stays until they have). */
   released = $state(false);
+  /**
+   * The content as it was when let go, while the draft shows: the store may already have turned
+   * a dropped entry into something else (a pin into a tab), and the draft still shows it as it was.
+   */
+  kept = $state.raw<SidebarContent | undefined>();
 
   /** Called after hovering a dot switched Space: the drop zones moved and need re-measuring. */
   onSpaceSwitched: (() => void) | undefined;
@@ -70,6 +79,11 @@ export class DragState {
   /** A list's entries: the draft's right after a drop, otherwise `current`. */
   entries(list: ListId, current: () => Entry[]): Entry[] {
     return this.draft?.[list] ?? current();
+  }
+
+  /** Look something up in the sidebar's content, or in the content as it was when let go (see `kept`). */
+  find<T>(lookup: (content: SidebarContent) => T | undefined): T | undefined {
+    return lookup(this.#store) ?? (this.kept && lookup(this.kept));
   }
 
   isActive(entry: Entry): boolean {
@@ -159,6 +173,8 @@ export class DragState {
   async end(canceled: boolean): Promise<void> {
     this.#hoverSpace(undefined);
     this.released = true;
+    const { spaces, favorites, tabs } = this.#store;
+    this.kept = { spaces, favorites, tabs };
     const actions = canceled ? [] : this.#actions();
     this.drop = undefined;
     if (actions.length && this.group.length > 1) this.#selection.clear();
@@ -168,6 +184,7 @@ export class DragState {
     this.#landing = undefined;
     this.#hover = undefined;
     this.draft = undefined;
+    this.kept = undefined;
     this.active = undefined;
     this.group = [];
     this.released = false;

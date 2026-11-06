@@ -51,8 +51,13 @@ Three layers, each with a single job. Dependencies point downward only.
   and a row's drop target is its row button (`attachTarget`), so a folder's contents don't count as the folder;
   between rows, `drop-geometry.ts` picks the closest row from the DOM (`data-entry`, `data-list`). The slot rules
   (`zoneAt`, `slotAt`, `resolveDrop`) and the drop-to-action mapping (`groupDrop`) are pure (`model/dnd.ts`). On
-  drop, the draft shows the result at once and `group-motion.ts` slides the rows into place. dnd-kit shows no
-  feedback (`feedback: 'none'`, its DOM-moving sorting is off too): `DragPreview` is a full-size copy of the row
+  drop, the draft shows the result at once, its rows hidden, and `land` (`group-motion.ts`) flies a copy of the
+  preview from where it was let go onto the row's new place (measured every frame, as lists around it may still
+  move), where the row fades in under it; the other rows slide to make room. The store may already have changed a
+  dropped entry (a pin turned into a tab): the draft's rows look entries up through `DragState.find`, which falls
+  back to the content as it was when let go (`kept`), so they never render empty mid-flight. dnd-kit shows no
+  feedback (`feedback: 'none'`, its DOM-moving sorting is off too, and so is its slide of rows whose index changed,
+  `transition: null`, which would move a dropped row under the copy flying onto it): `DragPreview` is a full-size copy of the row
   (rows mark their root `data-row`; the copy sets `data-hovered` to keep the hover look), held where the pointer took
   it and slightly see-through, like Arc, so the drop line or folder under it shows. DragLayer hands its shape to
   dnd-kit each frame (dnd-kit only re-checks collisions when the dragged shape changes, and reports moves before
@@ -84,7 +89,8 @@ Three layers, each with a single job. Dependencies point downward only.
   selection's menu through `rowMenu`, and a drag that starts on a selected row carries the whole selection
   (`DragState.group`, landed in order by the pure `groupDrop`). `drag/group-motion.ts` animates it (DOM only, rows
   found by `data-entry`): copies of the rows fly into the preview's stack on grab (the rows stay in place, faded),
-  and the rows fly out of it on drop; `DragState.hold` keeps the draft until they have landed. Page order and placement rules are pure
+  and on drop copies fly out of its cards onto the rows, like the dragged row's; `DragState.hold` keeps the draft
+  until they have landed. Page order and placement rules are pure
   (`model/selection.ts`). `SelectionDismiss` clears it on a click outside the selected rows, on panel blur, and on
   an Escape nothing else handled. Mark new menus or dialogs' containers so they stay inside `[data-overlay-root]`.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`

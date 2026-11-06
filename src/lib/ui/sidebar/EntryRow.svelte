@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Attachment } from 'svelte/attachments';
-  import { getSidebar } from '@/lib/model/context';
   import type { Entry } from '@/lib/model/dnd';
   import { findNode } from '@/lib/state/tree';
+  import { getDrag } from './drag/context';
   import FavoriteRow from './FavoriteRow.svelte';
   import PinnedFolder from './PinnedFolder.svelte';
   import PinRow from './PinRow.svelte';
@@ -16,14 +16,17 @@
     handle?: Attachment<HTMLElement>;
   }
 
-  /** Renders any draggable entry as a row (mid-drag, a list can hold any kind). */
+  /**
+   * Renders any draggable entry as a row (mid-drag, a list can hold any kind). Right after a drop,
+   * an entry the store already changed shows as it was (see `DragState.kept`).
+   */
   let { entry, depth = 0, folded = false, handle }: Props = $props();
 
-  const sidebar = getSidebar();
-  const tab = $derived(entry.kind === 'tab' ? sidebar.tabs.get(entry.id) : undefined);
-  const node = $derived(entry.kind === 'node' ? findNode(sidebar.spaces, entry.id) : undefined);
+  const drag = getDrag();
+  const tab = $derived(entry.kind === 'tab' ? drag.find((content) => content.tabs.get(entry.id)) : undefined);
+  const node = $derived(entry.kind === 'node' ? drag.find((content) => findNode(content.spaces, entry.id)) : undefined);
   const favorite = $derived(
-    entry.kind === 'favorite' ? sidebar.favorites.find((f) => f.id === entry.id) : undefined,
+    entry.kind === 'favorite' ? drag.find((content) => content.favorites.find((f) => f.id === entry.id)) : undefined,
   );
 </script>
 

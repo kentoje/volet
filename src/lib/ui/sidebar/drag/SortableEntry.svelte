@@ -51,6 +51,9 @@
     // Svelte owns the DOM: lists change from state, so dnd-kit's DOM-moving sorting stays off.
     // dnd-kit shows nothing either: the row stays put (faded) and DragPreview follows the pointer.
     plugins: [SortableKeyboardPlugin, Feedback.configure({ feedback: 'none' })],
+    // Nor does it slide a row whose index changed: on drop, the dropped row would slide up from its
+    // old place while the preview flies onto it (bending its path). `land` moves every row itself.
+    transition: null,
   });
 
   /**
