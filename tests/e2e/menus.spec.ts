@@ -15,6 +15,30 @@ test('renaming a Space renames its bookmark folder and tab group', async ({ work
   await expect.poll(async () => (await stripState(worker, windowId))[0]?.group).toBe('Studio');
 });
 
+test('"Rename Volet" in a dot menu focuses the name field, also for another Volet', async ({ worker, panel }) => {
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  const dots = panel.getByRole('navigation', { name: 'Volets' });
+  const field = panel.getByRole('textbox', { name: 'Volet name' });
+
+  // The active Volet's dot: typing replaces the name right away.
+  await dots.getByRole('button', { name: 'Volet 2' }).click({ button: 'right' });
+  await menuItem(panel, 'Rename Volet').click();
+  await expect(field).toBeFocused();
+  await panel.keyboard.type('Studio');
+  await panel.keyboard.press('Enter');
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Studio');
+
+  // Another Volet's dot: its page comes into view with the field focused.
+  await dots.getByRole('button', { name: 'Home', exact: true }).click({ button: 'right' });
+  await menuItem(panel, 'Rename Volet').click();
+  await expect(field).toBeFocused();
+  await panel.keyboard.type('Base');
+  await panel.keyboard.press('Enter');
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Base');
+  await expect.poll(async () => (await bookmarkTree(worker)).children!.map((c) => c.title)).toEqual(['Favorites', 'Base', 'Studio']);
+});
+
 test('the Space menu recolors the Space and its tab group', async ({ worker, windowId, panel }) => {
   await visiblePage(panel).getByRole('heading').click({ button: 'right' });
   await panel.getByRole('menuitem', { name: 'Hue 152' }).click();

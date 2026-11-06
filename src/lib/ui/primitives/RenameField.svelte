@@ -21,9 +21,24 @@
     else oncancel();
   }
 
+  /**
+   * Focus the field and select its text. Inside an inert page (a Volet still sliding into view),
+   * focus can't land yet: wait until the page stops being inert.
+   */
   const focusAndSelect = (input: HTMLInputElement) => {
-    input.focus();
-    input.select();
+    const focus = () => {
+      input.focus();
+      input.select();
+      return document.activeElement === input;
+    };
+    if (focus()) return;
+    const page = input.closest('[inert]');
+    if (!page) return;
+    const observer = new MutationObserver(() => {
+      if (!page.hasAttribute('inert') && focus()) observer.disconnect();
+    });
+    observer.observe(page, { attributes: true, attributeFilter: ['inert'] });
+    return () => observer.disconnect();
   };
 </script>
 

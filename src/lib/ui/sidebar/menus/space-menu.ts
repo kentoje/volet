@@ -11,7 +11,16 @@ export function spaceMenu(space: Space, menus: MenuContext): MenuItem[] {
   const index = store.spaces.findIndex((s) => s.id === space.id);
   const last = store.spaces.length - 1;
   return tidy([
-    { kind: 'action', label: 'Rename Volet', icon: PencilLine, onSelect: () => rename.start(spaceKey(space.id)) },
+    {
+      kind: 'action',
+      label: 'Rename Volet',
+      icon: PencilLine,
+      onSelect: () => {
+        // The name is edited in the Volet's title, so bring its page into view (from another Volet's dot).
+        if (space.id !== store.activeSpaceId) void store.switchSpace(space.id);
+        rename.start(spaceKey(space.id));
+      },
+    },
     {
       kind: 'swatches',
       label: 'Color',

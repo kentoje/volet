@@ -85,7 +85,8 @@ Three layers, each with a single job. Dependencies point downward only.
   and their items also highlight on hover while `<html data-unfocused>` is set (Bits UI highlights through focus
   events, which an unfocused panel never gets). Give new menu item styles the same hover rule. While a menu is open,
   the row it opened on keeps its hover look: `ContextMenu` sets `data-hovered` on its trigger's first element, which
-  rows style like hover (give new rows the same rule).
+  rows style like hover (give new rows the same rule). Closing a menu sends focus back where it was,
+  except when an item just focused a text field (an inline rename): that field keeps it (`keepFieldFocus`).
 - **Tooltips**: wrap a trigger in `primitives/tooltip/Tooltip.svelte` instead of a native `title` (`IconButton` does it
   for you). They show right away, close as soon as the pointer leaves the trigger, and fade in and out
   (`.tooltip-surface` in `app.css`); one `Tooltip.Provider` sits in `Sidebar.svelte`. Wrap neighboring triggers in a

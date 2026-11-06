@@ -21,6 +21,15 @@
   const dismiss = dismissOutsidePanel(() => (open = false));
 
   /**
+   * Closing sends focus back to where it was before the menu opened. An item that opened a text
+   * field (an inline rename) keeps the focus it gave it instead: taking it away would end the edit.
+   */
+  const keepFieldFocus = (event: Event) => {
+    const active = document.activeElement;
+    if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) event.preventDefault();
+  };
+
+  /**
    * While the menu is open, the row it opened on keeps its hover look, even with the pointer
    * in the menu (rows style `data-hovered` like hover, see TabRow). Re-runs when `open` changes.
    */
@@ -43,7 +52,7 @@
   </ContextMenu.Trigger>
   <ContextMenu.Portal to={OVERLAY_ROOT}>
     <!-- Placed by MENU_PLACEMENT: below the pointer, sliding and flipping to stay on screen. -->
-    <ContextMenu.Content class="menu-surface" data-no-drag {...MENU_PLACEMENT}>
+    <ContextMenu.Content class="menu-surface" data-no-drag {...MENU_PLACEMENT} onCloseAutoFocus={keepFieldFocus}>
       {#snippet child({ wrapperProps, props })}
         <div {...wrapperProps}>
           <div {...props} {@attach dismiss} {@attach highlightWithoutFocus}>
