@@ -5,7 +5,8 @@ import { spaceOfNode } from '@/lib/state/tree';
 import { type MenuContext, moveToSpace, newFolder } from './menu-context';
 
 /** Right-click menu of a pin. `away`: its tab has left the pin's home page. */
-export function pinMenu(pin: Pin, away: boolean, { store, rename }: MenuContext): MenuItem[] {
+export function pinMenu(pin: Pin, away: boolean, menus: MenuContext): MenuItem[] {
+  const { store, rename } = menus;
   const space = spaceOfNode(store.spaces, pin.id);
   const tabId = pin.tabId;
   return tidy([
@@ -14,7 +15,7 @@ export function pinMenu(pin: Pin, away: boolean, { store, rename }: MenuContext)
     away && { kind: 'action', label: 'Pin this page instead', icon: House, onSelect: () => store.setPinHome(pin.id) },
     { kind: 'action', label: 'Add to favorites', icon: Star, onSelect: () => store.favoritePin(pin.id) },
     moveToSpace(store, space?.id, (spaceId) => store.moveNode(pin.id, spaceId)),
-    newFolder(store, space?.id),
+    newFolder(menus, space?.id),
     separator,
     space && {
       kind: 'action',

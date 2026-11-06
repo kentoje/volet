@@ -23,7 +23,7 @@
   type="button"
   {...mergeProps(rest, {
     class: [
-      'group/dot grid size-7 place-items-center rounded-lg transition-transform hover:bg-hover',
+      'group/dot grid size-7 place-items-center rounded-lg transition-transform hover:bg-hover data-hovered:bg-hover',
       highlighted && 'scale-125 bg-hover',
     ],
     'aria-label': name,

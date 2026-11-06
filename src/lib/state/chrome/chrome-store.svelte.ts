@@ -180,7 +180,8 @@ export class ChromeSidebarStore implements SidebarStore {
   }
 
   async createFolder(parentId: string) {
-    await this.#run({ type: 'createFolder', parentId, index: 0, title: NEW_FOLDER_TITLE });
+    const id = await this.#run({ type: 'createFolder', parentId, index: 0, title: NEW_FOLDER_TITLE });
+    return typeof id === 'string' ? id : undefined;
   }
 
   async createFolderWith(items: SpaceItem[], parentId: string, index?: number) {

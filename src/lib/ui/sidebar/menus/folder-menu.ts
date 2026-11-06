@@ -2,25 +2,26 @@ import { FolderPlus, PencilLine, Trash } from '@lucide/svelte';
 import { type MenuItem, separator, tidy } from '@/lib/model/menu';
 import type { Folder, PinnedNode } from '@/lib/model/types';
 import { spaceOfNode } from '@/lib/state/tree';
-import { type MenuContext, moveToSpace, newFolder } from './menu-context';
+import { type MenuContext, createAndRename, moveToSpace, newFolder } from './menu-context';
 
 const countPins = (nodes: PinnedNode[]): number =>
   nodes.reduce((total, node) => total + (node.kind === 'pin' ? 1 : countPins(node.children)), 0);
 
 /** Right-click menu of a pinned folder. */
-export function folderMenu(folder: Folder, { store, rename, confirm }: MenuContext): MenuItem[] {
+export function folderMenu(folder: Folder, menus: MenuContext): MenuItem[] {
+  const { store, rename, confirm } = menus;
   const space = spaceOfNode(store.spaces, folder.id);
   const pins = countPins(folder.children);
   return tidy([
     { kind: 'action', label: 'Rename', icon: PencilLine, onSelect: () => rename.start(folder.id) },
-    newFolder(store, space?.id),
+    newFolder(menus, space?.id),
     {
       kind: 'action',
       label: 'New folder inside',
       icon: FolderPlus,
       onSelect: async () => {
         if (store.collapsedFolders.has(folder.id)) await store.toggleFolder(folder.id);
-        await store.createFolder(folder.id);
+        await createAndRename(menus, folder.id);
       },
     },
     moveToSpace(store, space?.id, (spaceId) => store.moveNode(folder.id, spaceId)),

@@ -20,10 +20,16 @@ export function getMenuContext(): MenuContext {
   return { store: getSidebar(), rename: getRename(), confirm: getConfirm(), selection: getSelection() };
 }
 
+/** Create a folder at the top of `parentId` (a Space or a folder), then rename it right away. */
+export async function createAndRename({ store, rename }: MenuContext, parentId: string): Promise<void> {
+  const id = await store.createFolder(parentId);
+  if (id) rename.start(id);
+}
+
 /** "New folder" at the top of a Space's pins (never inside another folder). */
-export function newFolder(store: SidebarStore, spaceId: SpaceId | undefined): MenuItem | false {
+export function newFolder(menus: MenuContext, spaceId: SpaceId | undefined): MenuItem | false {
   if (spaceId === undefined) return false;
-  return { kind: 'action', label: 'New folder', icon: FolderPlus, onSelect: () => store.createFolder(spaceId) };
+  return { kind: 'action', label: 'New folder', icon: FolderPlus, onSelect: () => createAndRename(menus, spaceId) };
 }
 
 /** "Move to Space" submenu listing every other Space, each with its color. */

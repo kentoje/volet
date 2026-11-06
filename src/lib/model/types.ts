@@ -94,7 +94,8 @@ export interface SidebarStore {
   renameNode(id: string, title: string): Done;
   /** Delete a pin or folder; open tabs stay as temporary tabs. */
   deleteNode(id: string): Done;
-  createFolder(parentId: string): Done;
+  /** Resolves with the new folder's id. */
+  createFolder(parentId: string): Created;
   /**
    * Create a folder at `index` in a Space or folder and put `items` in it, in order: pins and
    * folders move in, tabs are pinned in. Resolves to the new folder's id.

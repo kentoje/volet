@@ -60,6 +60,10 @@ test('pins can be renamed and folders created from menus', async ({ worker, wind
   await field.press('Enter');
   await visiblePage(panel).getByRole('heading').click({ button: 'right' });
   await menuItem(panel, 'New folder').click();
+  // The new folder opens for renaming, ready to type.
+  const folderName = panel.getByRole('textbox', { name: 'Folder name' });
+  await expect(folderName).toBeFocused();
+  await folderName.press('Enter');
 
   await expect
     .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => c.title))
@@ -81,13 +85,40 @@ test('"New folder" on a folder or a tab adds a folder at the top of the Space, n
   const homeOutline = async () =>
     (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => [c.title, c.children?.length]);
 
+  // Each new folder opens for renaming right away: typing names it.
+  const folderName = panel.getByRole('textbox', { name: 'Folder name' });
   await visiblePage(panel).getByRole('button', { name: 'Docs', exact: true }).click({ button: 'right' });
   await menuItem(panel, 'New folder').click();
-  await expect.poll(homeOutline).toEqual([['New folder', 0], ['Docs', 0]]);
+  await expect(folderName).toBeFocused();
+  await panel.keyboard.type('Inbox');
+  await panel.keyboard.press('Enter');
+  await expect.poll(homeOutline).toEqual([['Inbox', 0], ['Docs', 0]]);
 
   await visiblePage(panel).getByRole('button', { name: 'Loose', exact: true }).click({ button: 'right' });
   await menuItem(panel, 'New folder').click();
-  await expect.poll(homeOutline).toEqual([['New folder', 0], ['New folder', 0], ['Docs', 0]]);
+  await expect(folderName).toBeFocused();
+  await panel.keyboard.press('Escape');
+  await expect.poll(homeOutline).toEqual([['New folder', 0], ['Inbox', 0], ['Docs', 0]]);
+});
+
+test('a row keeps its hover look while its menu is open', async ({ worker, panel }) => {
+  const home = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Home')!.id;
+  });
+  await command(panel, { type: 'createFolder', parentId: home, index: 0, title: 'Docs' });
+  const folder = visiblePage(panel).getByRole('button', { name: 'Docs', exact: true });
+  const background = () => folder.evaluate((node) => getComputedStyle(node).backgroundColor);
+  const resting = await background();
+
+  await folder.click({ button: 'right' });
+  // The pointer leaves the row for the menu: the row still looks hovered.
+  await menuItem(panel, 'Rename').hover();
+  await expect(folder).toHaveAttribute('data-hovered');
+  await expect.poll(background).not.toBe(resting);
+
+  await panel.keyboard.press('Escape');
+  await expect(folder).not.toHaveAttribute('data-hovered');
 });
 
 test('menus stay inside a narrow panel, even from its corner', async ({ panel }) => {

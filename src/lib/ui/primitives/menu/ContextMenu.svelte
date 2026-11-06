@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ContextMenu } from 'bits-ui';
   import type { Snippet } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
   import type { MenuItem } from '@/lib/model/menu';
   import { OVERLAY_ROOT } from '../overlay';
   import { dismissOutsidePanel, highlightWithoutFocus } from './dismiss';
@@ -18,12 +19,27 @@
 
   /** A click in the page is invisible here: close when the panel loses focus, or the pointer leaves it (see dismiss.ts). */
   const dismiss = dismissOutsidePanel(() => (open = false));
+
+  /**
+   * While the menu is open, the row it opened on keeps its hover look, even with the pointer
+   * in the menu (rows style `data-hovered` like hover, see TabRow). Re-runs when `open` changes.
+   */
+  const keepHovered: Attachment<HTMLElement> = (trigger) => {
+    const row = trigger.firstElementChild;
+    if (!open || !row) return;
+    row.setAttribute('data-hovered', '');
+    return () => row.removeAttribute('data-hovered');
+  };
 </script>
 
 <!-- Right-click (or the context menu key) on `children` opens the menu. -->
 <ContextMenu.Root bind:open>
-  <ContextMenu.Trigger class="block">
-    {@render children()}
+  <ContextMenu.Trigger>
+    {#snippet child({ props })}
+      <div {...props} {@attach keepHovered}>
+        {@render children()}
+      </div>
+    {/snippet}
   </ContextMenu.Trigger>
   <ContextMenu.Portal to={OVERLAY_ROOT}>
     <!-- Placed by MENU_PLACEMENT: below the pointer, sliding and flipping to stay on screen. -->

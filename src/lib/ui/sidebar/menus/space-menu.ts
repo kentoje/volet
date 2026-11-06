@@ -6,7 +6,8 @@ import { spaceKey } from '../editing/rename-state.svelte';
 import { type MenuContext, newFolder } from './menu-context';
 
 /** Right-click menu of a Space (its title or its dot in the switcher). */
-export function spaceMenu(space: Space, { store, rename, confirm }: MenuContext): MenuItem[] {
+export function spaceMenu(space: Space, menus: MenuContext): MenuItem[] {
+  const { store, rename, confirm } = menus;
   const index = store.spaces.findIndex((s) => s.id === space.id);
   const last = store.spaces.length - 1;
   return tidy([
@@ -18,7 +19,7 @@ export function spaceMenu(space: Space, { store, rename, confirm }: MenuContext)
       selected: space.hue,
       onSelect: (hue) => store.setSpaceHue(space.id, hue),
     },
-    newFolder(store, space.id),
+    newFolder(menus, space.id),
     separator,
     index > 0 && { kind: 'action', label: 'Move left', icon: ArrowLeft, onSelect: () => store.moveSpace(space.id, index - 1) },
     index < last && {

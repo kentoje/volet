@@ -127,6 +127,7 @@ export class FakeSidebarStore implements SidebarStore {
   createFolder(parentId: string) {
     const folder: Folder = { kind: 'folder', id: `folder-${this.#nextId++}`, title: 'New folder', children: [] };
     this.spaces = tree.insertNode(this.spaces, folder, parentId, 0);
+    return folder.id;
   }
 
   createFolderWith(items: SpaceItem[], parentId: string, index?: number) {

@@ -5,13 +5,14 @@ import { spaceOfTab } from '@/lib/state/tree';
 import { type MenuContext, moveToSpace, newFolder } from './menu-context';
 
 /** Right-click menu of a temporary tab. */
-export function tabMenu(tab: LiveTab, { store }: MenuContext): MenuItem[] {
+export function tabMenu(tab: LiveTab, menus: MenuContext): MenuItem[] {
+  const { store } = menus;
   const space = spaceOfTab(store.spaces, tab.id);
   return tidy([
     space && { kind: 'action', label: 'Pin tab', icon: Pin, onSelect: () => store.pinTab(tab.id, space.id) },
     { kind: 'action', label: 'Add to favorites', icon: Star, onSelect: () => store.addFavorite(tab.id) },
     moveToSpace(store, space?.id, (spaceId) => store.moveTab(tab.id, spaceId)),
-    newFolder(store, space?.id),
+    newFolder(menus, space?.id),
     tab.audible && {
       kind: 'action',
       label: tab.muted ? 'Unmute tab' : 'Mute tab',
