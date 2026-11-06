@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import { CornerUpLeft, PinOff, X } from '@lucide/svelte';
   import type { Pin, SpaceItem } from '@/lib/model/types';
@@ -22,34 +21,6 @@
   const tab = $derived(pin.tabId !== undefined ? sidebar.tabs.get(pin.tabId) : undefined);
   /** The pin's tab has left its home URL: show where it is now, and offer a way back. */
   const away = $derived(tab !== undefined && tab.status === 'complete' && !sameUrl(tab.url, pin.url));
-
-  /**
-   * A closed pin clicked with the mouse opens after a short pause: a double-click renames it
-   * instead. Opening at the first click would bring its tab to the front after the second, and
-   * Chrome then gives the keyboard to the page, away from the name field. The row shows it's
-   * loading meanwhile. Open pins, and the keyboard, open at once.
-   */
-  const OPEN_DELAY_MS = 300;
-  let opening = $state(false);
-  let timer: ReturnType<typeof setTimeout> | undefined;
-
-  function cancelOpening() {
-    clearTimeout(timer);
-    opening = false;
-  }
-
-  function activate(event: MouseEvent) {
-    if (selection.click(entry, event)) return;
-    if (tab || event.detail === 0) return void sidebar.openPin(pin.id);
-    if (event.detail > 1) return; // a double-click's second click: it renames (see ondblclick)
-    opening = true;
-    timer = setTimeout(() => {
-      opening = false;
-      void sidebar.openPin(pin.id);
-    }, OPEN_DELAY_MS);
-  }
-
-  onDestroy(() => clearTimeout(timer));
 </script>
 
 {#snippet backButton()}
@@ -83,17 +54,16 @@
     active={tab !== undefined && tab.id === sidebar.activeTabId}
     selected={selection.has(entry)}
     openMark={tab !== undefined}
-    loading={opening || tab?.status === 'loading'}
+    loading={tab?.status === 'loading'}
     {depth}
     {handle}
     buttons={{ shown: 0, onHover: tab ? 2 : 1 }}
     leading={away ? backButton : undefined}
     editor={rename.is(pin.id) ? editor : undefined}
-    onactivate={activate}
-    ondblclick={() => {
-      cancelOpening();
-      rename.start(pin.id);
+    onactivate={(event) => {
+      if (!selection.click(entry, event)) sidebar.openPin(pin.id);
     }}
+    ondblclick={() => rename.start(pin.id)}
   >
     {#snippet trailing()}
       {#if space}
