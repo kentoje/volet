@@ -22,6 +22,15 @@ export interface ImportedLink {
 
 export type ImportedNode = ({ kind: 'pin' } & ImportedLink) | { kind: 'folder'; title: string; children: ImportedNode[] };
 
+/** What an import brought in, as the engine reports it. */
+export interface ImportResult {
+  spaces: number;
+  pins: number;
+  favorites: number;
+  /** The new Volets' ids, in the order imported. */
+  spaceIds: string[];
+}
+
 export function countPins(nodes: ImportedNode[]): number {
   return nodes.reduce((total, node) => total + (node.kind === 'pin' ? 1 : countPins(node.children)), 0);
 }

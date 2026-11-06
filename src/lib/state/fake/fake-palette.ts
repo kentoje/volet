@@ -1,10 +1,8 @@
 import { asUrl, rank } from '@/lib/engine/palette/rank';
 import type { PaletteClient, PaletteItem } from '@/lib/model/palette';
-import type { PinnedNode, SidebarStore } from '@/lib/model/types';
+import { allPinsIn } from '@/lib/model/pinned';
+import type { SidebarStore } from '@/lib/model/types';
 import { hostOf } from '@/lib/model/url';
-
-const pinsIn = (nodes: PinnedNode[]): Extract<PinnedNode, { kind: 'pin' }>[] =>
-  nodes.flatMap((node) => (node.kind === 'pin' ? [node] : pinsIn(node.children)));
 
 /** Palette over the fake store's content, for the prototype. */
 export function fakePaletteClient(store: SidebarStore): PaletteClient {
@@ -21,7 +19,7 @@ export function fakePaletteClient(store: SidebarStore): PaletteClient {
       list.push({ id: `favorite:${favorite.id}`, kind: 'favorite', title: favorite.title, detail: hostOf(favorite.url), url: favorite.url, ref: favorite.id });
     }
     for (const space of store.spaces) {
-      for (const pin of pinsIn(space.pinned)) {
+      for (const pin of allPinsIn(space.pinned)) {
         list.push({ id: `pin:${pin.id}`, kind: 'pin', title: pin.title, detail: `${space.name} · ${hostOf(pin.url)}`, url: pin.url, ref: pin.id });
       }
       if (space.id !== store.activeSpaceId) {

@@ -28,11 +28,10 @@ export class FakeArcClient implements ArcClient {
     if (!offer) return undefined;
     this.offers = this.offers.filter((candidate) => candidate.id !== id);
     this.invite = false;
-    this.#store.createSpace();
-    const space = this.#store.spaces.at(-1)!;
-    this.#store.renameSpace(space.id, offer.name);
-    if (offer.hue !== undefined) this.#store.setSpaceHue(space.id, offer.hue);
-    return space.id;
+    const spaceId = this.#store.addSpace();
+    this.#store.renameSpace(spaceId, offer.name);
+    if (offer.hue !== undefined) this.#store.setSpaceHue(spaceId, offer.hue);
+    return spaceId;
   }
 
   forget(): void {

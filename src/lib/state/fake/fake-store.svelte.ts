@@ -29,7 +29,7 @@ export class FakeSidebarStore implements SidebarStore {
   }
 
   closeTab(tabId: TabId) {
-    const space = this.spaces.find((s) => s.tabIds.includes(tabId));
+    const space = tree.spaceOfTab(this.spaces, tabId);
     if (space && this.activeTabId === tabId) {
       const index = space.tabIds.indexOf(tabId);
       this.#activateOrClear(space.tabIds[index + 1] ?? space.tabIds[index - 1]);
@@ -57,8 +57,7 @@ export class FakeSidebarStore implements SidebarStore {
   }
 
   moveTab(tabId: TabId, spaceId: SpaceId, index?: number) {
-    this.#release(tabId);
-    this.spaces = tree.placeTemporary(this.spaces, tabId, spaceId, index);
+    this.#show(tree.moveTab(this, tabId, spaceId, index));
   }
 
   // ───────────────────────────── pins and folders ─────────────────────────────
@@ -90,18 +89,12 @@ export class FakeSidebarStore implements SidebarStore {
     const pin = tree.findPin(this.spaces, pinId);
     const tab = pin?.tabId !== undefined ? this.tabs.get(pin.tabId) : undefined;
     if (!tab) return;
-    this.spaces = this.spaces.map((space) => ({
-      ...space,
-      pinned: tree.mapPins(space.pinned, (p) => (p.id === pinId ? { ...p, url: tab.url } : p)),
-    }));
+    this.spaces = tree.updatePin(this.spaces, pinId, (p) => ({ ...p, url: tab.url }));
   }
 
   pinTab(tabId: TabId, parentId: string, index?: number) {
     const tab = this.tabs.get(tabId);
-    if (!tab) return;
-    this.#release(tabId);
-    const pin = { kind: 'pin', id: `pin-${this.#nextId++}`, title: tab.title, url: tab.url, tabId } as const;
-    this.spaces = tree.pinTemporary(this.spaces, pin, parentId, index);
+    if (tab) this.#show(tree.pinTab(this, tab, `pin-${this.#nextId++}`, parentId, index));
   }
 
   unpin(pinId: string, spaceId: SpaceId, index?: number) {
@@ -125,18 +118,14 @@ export class FakeSidebarStore implements SidebarStore {
   }
 
   createFolder(parentId: string) {
-    const folder: Folder = { kind: 'folder', id: `folder-${this.#nextId++}`, title: 'New folder', children: [] };
+    const folder = this.#newFolder();
     this.spaces = tree.insertNode(this.spaces, folder, parentId, 0);
     return folder.id;
   }
 
   createFolderWith(items: SpaceItem[], parentId: string, index?: number) {
-    const folder: Folder = { kind: 'folder', id: `folder-${this.#nextId++}`, title: 'New folder', children: [] };
-    for (const item of items) if (item.kind === 'tab') this.#release(item.id);
-    this.spaces = tree.fillNewFolder(this.spaces, folder, parentId, index, items, (tabId) => {
-      const tab = this.tabs.get(tabId);
-      return tab && { kind: 'pin', id: `pin-${this.#nextId++}`, title: tab.title, url: tab.url, tabId };
-    });
+    const folder = this.#newFolder();
+    this.#show(tree.folderWith(this, folder, parentId, index, items, this.tabs, () => `pin-${this.#nextId++}`));
     return folder.id;
   }
 
@@ -156,15 +145,11 @@ export class FakeSidebarStore implements SidebarStore {
 
   addFavorite(tabId: TabId, index?: number) {
     const tab = this.tabs.get(tabId);
-    if (!tab) return;
-    this.#release(tabId);
-    this.spaces = tree.withoutTab(this.spaces, tabId);
-    const favorite = { id: `fav-${this.#nextId++}`, title: tab.title, url: tab.url, tabId };
-    this.favorites = tree.insertFavorite(this.favorites, favorite, index);
+    if (tab) this.#show(tree.favoriteTab(this, tab, `fav-${this.#nextId++}`, index));
   }
 
   favoritePin(pinId: string, index?: number) {
-    ({ spaces: this.spaces, favorites: this.favorites } = tree.pinToFavorite(this.spaces, this.favorites, pinId, index));
+    this.#show(tree.pinToFavorite(this.spaces, this.favorites, pinId, index));
   }
 
   moveFavorite(favoriteId: string, index: number) {
@@ -172,9 +157,7 @@ export class FakeSidebarStore implements SidebarStore {
   }
 
   removeFavorite(favoriteId: string) {
-    const tabId = this.favorites.find((favorite) => favorite.id === favoriteId)?.tabId;
-    this.favorites = this.favorites.filter((favorite) => favorite.id !== favoriteId);
-    if (tabId !== undefined) this.spaces = tree.placeTemporary(this.spaces, tabId, this.activeSpaceId);
+    this.#show(tree.removeFavorite(this, favoriteId, this.activeSpaceId));
   }
 
   setFavoriteHome(favoriteId: string) {
@@ -194,10 +177,16 @@ export class FakeSidebarStore implements SidebarStore {
   }
 
   createSpace() {
+    this.addSpace();
+  }
+
+  /** Create a Space and show it; returns its id (the prototype's Arc import names it). */
+  addSpace(): SpaceId {
     const id = `space-${this.#nextId++}`;
     const hue = nextHue(this.spaces.map((space) => space.hue));
     this.spaces = [...this.spaces, { id, name: `Volet ${this.spaces.length + 1}`, hue, pinned: [], tabIds: [] }];
     this.switchSpace(id);
+    return id;
   }
 
   renameSpace(spaceId: SpaceId, name: string) {
@@ -214,18 +203,20 @@ export class FakeSidebarStore implements SidebarStore {
 
   deleteSpace(spaceId: SpaceId) {
     if (this.spaces.length < 2) return;
-    const index = this.spaces.findIndex((space) => space.id === spaceId);
-    this.spaces = this.spaces.filter((space) => space.id !== spaceId);
-    if (this.activeSpaceId === spaceId) this.switchSpace((this.spaces[index] ?? this.spaces[index - 1])!.id);
+    const { spaces, successor } = tree.deleteSpace(this.spaces, spaceId);
+    this.spaces = spaces;
+    if (this.activeSpaceId === spaceId && successor) this.switchSpace(successor.id);
   }
 
   // ───────────────────────────── internals ─────────────────────────────
 
-  /** Unlink a tab from a favorite or pin, as the engine does when it moves elsewhere. */
-  #release(tabId: TabId) {
-    this.favorites = this.favorites.filter((favorite) => favorite.tabId !== tabId);
-    const pin = this.spaces.flatMap((space) => tree.findPinByTab(space.pinned, tabId))[0];
-    if (pin) this.spaces = tree.withPinTab(this.spaces, pin.id, undefined);
+  #show({ spaces, favorites }: tree.SpacesAndFavorites) {
+    this.spaces = spaces;
+    this.favorites = favorites;
+  }
+
+  #newFolder(): Folder {
+    return { kind: 'folder', id: `folder-${this.#nextId++}`, title: tree.NEW_FOLDER_TITLE, children: [] };
   }
 
   #createTab(url: string, title: string, load = true): TabId {

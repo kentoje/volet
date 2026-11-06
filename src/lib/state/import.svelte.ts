@@ -1,16 +1,9 @@
 import { arcSidebarItem, importedArcSpacesItem } from '@/lib/engine/storage';
 import { ArcImportError } from '@/lib/import/arc';
-import type { ImportedSidebar } from '@/lib/import/types';
+import type { ImportResult, ImportedSidebar } from '@/lib/import/types';
 import { rememberArcFile } from './arc.svelte';
-import { sendCommand } from './chrome/command-client';
+import { importSidebar } from './chrome/command-client';
 import { range, toggled } from './tree';
-
-export interface ImportResult {
-  spaces: number;
-  pins: number;
-  favorites: number;
-  spaceIds: string[];
-}
 
 /** The Arc import flow: choose the file, review what's in it, import the chosen Spaces. */
 export class ImportState {
@@ -73,7 +66,7 @@ export class ImportState {
       favorites: this.includeFavorites ? this.sidebar.favorites : [],
     };
     try {
-      this.result = (await sendCommand({ type: 'importSidebar', sidebar })) as ImportResult;
+      this.result = await importSidebar(sidebar);
       this.step = 'done';
     } catch (error) {
       this.error = `The import stopped: ${(error as Error).message}`;

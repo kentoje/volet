@@ -1,4 +1,4 @@
-import type { Favorite, Folder, Pin, PinnedNode, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
+import type { Favorite, Folder, LiveTab, Pin, PinnedNode, Space, SpaceId, SpaceItem, TabId } from '@/lib/model/types';
 
 /**
  * Pure, immutable operations on the sidebar's content. The Chrome store uses them
@@ -17,6 +17,8 @@ interface SpaceIndex {
   spaces: Map<SpaceId, Space>;
   /** The Space each temporary tab is listed in. */
   tabs: Map<TabId, Space>;
+  /** The pin each open pin tab belongs to. */
+  pinTabs: Map<TabId, Pin>;
 }
 
 const indexes = new WeakMap<readonly Space[], SpaceIndex>();
@@ -28,11 +30,12 @@ const indexes = new WeakMap<readonly Space[], SpaceIndex>();
 function indexOf(spaces: readonly Space[]): SpaceIndex {
   const cached = indexes.get(spaces);
   if (cached) return cached;
-  const index: SpaceIndex = { nodes: new Map(), spaces: new Map(), tabs: new Map() };
+  const index: SpaceIndex = { nodes: new Map(), spaces: new Map(), tabs: new Map(), pinTabs: new Map() };
   const visit = (nodes: PinnedNode[], space: Space) => {
     for (const node of nodes) {
       if (!index.nodes.has(node.id)) index.nodes.set(node.id, { node, space });
       if (node.kind === 'folder') visit(node.children, space);
+      else if (node.tabId !== undefined && !index.pinTabs.has(node.tabId)) index.pinTabs.set(node.tabId, node);
     }
   };
   for (const space of spaces) {
@@ -53,12 +56,9 @@ export function findPin(spaces: Space[], pinId: string): Pin | undefined {
   return node?.kind === 'pin' ? node : undefined;
 }
 
-/** The pins (normally zero or one) whose open tab is `tabId`. */
-export function findPinByTab(nodes: PinnedNode[], tabId: TabId): Pin[] {
-  return nodes.flatMap((node): Pin[] => {
-    if (node.kind === 'folder') return findPinByTab(node.children, tabId);
-    return node.tabId === tabId ? [node] : [];
-  });
+/** The pin whose open tab is `tabId` (the first one, should several claim it). */
+export function findPinByTab(spaces: Space[], tabId: TabId): Pin | undefined {
+  return indexOf(spaces).pinTabs.get(tabId);
 }
 
 /** The Space whose temporary tabs include `tabId`. */
@@ -85,17 +85,39 @@ export function folderContains(spaces: Space[], ancestorId: string, folderId: st
 
 // ───────────────────────────── pins and folders ─────────────────────────────
 
-export function mapPins(nodes: PinnedNode[], change: (pin: Pin) => Pin): PinnedNode[] {
-  return nodes.map((node) =>
-    node.kind === 'pin' ? change(node) : { ...node, children: mapPins(node.children, change) },
-  );
+/**
+ * Change one pin or folder. Only the folders and the Space on its path are copied: everything
+ * else keeps its object (and `spaces` itself is returned when nothing changed).
+ */
+export function updateNode(spaces: Space[], id: string, change: (node: PinnedNode) => PinnedNode): Space[] {
+  const home = spaceOfNode(spaces, id);
+  if (!home || home.id === id) return spaces;
+  const update = (nodes: PinnedNode[]): PinnedNode[] => {
+    let changed = false;
+    const next = nodes.map((node) => {
+      let result = node;
+      if (node.id === id) result = change(node);
+      else if (node.kind === 'folder' && containsNode(node.children, id)) {
+        const children = update(node.children);
+        if (children !== node.children) result = { ...node, children };
+      }
+      if (result !== node) changed = true;
+      return result;
+    });
+    return changed ? next : nodes;
+  };
+  const pinned = update(home.pinned);
+  if (pinned === home.pinned) return spaces;
+  return spaces.map((space) => (space === home ? { ...space, pinned } : space));
+}
+
+/** Change one pin (a folder with that id is left alone). */
+export function updatePin(spaces: Space[], pinId: string, change: (pin: Pin) => Pin): Space[] {
+  return updateNode(spaces, pinId, (node) => (node.kind === 'pin' ? change(node) : node));
 }
 
 export function withPinTab(spaces: Space[], pinId: string, tabId: TabId | undefined): Space[] {
-  return spaces.map((space) => ({
-    ...space,
-    pinned: mapPins(space.pinned, (pin) => (pin.id === pinId ? { ...pin, tabId } : pin)),
-  }));
+  return updatePin(spaces, pinId, (pin) => (pin.tabId === tabId ? pin : { ...pin, tabId }));
 }
 
 function mapNodes(nodes: PinnedNode[], change: (node: PinnedNode) => PinnedNode): PinnedNode[] {
@@ -106,10 +128,7 @@ function mapNodes(nodes: PinnedNode[], change: (node: PinnedNode) => PinnedNode)
 }
 
 export function renameNode(spaces: Space[], id: string, title: string): Space[] {
-  return spaces.map((space) => ({
-    ...space,
-    pinned: mapNodes(space.pinned, (node) => (node.id === id ? { ...node, title } : node)),
-  }));
+  return updateNode(spaces, id, (node) => ({ ...node, title }));
 }
 
 function removeFrom(nodes: PinnedNode[], id: string): { nodes: PinnedNode[]; removed?: PinnedNode } {
@@ -291,4 +310,103 @@ export function withKey<K, V>(map: ReadonlyMap<K, V>, key: K, value: V | undefin
 /** A set of the numbers 0 to count - 1 (e.g. "every item chosen"). */
 export function range(count: number, keep: (index: number) => boolean = () => true): ReadonlySet<number> {
   return new Set(Array.from({ length: count }, (_, index) => index).filter(keep));
+}
+
+// ───────────────────────────── changes both stores make ─────────────────────────────
+
+/** The sidebar's saved lists: what most changes touch. */
+export interface SpacesAndFavorites {
+  spaces: Space[];
+  favorites: Favorite[];
+}
+
+/** The title a new folder starts with (then renamed in place). */
+export const NEW_FOLDER_TITLE = 'New folder';
+
+/** The pin a tab becomes when it's pinned, titled after its page. */
+export function pinFromTab(tab: LiveTab, id: string): Pin {
+  return { kind: 'pin', id, title: tab.title, url: tab.url, tabId: tab.id };
+}
+
+/** A tab leaving its favorite or pin (moving elsewhere): unlink it there, as the engine does. */
+export function releaseTab({ spaces, favorites }: SpacesAndFavorites, tabId: TabId): SpacesAndFavorites {
+  const pin = findPinByTab(spaces, tabId);
+  return {
+    spaces: pin ? withPinTab(spaces, pin.id, undefined) : spaces,
+    favorites: favorites.some((favorite) => favorite.tabId === tabId)
+      ? favorites.filter((favorite) => favorite.tabId !== tabId)
+      : favorites,
+  };
+}
+
+/** Move a tab among a Space's temporary tabs (from wherever it was: a list, a pin, a favorite). */
+export function moveTab(content: SpacesAndFavorites, tabId: TabId, spaceId: SpaceId, index?: number): SpacesAndFavorites {
+  const { spaces, favorites } = releaseTab(content, tabId);
+  return { spaces: placeTemporary(spaces, tabId, spaceId, index), favorites };
+}
+
+/** Pin a tab, as `pinId`, into a Space or folder. */
+export function pinTab(
+  content: SpacesAndFavorites,
+  tab: LiveTab,
+  pinId: string,
+  parentId: string,
+  index?: number,
+): SpacesAndFavorites {
+  const { spaces, favorites } = releaseTab(content, tab.id);
+  return { spaces: pinTemporary(spaces, pinFromTab(tab, pinId), parentId, index), favorites };
+}
+
+/** Make a tab a favorite, as `favoriteId`, at `index` (end if omitted). */
+export function favoriteTab(
+  content: SpacesAndFavorites,
+  tab: LiveTab,
+  favoriteId: string,
+  index?: number,
+): SpacesAndFavorites {
+  const { spaces, favorites } = releaseTab(content, tab.id);
+  const favorite = { id: favoriteId, title: tab.title, url: tab.url, tabId: tab.id };
+  return { spaces: withoutTab(spaces, tab.id), favorites: insertFavorite(favorites, favorite, index) };
+}
+
+/** Remove a favorite; its open tab, if any, joins `spaceId`'s temporary tabs. */
+export function removeFavorite(
+  { spaces, favorites }: SpacesAndFavorites,
+  favoriteId: string,
+  spaceId: SpaceId,
+): SpacesAndFavorites {
+  const tabId = favorites.find((favorite) => favorite.id === favoriteId)?.tabId;
+  return {
+    spaces: tabId !== undefined ? placeTemporary(spaces, tabId, spaceId) : spaces,
+    favorites: favorites.filter((favorite) => favorite.id !== favoriteId),
+  };
+}
+
+/**
+ * Make `folder` at `index` in a Space or folder, holding `items` in order: pins and folders move
+ * in, tabs are pinned in (as the pins `pinId` names) and leave any favorite or pin they had.
+ */
+export function folderWith(
+  content: SpacesAndFavorites,
+  folder: Folder,
+  parentId: string,
+  index: number | undefined,
+  items: SpaceItem[],
+  tabs: ReadonlyMap<TabId, LiveTab>,
+  pinId: (tabId: TabId) => string,
+): SpacesAndFavorites {
+  let released = content;
+  for (const item of items) if (item.kind === 'tab') released = releaseTab(released, item.id);
+  const spaces = fillNewFolder(released.spaces, folder, parentId, index, items, (tabId) => {
+    const tab = tabs.get(tabId);
+    return tab && pinFromTab(tab, pinId(tabId));
+  });
+  return { spaces, favorites: released.favorites };
+}
+
+/** Delete a Space; `successor` is the one that takes its place (the next, else the previous). */
+export function deleteSpace(spaces: Space[], spaceId: SpaceId): { spaces: Space[]; successor?: Space } {
+  const index = spaces.findIndex((space) => space.id === spaceId);
+  const rest = spaces.filter((space) => space.id !== spaceId);
+  return { spaces: rest, successor: rest[index] ?? rest[index - 1] };
 }

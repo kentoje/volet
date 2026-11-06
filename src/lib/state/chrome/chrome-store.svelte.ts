@@ -10,8 +10,6 @@ import { loadSnapshot } from './load-snapshot';
 import { RefreshGate } from './refresh-gate';
 import { TabOverlay } from './tab-overlay';
 
-const NEW_FOLDER_TITLE = 'New folder';
-
 /**
  * The sidebar's view of Chrome for one window. Reads come straight from Chrome;
  * every write is a command run by the service worker. Each action applies an
@@ -88,11 +86,15 @@ export class ChromeSidebarStore implements SidebarStore {
     return value;
   }
 
-  /** A tab leaving favorites or a pin: unlink it there (the engine does the same). */
-  #releaseTab(tabId: TabId): void {
-    this.favorites = this.favorites.filter((favorite) => favorite.tabId !== tabId);
-    const pin = this.spaces.flatMap((space) => tree.findPinByTab(space.pinned, tabId))[0];
-    if (pin) this.spaces = tree.withPinTab(this.spaces, pin.id, undefined);
+  /** Like `#run`, for commands that create something: resolves to its id. */
+  async #create(command: Command, optimistic?: () => void): Promise<string | undefined> {
+    const id = await this.#run(command, optimistic);
+    return typeof id === 'string' ? id : undefined;
+  }
+
+  #show({ spaces, favorites }: tree.SpacesAndFavorites): void {
+    this.spaces = spaces;
+    this.favorites = favorites;
   }
 
   // ───────────────────────────── tabs ─────────────────────────────
@@ -123,8 +125,7 @@ export class ChromeSidebarStore implements SidebarStore {
 
   async moveTab(tabId: TabId, spaceId: SpaceId, index?: number) {
     await this.#run({ type: 'moveTab', windowId: this.windowId, tabId, spaceId, index }, () => {
-      this.#releaseTab(tabId);
-      this.spaces = tree.placeTemporary(this.spaces, tabId, spaceId, index);
+      this.#show(tree.moveTab(this, tabId, spaceId, index));
     });
   }
 
@@ -154,10 +155,7 @@ export class ChromeSidebarStore implements SidebarStore {
   async pinTab(tabId: TabId, parentId: string, index?: number) {
     const tab = this.tabs.get(tabId);
     await this.#run({ type: 'pinTab', windowId: this.windowId, tabId, parentId, index }, () => {
-      if (!tab) return;
-      this.#releaseTab(tabId);
-      const pin = { kind: 'pin', id: `pending-${tabId}`, title: tab.title, url: tab.url, tabId } as const;
-      this.spaces = tree.pinTemporary(this.spaces, pin, parentId, index);
+      if (tab) this.#show(tree.pinTab(this, tab, `pending-${tabId}`, parentId, index));
     });
   }
 
@@ -185,22 +183,16 @@ export class ChromeSidebarStore implements SidebarStore {
     });
   }
 
-  async createFolder(parentId: string) {
-    const id = await this.#run({ type: 'createFolder', parentId, index: 0, title: NEW_FOLDER_TITLE });
-    return typeof id === 'string' ? id : undefined;
+  createFolder(parentId: string) {
+    return this.#create({ type: 'createFolder', parentId, index: 0, title: tree.NEW_FOLDER_TITLE });
   }
 
-  async createFolderWith(items: SpaceItem[], parentId: string, index?: number) {
-    const title = NEW_FOLDER_TITLE;
-    const id = await this.#run({ type: 'createFolderWith', windowId: this.windowId, parentId, index, title, items }, () => {
+  createFolderWith(items: SpaceItem[], parentId: string, index?: number) {
+    const title = tree.NEW_FOLDER_TITLE;
+    return this.#create({ type: 'createFolderWith', windowId: this.windowId, parentId, index, title, items }, () => {
       const folder: Folder = { kind: 'folder', id: 'pending-folder', title, children: [] };
-      for (const item of items) if (item.kind === 'tab') this.#releaseTab(item.id);
-      this.spaces = tree.fillNewFolder(this.spaces, folder, parentId, index, items, (tabId) => {
-        const tab = this.tabs.get(tabId);
-        return tab && { kind: 'pin', id: `pending-${tabId}`, title: tab.title, url: tab.url, tabId };
-      });
+      this.#show(tree.folderWith(this, folder, parentId, index, items, this.tabs, (tabId) => `pending-${tabId}`));
     });
-    return typeof id === 'string' ? id : undefined;
   }
 
   async toggleFolder(folderId: string) {
@@ -221,17 +213,13 @@ export class ChromeSidebarStore implements SidebarStore {
   async addFavorite(tabId: TabId, index?: number) {
     const tab = this.tabs.get(tabId);
     await this.#run({ type: 'addFavorite', windowId: this.windowId, tabId, index }, () => {
-      if (!tab) return;
-      this.#releaseTab(tabId);
-      this.spaces = tree.withoutTab(this.spaces, tabId);
-      const favorite = { id: `pending-${tabId}`, title: tab.title, url: tab.url, tabId };
-      this.favorites = tree.insertFavorite(this.favorites, favorite, index);
+      if (tab) this.#show(tree.favoriteTab(this, tab, `pending-${tabId}`, index));
     });
   }
 
   async favoritePin(pinId: string, index?: number) {
     await this.#run({ type: 'favoritePin', windowId: this.windowId, pinId, index }, () => {
-      ({ spaces: this.spaces, favorites: this.favorites } = tree.pinToFavorite(this.spaces, this.favorites, pinId, index));
+      this.#show(tree.pinToFavorite(this.spaces, this.favorites, pinId, index));
     });
   }
 
@@ -242,10 +230,8 @@ export class ChromeSidebarStore implements SidebarStore {
   }
 
   async removeFavorite(favoriteId: string) {
-    const tabId = this.favorites.find((favorite) => favorite.id === favoriteId)?.tabId;
     await this.#run({ type: 'removeFavorite', windowId: this.windowId, favoriteId }, () => {
-      this.favorites = this.favorites.filter((favorite) => favorite.id !== favoriteId);
-      if (tabId !== undefined) this.spaces = tree.placeTemporary(this.spaces, tabId, this.activeSpaceId);
+      this.#show(tree.removeFavorite(this, favoriteId, this.activeSpaceId));
     });
   }
 
@@ -284,11 +270,9 @@ export class ChromeSidebarStore implements SidebarStore {
 
   async deleteSpace(spaceId: SpaceId) {
     await this.#run({ type: 'deleteSpace', windowId: this.windowId, spaceId }, () => {
-      const index = this.spaces.findIndex((space) => space.id === spaceId);
-      this.spaces = this.spaces.filter((space) => space.id !== spaceId);
-      if (this.activeSpaceId === spaceId) {
-        this.activeSpaceId = (this.spaces[index] ?? this.spaces[index - 1])?.id ?? '';
-      }
+      const { spaces, successor } = tree.deleteSpace(this.spaces, spaceId);
+      this.spaces = spaces;
+      if (this.activeSpaceId === spaceId) this.activeSpaceId = successor?.id ?? '';
     });
   }
 }

@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import { countPins, type ImportedNode } from '../../import/types';
+import { countPins, type ImportResult, type ImportedNode } from '../../import/types';
 import { nextHue } from '../colors';
 import { ensureRoot } from '../root';
 import { spaceFolders } from '../snapshot';
@@ -33,7 +33,7 @@ export const importHandlers = {
    * New Spaces are added next to the existing ones (names made unique); favorites skip duplicates.
    * Resolves with what was imported, and the new Spaces' ids.
    */
-  async importSidebar({ sidebar }) {
+  async importSidebar({ sidebar }): Promise<ImportResult> {
     const ids = await ensureRoot();
     const root = (await browser.bookmarks.getSubTree(ids.rootId))[0]!;
     const taken = spaceFolders(root, ids.favoritesId).map((space) => space.title);

@@ -1,5 +1,10 @@
 import type { Pin, PinnedNode, TabId } from './types';
 
+/** Every pin in `nodes`, at any depth, in page order. */
+export function allPinsIn(nodes: PinnedNode[]): Pin[] {
+  return nodes.flatMap((node) => (node.kind === 'pin' ? [node] : allPinsIn(node.children)));
+}
+
 /** The pins in `nodes`, at any depth, whose tab is open: a collapsed folder still shows them. */
 export function openPinsIn(nodes: PinnedNode[]): Pin[] {
   return nodes.flatMap((node) =>

@@ -2,7 +2,7 @@ import { arcInviteItem, arcSidebarItem, importedArcSpacesItem } from '@/lib/engi
 import { parseArcSidebar } from '@/lib/import/arc';
 import type { ImportedSidebar } from '@/lib/import/types';
 import { type ArcClient, arcOffers } from '@/lib/model/arc';
-import { sendCommand } from './chrome/command-client';
+import { importSidebar, sendCommand } from './chrome/command-client';
 
 /**
  * Read Arc's sidebar file and remember what's in it, so the import page and the sidebar can offer
@@ -48,9 +48,7 @@ export class ChromeArcClient implements ArcClient {
   async importSpace(id: string): Promise<string | undefined> {
     const space = this.#sidebar?.spaces.find((candidate) => candidate.id === id);
     if (!space) return undefined;
-    const result = (await sendCommand({ type: 'importSidebar', sidebar: { spaces: [space], favorites: [] } })) as {
-      spaceIds: string[];
-    };
+    const result = await importSidebar({ spaces: [space], favorites: [] });
     return result.spaceIds[0];
   }
 
