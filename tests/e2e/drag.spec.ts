@@ -60,6 +60,7 @@ test('dragging a tab into the pinned area pins it, and back out unpins it', asyn
   await openTabs(worker, windowId, ['Keeper']);
   await expect(row(panel, 'Keeper')).toBeVisible();
   const hint = visiblePage(panel).getByText('Drag tabs here to pin them');
+  let overlap: Promise<number> | undefined;
   await drag(panel, row(panel, 'Keeper'), hint, {
     beforeDrop: async () => {
       // The empty list lights up exactly where its dotted hint is.
@@ -67,8 +68,25 @@ test('dragging a tab into the pinned area pins it, and back out unpins it', asyn
       await expect(lit).toHaveCount(1);
       const [a, b] = [(await lit.boundingBox())!, (await hint.boundingBox())!];
       expect([a.x, a.y, a.width, a.height]).toEqual([b.x, b.y, b.width, b.height]);
+      // Watch every frame of the drop: the hint and the dropped row never show together.
+      overlap = panel.evaluate(
+        () =>
+          new Promise<number>((resolve) => {
+            let frames = 0;
+            const end = performance.now() + 500;
+            const sample = () => {
+              const page = document.querySelector('section:not([inert])');
+              const hinted = [...(page?.querySelectorAll('p') ?? [])].some((p) => p.textContent?.includes('Drag tabs here'));
+              if (hinted && page?.querySelector('[data-list^="pins:"]')) frames++;
+              if (performance.now() < end) requestAnimationFrame(sample);
+              else resolve(frames);
+            };
+            sample();
+          }),
+      );
     },
   });
+  expect(await overlap).toBe(0);
   await expect
     .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.map((c) => c.title))
     .toEqual(['Keeper']);

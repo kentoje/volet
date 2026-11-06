@@ -40,11 +40,13 @@
 
 <!--
   A list's whole area accepts drops: over a gap or past the last row, the drop goes next to
-  the closest row. Empty, the list lights up (or shows a drop line) when something would land in it.
+  the closest row. Empty, the list lights up (or shows a drop line) when something would land in it;
+  the light fades while dragging, but goes at once on drop, as the dropped row lands in its place.
 -->
 <div
   class={[
-    'rounded-[10px] transition-colors',
+    'rounded-[10px]',
+    !drag.released && 'transition-colors',
     empty === 'line' && 'relative',
     empty === 'fill' && drag.fills(list) && 'bg-hover',
     className,

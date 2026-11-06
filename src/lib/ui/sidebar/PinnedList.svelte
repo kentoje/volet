@@ -57,7 +57,13 @@
       {/if}
     {/each}
   </ul>
-  {#if entries.length === 0 && !folded}
-    <div transition:slide={{ duration }}>{@render empty?.()}</div>
+  <!--
+    The empty hint slides with its folder (collapsing, expanding), but a row arriving or leaving
+    swaps with it at once: the first row dropped in lands where the hint was, with no overlap.
+  -->
+  {#if !folded}
+    <div transition:slide={{ duration }}>
+      {#if entries.length === 0}{@render empty?.()}{/if}
+    </div>
   {/if}
 </DropZone>
