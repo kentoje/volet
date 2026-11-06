@@ -35,6 +35,11 @@ export const collapsedItem = storage.defineItem<string[]>('local:collapsedFolder
 export const archiveItem = storage.defineItem<ArchiveEntry[]>('local:archive', { fallback: [] });
 /** Arc's sidebar as last read from its file (by the import page, or the panel when it may re-read it). */
 export const arcSidebarItem = storage.defineItem<ImportedSidebar | null>('local:arcSidebar', { fallback: null });
+/**
+ * bookmark id → the title Volet gave that pin or favorite from its page. While it still has that
+ * title, it follows the page (`engine/titles.ts`); once someone renames it, it's theirs.
+ */
+export const autoTitlesItem = storage.defineItem<Record<string, string>>('local:autoTitles', { fallback: {} });
 /** Ids of the Arc Spaces imported on this device. */
 export const importedArcSpacesItem = storage.defineItem<string[]>('local:importedArcSpaces', { fallback: [] });
 /** Show the "Coming from Arc?" card: set on install, cleared when dismissed or once something is imported. */
@@ -43,8 +48,3 @@ export const arcInviteItem = storage.defineItem<boolean>('local:arcInvite', { fa
 // Sync: follows the user across devices. Keyed by Space name since bookmark ids differ per device.
 export const spaceMetaItem = storage.defineItem<Record<string, SpaceMeta>>('sync:spaceMeta', { fallback: {} });
 export const settingsItem = storage.defineItem<Settings>('sync:settings', { fallback: DEFAULT_SETTINGS });
-/**
- * Pins and favorites the user named (`titleSignature` of URL and title): their titles never follow
- * the page's. Signatures rather than bookmark ids, which differ per device.
- */
-export const namedTitlesItem = storage.defineItem<string[]>('sync:namedTitles', { fallback: [] });

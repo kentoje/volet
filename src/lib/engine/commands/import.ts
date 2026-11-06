@@ -1,25 +1,25 @@
 import { browser } from 'wxt/browser';
-import { countPins, type ImportedLink, type ImportedNode } from '../../import/types';
+import { countPins, type ImportedNode } from '../../import/types';
 import { nextHue } from '../colors';
 import { ensureRoot } from '../root';
 import { spaceFolders } from '../snapshot';
 import { uniqueName } from '../space-names';
 import { arcInviteItem, collapsedItem, importedArcSpacesItem, spaceMetaItem } from '../storage';
-import { markNamed } from '../titles';
+import { rememberAutoTitles } from '../titles';
 import type { Handlers } from './types';
 
 /** What creating the pins and folders collects along the way. */
 interface Created {
-  /** Pins whose title the user chose (to keep it). */
-  named: ImportedLink[];
+  /** Bookmarks titled after their page (not a name the user chose in Arc): they follow it. */
+  auto: { id: string; title: string }[];
   folderIds: string[];
 }
 
 async function createNodes(parentId: string, nodes: ImportedNode[], created: Created): Promise<void> {
   for (const node of nodes) {
     if (node.kind === 'pin') {
-      await browser.bookmarks.create({ parentId, title: node.title, url: node.url });
-      if (node.named) created.named.push(node);
+      const pin = await browser.bookmarks.create({ parentId, title: node.title, url: node.url });
+      if (!node.named) created.auto.push(pin);
     } else {
       const folder = await browser.bookmarks.create({ parentId, title: node.title });
       created.folderIds.push(folder.id);
@@ -40,7 +40,7 @@ export const importHandlers = {
     const meta = { ...(await spaceMetaItem.getValue()) };
     const hues = Object.values(meta).map((m) => m.hue);
 
-    const created: Created = { named: [], folderIds: [] };
+    const created: Created = { auto: [], folderIds: [] };
     const spaceIds: string[] = [];
     for (const space of sidebar.spaces) {
       const title = uniqueName(space.name, taken);
@@ -60,12 +60,12 @@ export const importHandlers = {
     for (const favorite of sidebar.favorites) {
       if (known.has(favorite.url)) continue;
       known.add(favorite.url);
-      await browser.bookmarks.create({ parentId: ids.favoritesId, title: favorite.title, url: favorite.url });
-      if (favorite.named) created.named.push(favorite);
+      const bookmark = await browser.bookmarks.create({ parentId: ids.favoritesId, title: favorite.title, url: favorite.url });
+      if (!favorite.named) created.auto.push(bookmark);
       favorites++;
     }
 
-    await markNamed(created.named);
+    await rememberAutoTitles(created.auto);
     // Imported folders start closed, so a big Arc sidebar arrives tidy.
     if (created.folderIds.length) {
       await collapsedItem.setValue([...(await collapsedItem.getValue()), ...created.folderIds]);

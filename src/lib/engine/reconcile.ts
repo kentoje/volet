@@ -17,6 +17,7 @@ import { retry } from './retry';
 import { parkedTab, setActiveSpace, setBinding, setGroupSpace } from './session';
 import { NO_GROUP, bookmarkIds, findBookmark, pinsIn, spaceOfBookmark, spaceOfGroup } from './snapshot';
 import { uniqueName } from './space-names';
+import { rememberAutoTitles } from './titles';
 
 /**
  * Bring one window in line with the model. Idempotent: running it twice changes
@@ -70,9 +71,11 @@ async function syncFavorites(ctx: Context): Promise<void> {
       const url = tabUrl(tab);
       if (!url) continue;
       const taken = boundIdsInWindow(ctx);
-      const favorite =
-        favorites.find((fav) => !taken.has(fav.id) && sameUrl(fav.url!, url)) ??
-        (await browser.bookmarks.create({ parentId: ctx.ids.favoritesId, title: tab.title || url, url }));
+      let favorite = favorites.find((fav) => !taken.has(fav.id) && sameUrl(fav.url!, url));
+      if (!favorite) {
+        favorite = await browser.bookmarks.create({ parentId: ctx.ids.favoritesId, title: tab.title || url, url });
+        await rememberAutoTitles([favorite]);
+      }
       await setBinding(ctx, tab.id, { kind: 'favorite', id: favorite.id });
     } else if (!tab.pinned && live?.kind === 'favorite') {
       await setBinding(ctx, tab.id, undefined);

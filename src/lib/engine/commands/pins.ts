@@ -13,6 +13,7 @@ import { retry } from '../retry';
 import { setActiveSpace, setBinding } from '../session';
 import { findBookmark, spaceOfBookmark, spaceOfGroup } from '../snapshot';
 import { keepActiveInSpace, placeTab, releaseFavorite } from '../tab-ops';
+import { rememberAutoTitles } from '../titles';
 import { deleteBookmark } from './bookmarks';
 import type { CommandOf, Handlers } from './types';
 
@@ -25,6 +26,7 @@ export async function pinTab({ windowId, tabId, parentId, index }: CommandOf<'pi
   await releaseFavorite(ctx, tabId);
   if (tab.pinned) await retry(() => browser.tabs.update(tabId, { pinned: false }));
   const pin = await browser.bookmarks.create({ parentId, index, title: tab.title || url, url });
+  await rememberAutoTitles([pin]);
   await setBinding(ctx, tabId, { kind: 'pin', id: pin.id });
   await reloadRoot(ctx);
   const spaceId = spaceOfBookmark(ctx.root, pin.id);

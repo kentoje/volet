@@ -6,7 +6,7 @@ import { ensureRoot } from '../root';
 import { setBinding } from '../session';
 import { findBookmark, pinsIn, spaceOfBookmark } from '../snapshot';
 import { bindingsItem } from '../storage';
-import { isNamed, markNamed, refreshBoundTitle } from '../titles';
+import { hasAutoTitle, refreshBoundTitle } from '../titles';
 import type { CommandOf, Handlers } from './types';
 
 /** Move a pin, folder, favorite or Space. `index` is the final position among its new siblings. */
@@ -67,15 +67,14 @@ export const bookmarkHandlers = {
     const url = bound && tabUrl(bound);
     const [before] = await browser.bookmarks.get(id).catch(() => []);
     if (!url || bound.id === undefined || !before?.url) return;
+    const followsPage = await hasAutoTitle(before);
     await browser.bookmarks.update(id, { url });
-    // A name the user chose stays theirs at the new address; otherwise it takes the page's title.
-    if (await isNamed({ url: before.url, title: before.title })) await markNamed([{ url, title: before.title }]);
-    else await refreshBoundTitle(bound.id);
+    // It takes the new page's title, unless someone named it (then the name stays).
+    if (followsPage) await refreshBoundTitle(bound.id);
   },
 
+  /** A renamed pin or favorite keeps its name: its title no longer follows the page (titles.ts). */
   async renameBookmark({ id, title }) {
-    const renamed = await browser.bookmarks.update(id, { title });
-    // A pin or favorite the user named keeps its name: its title no longer follows the page.
-    if (renamed.url) await markNamed([{ url: renamed.url, title }]);
+    await browser.bookmarks.update(id, { title });
   },
 } satisfies Partial<Handlers>;

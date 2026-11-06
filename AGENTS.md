@@ -45,9 +45,12 @@ Three layers, each with a single job. Dependencies point downward only.
   the sidebar doesn't follow it back to its own Space; picking any other tab ends that. A new Volet still starts with a
   new tab. Never collapse the group holding the active tab (`collapseOtherSpaces` skips it): Chrome would pick, or
   open, another tab.
-- **Pin titles follow the page**: when a pin's or favorite's tab finishes loading the bookmark's own URL, the engine
-  gives the bookmark the page's title (`engine/titles.ts`), unless the user named it (renamed in Volet, or a custom
-  name in Arc). Named titles are kept as signatures of URL and title (`namedTitlesItem`, synced), not bookmark ids.
+- **Pin titles follow the page, until renamed**: when a pin's or favorite's tab finishes loading the bookmark's own
+  URL, the engine gives the bookmark the page's title (`engine/titles.ts`), but only while its title is still the one
+  Volet gave it from its page (`autoTitlesItem`, per bookmark id: pinning a tab, an import, an earlier refresh). Once
+  anyone renames it (in Volet, in Chrome's bookmarks, a custom name from Arc), it never changes again; a title Volet
+  didn't give counts as the user's too. When code creates a pin or favorite titled after its page, call
+  `rememberAutoTitles`.
 - **Arc import**: `import/arc.ts` parses Arc's `StorableSidebar.json` (pure). The import page reads it with a plain
   file input (Chrome's File System Access picker refuses anything under `~/Library`, where Arc keeps it, so no lasting
   file handle either) and remembers what's in it (`arcSidebarItem`), to review again without the file; the engine

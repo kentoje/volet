@@ -109,3 +109,47 @@ test('the import page offers the Arc Spaces read last time, without the file', a
   await expect(page.getByRole('checkbox', { name: /Reading/ })).toBeChecked();
   await expect(page.getByRole('button', { name: 'Import 3 Volets' })).toBeVisible();
 });
+
+test("an Arc title saved from a broken page follows the page once it loads; a custom Arc name stays", async ({
+  context,
+  worker,
+  panel,
+}) => {
+  const origin = `chrome-extension://${new URL(worker.url()).host}`;
+  // Arc saved "Page not found" for the first tab; the user named the second one.
+  const file = {
+    sidebar: {
+      containers: [
+        { global: {} },
+        {
+          spaces: ['S1', { id: 'S1', title: 'Work', containerIDs: ['pinned', 'P1'] }],
+          items: [
+            'P1',
+            { id: 'P1', childrenIds: ['t1', 't2'], data: { itemContainer: {} } },
+            't1',
+            { id: 't1', title: null, childrenIds: [], data: { tab: { savedURL: `${origin}/options.html`, savedTitle: 'Page not found' } } },
+            't2',
+            { id: 't2', title: 'My import page', childrenIds: [], data: { tab: { savedURL: `${origin}/import.html`, savedTitle: 'x' } } },
+          ],
+        },
+      ],
+    },
+  };
+  const page = await context.newPage();
+  await page.goto(extensionPage(worker, 'import.html'));
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByText('Drop StorableSidebar.json here').click();
+  await (await chooser).setFiles({ name: 'StorableSidebar.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(file)) });
+  await page.getByRole('button', { name: 'Import 1 Volet' }).click();
+  await expect(page.getByRole('status')).toContainText('Imported 1 Volet');
+  await page.close();
+
+  await panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Work', exact: true }).click();
+  const rows = visiblePage(panel);
+  // Opening both pins loads their pages.
+  await rows.getByRole('button', { name: 'Page not found', exact: true }).click();
+  await rows.getByRole('button', { name: 'My import page', exact: true }).click();
+  await expect(rows.getByRole('button', { name: 'Volet settings', exact: true })).toBeVisible();
+  await panel.waitForTimeout(300);
+  await expect(rows.getByRole('button', { name: 'My import page', exact: true })).toBeVisible();
+});

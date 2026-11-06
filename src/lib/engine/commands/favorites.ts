@@ -4,6 +4,7 @@ import { ensureRoot } from '../root';
 import { retry } from '../retry';
 import { setBinding } from '../session';
 import { findBookmark } from '../snapshot';
+import { rememberAutoTitles } from '../titles';
 import { deleteBookmark, moveBookmark } from './bookmarks';
 import type { CommandOf, Handlers } from './types';
 
@@ -47,6 +48,7 @@ export const favoriteHandlers = {
       title: tab.title || url,
       url,
     });
+    await rememberAutoTitles([favorite]);
     // Bind first so reconcile sees an adopted favorite, not a stray native pin.
     await setBinding(ctx, tabId, { kind: 'favorite', id: favorite.id });
     await retry(() => browser.tabs.update(tabId, { pinned: true }));
