@@ -74,6 +74,31 @@ test('dragging a tab into the pinned area pins it, and back out unpins it', asyn
   expect((await stripState(worker, windowId)).some((tab) => tab.url.includes('Keeper'))).toBe(true);
 });
 
+test('an empty unpinned list shows a drop line, and takes a pin dropped there', async ({ worker, windowId, panel }) => {
+  await worker.evaluate(async (id) => {
+    const [blank] = await chrome.tabs.query({ windowId: id });
+    await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Keeper</title>' });
+    await chrome.tabs.remove(blank!.id!);
+  }, windowId);
+  await expect(row(panel, 'Keeper')).toBeVisible();
+  await drag(panel, row(panel, 'Keeper'), visiblePage(panel).getByText('Drag tabs here to pin them'));
+  await expect(visiblePage(panel).getByRole('button', { name: 'Unpin' })).toBeAttached();
+  await expect(visiblePage(panel).locator('[data-list^="temp:"]')).toHaveCount(0);
+
+  // Just above "New tab": the line marks the top of the empty list.
+  await drag(panel, row(panel, 'Keeper'), visiblePage(panel).getByRole('button', { name: 'New tab' }), {
+    offsetY: -20,
+    beforeDrop: async () => {
+      await expect(panel.locator('[data-drop-line]')).toHaveCount(1);
+      await expect(visiblePage(panel).locator('[data-drop-line]')).toBeVisible();
+    },
+  });
+  await expect
+    .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Home')!.children!.length)
+    .toBe(0);
+  await expect(visiblePage(panel).locator('[data-list^="temp:"]')).toHaveCount(1);
+});
+
 test('a pin dropped below the last temporary tab becomes the last one', async ({ worker, windowId, panel }) => {
   await openTabs(worker, windowId, ['Keeper', 'Other']);
   await expect(row(panel, 'Other')).toBeVisible();

@@ -47,7 +47,8 @@ Three layers, each with a single job. Dependencies point downward only.
   `options/` (settings) and `import/` (Arc import).
 - **Drag and drop** (`ui/sidebar/drag/`): nothing moves while dragging. `DragState.drop` is where the rows would
   land, shown as a line in the gap next to a row (`DropLine`, drawn by `SortableEntry`), a lit-up folder row (its
-  middle drops into it) or a lit-up empty list (`DropZone`). Hit testing is by pointer only (`pointerIntersection`),
+  middle drops into it) or a lit-up empty list (`DropZone`; the unpinned tabs have no empty hint to light up, so
+  they show a line at their top instead, `empty="line"`). Hit testing is by pointer only (`pointerIntersection`),
   and a row's drop target is its row button (`attachTarget`), so a folder's contents don't count as the folder;
   between rows, `drop-geometry.ts` picks the closest row from the DOM (`data-entry`, `data-list`). The slot rules
   (`zoneAt`, `slotAt`, `resolveDrop`) and the drop-to-action mapping (`groupDrop`) are pure (`model/dnd.ts`). On

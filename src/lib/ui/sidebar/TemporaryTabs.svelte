@@ -15,7 +15,8 @@
   const entries = $derived(drag.entries(list, () => space.tabIds.map((id): Entry => ({ kind: 'tab', id }))));
 </script>
 
-<DropZone {list} class="flex flex-col gap-0.5">
+<!-- Empty, there's no hint to light up: a drop line shows where the tab will go. -->
+<DropZone {list} empty="line" class="flex flex-col gap-0.5">
   <ul class="flex min-h-2 flex-col gap-0.5">
     {#each entries as entry, index (entryKey(entry))}
       <SortableEntry {entry} {list} {index}>
