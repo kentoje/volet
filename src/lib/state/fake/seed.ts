@@ -114,7 +114,7 @@ export function seedSpaces(): Space[] {
       name: 'Side project',
       hue: 42,
       pinned: [
-        { kind: 'pin', id: 'pin-repo', title: 'chrome-tabs-extension', url: 'https://github.com/' },
+        { kind: 'pin', id: 'pin-repo', title: 'volet', url: 'https://github.com/' },
         { kind: 'pin', id: 'pin-wxt', title: 'WXT docs', url: 'https://wxt.dev/guide/installation' },
       ],
       tabIds: [40, 41],

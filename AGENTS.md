@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Arc-like vertical tab Spaces for Chrome: a side panel extension built with WXT, Svelte 5, TypeScript and Tailwind v4.
+Volet: Arc-like vertical tab Spaces for Chrome, a side panel extension built with WXT, Svelte 5, TypeScript and Tailwind v4.
 
 ## Commands
 

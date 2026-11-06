@@ -1,5 +1,5 @@
 {
-  "name": "chrome-tabs-extension",
+  "name": "volet",
   "description": "Arc-like vertical tab spaces for Chrome",
   "private": true,
   "version": "0.0.1",

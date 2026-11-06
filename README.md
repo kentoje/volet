@@ -1,6 +1,6 @@
-# Spaces (working name)
+# Volet
 
-Arc-like vertical tab Spaces for Chrome, as a side panel extension.
+Arc-like vertical tab Spaces for Chrome, as a side panel extension. A *volet* is a window shutter in French, and the word French software uses for a side panel.
 A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0), built with
 [WXT](https://wxt.dev), Svelte 5, TypeScript, Tailwind v4, Bits UI and dnd-kit.
 

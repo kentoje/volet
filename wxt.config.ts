@@ -14,7 +14,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
   }),
   manifest: {
-    name: 'Spaces',
+    name: 'Volet',
     description: 'Arc-like vertical tab spaces for Chrome',
     // activeTab + scripting: the palette shortcut may show the palette on the current page only.
     permissions: [
