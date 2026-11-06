@@ -5,6 +5,7 @@
   import { slide } from 'svelte/transition';
   import type { MenuItem } from '@/lib/model/menu';
   import { MENU_ITEM_CLASS } from './item-class';
+  import Leading from './Leading.svelte';
   import MenuItems from './MenuItems.svelte';
 
   /**
@@ -13,7 +14,7 @@
    * It opens on click, Enter or →, not on hover, so the menu doesn't change shape under a
    * passing pointer; ← collapses it.
    */
-  let { item }: { item: Extract<MenuItem, { kind: 'submenu' }> } = $props();
+  let { item, iconColumn = true }: { item: Extract<MenuItem, { kind: 'submenu' }>; iconColumn?: boolean } = $props();
 
   const id = $props.id();
   let expanded = $state(false);
@@ -46,9 +47,7 @@
   onSelect={() => (expanded = !expanded)}
   onkeydown={onTriggerKey}
 >
-  <span class="grid size-4 place-items-center text-ink-muted">
-    {#if item.icon}<item.icon size={14} strokeWidth={2} />{/if}
-  </span>
+  {#if iconColumn}<Leading icon={item.icon} hue={item.hue} />{/if}
   <span class="flex-1">{item.label}</span>
   <ChevronRight
     size={14}
@@ -56,7 +55,7 @@
   />
 </ContextMenu.Item>
 {#if expanded}
-  <!-- Indented so its items' labels start under this item's label. -->
+  <!-- Indented by one icon column (icon and gap), so its items start under this item's label. -->
   <div transition:slide={{ duration }}>
     <ContextMenu.Group {id} aria-label={item.label} class="pl-[26px]" onkeydown={onItemsKey}>
       <MenuItems items={item.items} />

@@ -20,7 +20,7 @@ export function getMenuContext(): MenuContext {
   return { store: getSidebar(), rename: getRename(), confirm: getConfirm(), selection: getSelection() };
 }
 
-/** "Move to Space" submenu listing every other Space. */
+/** "Move to Space" submenu listing every other Space, each with its color. */
 export function moveToSpace(store: SidebarStore, current: SpaceId | undefined, move: (spaceId: SpaceId) => void): MenuItem {
   return {
     kind: 'submenu',
@@ -28,6 +28,6 @@ export function moveToSpace(store: SidebarStore, current: SpaceId | undefined, m
     icon: ArrowRightLeft,
     items: store.spaces
       .filter((space) => space.id !== current)
-      .map((space) => ({ kind: 'action', label: space.name, onSelect: () => move(space.id) })),
+      .map((space) => ({ kind: 'action', label: space.name, hue: space.hue, onSelect: () => move(space.id) })),
   };
 }
