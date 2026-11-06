@@ -1,5 +1,4 @@
 import { browser } from 'wxt/browser';
-import { MAX_SPACES, roomForSpaces } from '../../model/spaces';
 import { groupColorFor, nextHue } from '../colors';
 import {
   type Context,
@@ -54,7 +53,6 @@ export const spaceHandlers = {
 
   async createSpace({ windowId, name, hue }) {
     const ctx = await loadContext(windowId);
-    if (roomForSpaces(ctx.spaces.length) === 0) throw new Error(`There can be at most ${MAX_SPACES} Spaces`);
     const title = uniqueName(
       name?.trim() || `Volet ${ctx.spaces.length + 1}`,
       ctx.spaces.map((space) => space.title),

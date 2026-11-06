@@ -28,6 +28,31 @@
   transition: none;
 }
 
+/*
+ * A row that scrolls sideways (`primitives/scroll-strip.ts`): no scrollbar, and each edge
+ * that hides more items fades out (14px, `FADE_PX`).
+ */
+.scroll-strip {
+  scrollbar-width: none;
+  --fade-start: 0px;
+  --fade-end: 0px;
+}
+.scroll-strip:is([data-hidden-start], [data-hidden-end]) {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+}
+.scroll-strip[data-hidden-start] {
+  --fade-start: 14px;
+}
+.scroll-strip[data-hidden-end] {
+  --fade-end: 14px;
+}
+
 /* Menus and dialogs: portaled inside .sidebar (see OVERLAY_ROOT) so they wear the tint. */
 @layer components {
   /* Inverted (ink on the tint), small and quick to read. */

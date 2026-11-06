@@ -242,42 +242,57 @@ function fillVolets(worker: import('@playwright/test').Worker, total: number) {
   }, total);
 }
 
-test('Volets stop at 8: the New Volet button turns off and the engine refuses more', async ({ worker, windowId, panel }) => {
+test('every tab group made in Chrome becomes a Volet, however many there are', async ({ worker, windowId, panel }) => {
   await fillVolets(worker, 8);
   const dots = panel.getByRole('navigation', { name: 'Volets' }).locator('li button');
   await expect(dots).toHaveCount(8);
-  const add = panel.getByRole('button', { name: 'New Volet' });
-  await expect(add).toHaveAttribute('aria-disabled', 'true');
-  await add.click({ force: true }); // Playwright waits on aria-disabled buttons; a user can still click it
-
-  const refused = await command(panel, { type: 'createSpace', windowId });
-  expect(refused).toEqual({ ok: false, error: 'There can be at most 8 Spaces' });
-  expect((await bookmarkTree(worker)).children).toHaveLength(9); // Favorites and the eight Volets
-  await expect(dots).toHaveCount(8);
-
-  // Deleting one makes room again.
-  await worker.evaluate(async () => {
-    const [extra] = await chrome.bookmarks.search({ title: 'Extra 8' });
-    await chrome.bookmarks.removeTree(extra!.id);
-  });
-  await expect(add).not.toHaveAttribute('aria-disabled');
-});
-
-test('at 8 Volets, a tab group made in Chrome joins the active Volet instead of becoming a new one', async ({
-  worker,
-  windowId,
-  panel,
-}) => {
-  await fillVolets(worker, 8);
-  await expect(panel.getByRole('navigation', { name: 'Volets' }).locator('li button')).toHaveCount(8);
   await worker.evaluate(async (id) => {
     const tab = await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Grouped</title>', active: false });
     await chrome.tabs.group({ tabIds: [tab.id!], createProperties: { windowId: id } });
   }, windowId);
-
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Grouped'))?.group)
-    .toBe('Volet 1 (click to rename)');
-  expect((await bookmarkTree(worker)).children).toHaveLength(9);
-  await expect(visiblePage(panel).getByRole('button', { name: 'Grouped', exact: true })).toBeVisible();
+    .toBe('Volet 9');
+  await expect(dots).toHaveCount(9);
+
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(dots).toHaveCount(10);
+  expect((await bookmarkTree(worker)).children).toHaveLength(11); // Favorites and ten Volets
+});
+
+test('when the Volet dots stop fitting they narrow, then scroll, keeping the active one in view', async ({
+  worker,
+  windowId,
+  panel,
+}) => {
+  await panel.setViewportSize({ width: 360, height: 800 }); // a side panel's width (pages default to 1280)
+  await fillVolets(worker, 20);
+  const strip = panel.getByRole('navigation', { name: 'Volets' }).getByRole('list');
+  const dots = strip.locator('li button');
+  await expect(dots).toHaveCount(20);
+  // Narrowed as far as they go, and the row scrolls, its far edge faded.
+  expect(await dots.first().evaluate((el) => Math.round(el.getBoundingClientRect().width))).toBe(20);
+  expect(await strip.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  await expect(strip).toHaveAttribute('data-hidden-end', '');
+  await expect(strip).not.toHaveAttribute('data-hidden-start');
+
+  // Switching to the last Volet (here from the worker, as the palette or a shortcut would) brings its dot into view.
+  const lastId = await worker.evaluate(async () => (await chrome.bookmarks.search({ title: 'Extra 20' }))[0]!.id);
+  await command(panel, { type: 'switchSpace', windowId, spaceId: lastId });
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Extra 20');
+  const shown = (name: string) =>
+    strip.getByRole('button', { name, exact: true }).evaluate((el) => {
+      const row = el.closest('ul')!.getBoundingClientRect();
+      const dot = el.getBoundingClientRect();
+      return dot.left >= row.left && dot.right <= row.right;
+    });
+  await expect.poll(() => shown('Extra 20')).toBe(true);
+  await expect(strip).toHaveAttribute('data-hidden-start', '');
+
+  // A sideways swipe over the dots scrolls them instead of switching Volet.
+  await strip.hover();
+  await panel.mouse.wheel(-2000, 0);
+  await expect.poll(() => strip.evaluate((el) => el.scrollLeft)).toBe(0);
+  await expect.poll(() => shown('Volet 1 (click to rename)')).toBe(true);
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Extra 20');
 });

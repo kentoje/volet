@@ -1,5 +1,4 @@
 import { browser } from 'wxt/browser';
-import { roomForSpaces } from '../model/spaces';
 import { sameUrl } from '../model/url';
 import { groupColorFor } from './colors';
 import {
@@ -9,7 +8,6 @@ import {
   hueOf,
   liveBinding,
   loadContext,
-  reloadTabs,
   spaceOfTab,
   spaceTabs,
   tabUrl,
@@ -35,20 +33,10 @@ export async function reconcile(windowId: number, options: { recover?: boolean }
   await adoptLooseTabs(ctx, activeSpace);
 }
 
-/**
- * Every tab group is a Space. Groups made in Chrome's own UI become new Spaces, or, when there's no room
- * for another Space, are ungrouped so their tabs join the active one (`adoptLooseTabs`).
- */
+/** Every tab group is a Space. Groups made in Chrome's own UI become new Spaces. */
 async function mapGroupsToSpaces(ctx: Context): Promise<void> {
-  const ungrouped = new Set<number>();
   for (const group of ctx.groups) {
     let spaceId = spaceOfGroup(group.id, ctx.groups, ctx.groupSpaces, ctx.spaces);
-    if (spaceId === undefined && roomForSpaces(ctx.spaces.length) === 0) {
-      const tabIds = ctx.tabs.filter((tab) => tab.groupId === group.id).map((tab) => tab.id!);
-      if (tabIds.length) await retry(() => browser.tabs.ungroup(tabIds as [number, ...number[]]));
-      ungrouped.add(group.id);
-      continue;
-    }
     if (spaceId === undefined) {
       const title = uniqueName(
         group.title?.trim() || `Volet ${ctx.spaces.length + 1}`,
@@ -65,10 +53,6 @@ async function mapGroupsToSpaces(ctx: Context): Promise<void> {
     if (group.title !== title || group.color !== color) {
       await retry(() => browser.tabGroups.update(group.id, { title, color }));
     }
-  }
-  if (ungrouped.size) {
-    ctx.groups = ctx.groups.filter((group) => !ungrouped.has(group.id));
-    await reloadTabs(ctx);
   }
 }
 

@@ -1,6 +1,5 @@
 import { asUrl, rank } from '@/lib/engine/palette/rank';
 import type { PaletteClient, PaletteItem } from '@/lib/model/palette';
-import { roomForSpaces } from '@/lib/model/spaces';
 import type { PinnedNode, SidebarStore } from '@/lib/model/types';
 import { hostOf } from '@/lib/model/url';
 
@@ -30,9 +29,7 @@ export function fakePaletteClient(store: SidebarStore): PaletteClient {
       }
     }
     list.push({ id: 'action:new-tab', kind: 'action', title: 'New tab', detail: 'In this Volet', ref: 'new-tab' });
-    if (roomForSpaces(store.spaces.length) > 0) {
-      list.push({ id: 'action:new-space', kind: 'action', title: 'New Volet', ref: 'new-space' });
-    }
+    list.push({ id: 'action:new-space', kind: 'action', title: 'New Volet', ref: 'new-space' });
     return list;
   };
 

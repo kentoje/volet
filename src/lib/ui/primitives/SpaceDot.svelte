@@ -23,7 +23,8 @@
   type="button"
   {...mergeProps(rest, {
     class: [
-      'group/dot grid size-7 place-items-center rounded-lg transition-transform hover:bg-hover data-hovered:bg-hover',
+      // As wide as its slot: the switcher narrows the slots when there are many Spaces.
+      'group/dot grid h-7 w-full place-items-center rounded-lg transition-transform hover:bg-hover data-hovered:bg-hover',
       highlighted && 'scale-125 bg-hover',
     ],
     'aria-label': name,

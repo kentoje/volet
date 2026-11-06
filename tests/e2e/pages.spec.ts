@@ -71,25 +71,6 @@ test('importing an Arc sidebar creates its Spaces, pins, folders and favorites',
   await expect(panel.getByRole('button', { name: 'Studio', exact: true })).toBeVisible(); // its dot
 });
 
-test('importing more Arc Spaces than fit offers only the room left', async ({ context, worker }) => {
-  const spaces = Array.from({ length: 9 }, (_, i) => [`S${i}`, { id: `S${i}`, title: `Arc ${i + 1}` }]).flat();
-  const file = { sidebar: { containers: [{ global: {} }, { spaces, items: [] }] } };
-  const page = await context.newPage();
-  await page.goto(extensionPage(worker, 'import.html'));
-  await page.locator('input[type=file]').setInputFiles({
-    name: 'StorableSidebar.json',
-    mimeType: 'application/json',
-    buffer: Buffer.from(JSON.stringify(file)),
-  });
-  // The first Volet is already there, so seven fit: the first seven are chosen and the others can't be.
-  await expect(page.getByRole('checkbox', { name: /Arc 7/ })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: /Arc 8/ })).toBeDisabled();
-  await expect(page.getByText('so 7 more fit')).toBeVisible();
-  await page.getByRole('button', { name: 'Import 7 Volets' }).click();
-  await expect(page.getByRole('status')).toContainText('Imported 7 Volets');
-  expect((await bookmarkTree(worker)).children).toHaveLength(9); // Favorites, the first Volet and seven from Arc
-});
-
 test('the settings page changes how long unpinned tabs stay open', async ({ context, worker }) => {
   const page = await context.newPage();
   await page.goto(extensionPage(worker, 'options.html'));

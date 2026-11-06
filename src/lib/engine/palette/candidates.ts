@@ -1,4 +1,3 @@
-import { roomForSpaces } from '../../model/spaces';
 import { hostOf } from '../../model/url';
 import type { ArchiveEntry } from '../schema';
 import { type BookmarkNode, findBookmark, pinsIn } from '../snapshot';
@@ -54,8 +53,7 @@ export function candidates(input: CandidateInput): PaletteItem[] {
     items.push({ id: `space:${space.id}`, kind: 'space', title: `Switch to ${space.title}`, hue: space.hue, ref: space.id });
   }
 
-  const full = roomForSpaces(input.spaces.length) === 0;
-  items.push(...ACTIONS.filter((action) => !(full && action.ref === 'new-space')));
+  items.push(...ACTIONS);
 
   for (const entry of input.archive) {
     items.push({

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Plus, Search } from '@lucide/svelte';
   import { getSidebar } from '@/lib/model/context';
-  import { MAX_SPACES, roomForSpaces } from '@/lib/model/spaces';
   import IconButton from '../primitives/IconButton.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
+  import { reveal, scrollStrip } from '../primitives/scroll-strip';
   import SpaceDot from '../primitives/SpaceDot.svelte';
   import Tooltip from '../primitives/tooltip/Tooltip.svelte';
   import TooltipGroup from '../primitives/tooltip/TooltipGroup.svelte';
@@ -17,21 +17,35 @@
   const menus = getMenuContext();
   const palette = getPanelPalette();
   const order = getSpaceOrder();
-  const full = $derived(roomForSpaces(sidebar.spaces.length) === 0);
+
+  /** Keeps the active Space's dot in view: at once when the panel opens, then gliding. */
+  let shown = false;
+  function showActive(node: HTMLElement) {
+    const cleanup = reveal(node, `[data-space-dot="${CSS.escape(sidebar.activeSpaceId)}"]`, shown);
+    shown = true;
+    return cleanup;
+  }
 </script>
 
-<nav class="relative flex h-11 flex-none items-center px-2.5" aria-label="Volets">
-  {#if palette}
-    <div class="absolute left-2.5">
+<nav class="flex h-11 flex-none items-center gap-2 px-2.5" aria-label="Volets">
+  <!-- Both buttons take the same room, so the dots stay centered between them. -->
+  <div class="w-6 flex-none">
+    {#if palette}
       <IconButton label="Search tabs and pins (⌘K)" onclick={() => palette.show()}>
         <Search size={15} strokeWidth={2} />
       </IconButton>
-    </div>
-  {/if}
+    {/if}
+  </div>
   <!-- One tooltip for all the dots: it glides to the hovered one. The dots touch (no gap)
-       so the pointer goes straight from one to the next and the tooltip never closes between. -->
+       so the pointer goes straight from one to the next and the tooltip never closes between.
+       Dots narrow from 28px to 20px to fit; past that, the row scrolls. -->
   <TooltipGroup>
-    <ul class="flex flex-1 items-center justify-center">
+    <ul
+      class="scroll-strip flex h-full min-w-0 flex-1 items-center justify-center-safe overflow-x-auto [container-type:inline-size] *:w-[clamp(20px,calc(100cqi/var(--dots)),28px)] *:flex-none"
+      style:--dots={sidebar.spaces.length}
+      {@attach scrollStrip}
+      {@attach showActive}
+    >
       <!-- Drag a dot to reorder the Spaces; drop a tab on one to move it there. -->
       {#each order.ordered(sidebar.spaces) as space, index (space.id)}
         <SortableSpaceDot spaceId={space.id} {index}>
@@ -41,6 +55,7 @@
                 {#snippet trigger(props)}
                   <SpaceDot
                     {...props}
+                    data-space-dot={space.id}
                     name={space.name}
                     hue={space.hue}
                     active={space.id === sidebar.activeSpaceId}
@@ -56,13 +71,8 @@
       {/each}
     </ul>
   </TooltipGroup>
-  <div class="absolute right-2.5">
-    <IconButton
-      label="New Volet"
-      hint={full ? `You can have up to ${MAX_SPACES} Volets` : undefined}
-      disabled={full}
-      onclick={() => sidebar.createSpace()}
-    >
+  <div class="w-6 flex-none">
+    <IconButton label="New Volet" onclick={() => sidebar.createSpace()}>
       <Plus size={16} strokeWidth={2} />
     </IconButton>
   </div>

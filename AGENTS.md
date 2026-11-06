@@ -70,10 +70,10 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Folders**: a collapsed folder keeps rendering its list as `folded` (`PinnedList`): rows without an open tab
   slide away and the open ones stay in place (`hasOpenTab` in `model/pinned.ts`). Those slides are local
   transitions on purpose, so rows added or removed for other reasons (drags, optimistic ids) just appear.
-- **Volet limit**: at most `MAX_SPACES` (8) Spaces (`model/spaces.ts`), so their dots fit the switcher. The engine
-  enforces it: `createSpace` refuses, reconcile ungroups a group made in Chrome's tab strip instead of making a ninth
-  Space (its tabs join the active one), and the Arc import takes only the room left. The UI just reflects it (the New
-  Volet button turns off, the palette drops the action, the import review caps its choices).
+- **Volet switcher**: there's no limit on Volets; every tab group in Chrome is one, so a first run starts with the
+  user's groups. Their dots (`SpaceSwitcher`) narrow from 28px to 20px to fit between the two buttons, then the row
+  scrolls (`primitives/scroll-strip.ts`): no scrollbar, a fade on each edge that hides dots, the wheel scrolls it, and
+  the active Space's dot is kept in view. Wheel events the row uses stop there, so they don't also swipe Spaces.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`): menus open below the pointer so they can
