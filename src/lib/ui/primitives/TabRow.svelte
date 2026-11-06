@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
   import Favicon from './Favicon.svelte';
+  import { revealRow } from './reveal-row';
   import TooltipGroup from './tooltip/TooltipGroup.svelte';
 
   interface Props {
@@ -85,6 +86,7 @@
 <!--
   `data-row` marks the row's root (a drag copies it). A copy sets `data-hovered` to keep the hover
   look it had under the pointer: the same rules as hover apply to it.
+  The active row keeps itself in view: when it becomes active, or appears active (a new tab).
 -->
 <div
   class={[
@@ -96,6 +98,7 @@
   style:--depth={depth}
   style:--room={room(buttons.shown)}
   style:--room-hover={room(buttons.onHover)}
+  {@attach active && revealRow}
 >
   {#if editor}
     <div class={mainClass}>

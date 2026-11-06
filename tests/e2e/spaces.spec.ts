@@ -338,3 +338,42 @@ test("the bookmark folder keeps the extension's name", async ({ worker }) => {
   });
   await expect.poll(() => worker.evaluate(async (id) => (await chrome.bookmarks.get(id))[0]!.title, rootId)).toBe('Volet');
 });
+
+test('a new active tab at the end of a long list scrolls into view; one opened in the background does not', async ({
+  worker,
+  windowId,
+  panel,
+}) => {
+  await panel.setViewportSize({ width: 360, height: 500 });
+  await worker.evaluate(async (id) => {
+    for (let i = 1; i <= 25; i++) {
+      await chrome.tabs.create({ windowId: id, url: `data:text/html,<title>Tab ${i}</title>`, active: false });
+    }
+  }, windowId);
+  const list = visiblePage(panel);
+  await expect(list.getByRole('button', { name: 'Tab 25', exact: true })).toBeAttached();
+  await list.evaluate((element) => element.scrollTo({ top: 0 }));
+  const open = (title: string, active: boolean) =>
+    worker.evaluate(
+      async ({ id, title, active }) => {
+        await chrome.tabs.create({ windowId: id, url: `data:text/html,<title>${title}</title>`, active });
+      },
+      { id: windowId, title, active },
+    );
+  const shown = (title: string) =>
+    list.getByRole('button', { name: title, exact: true }).evaluate((element) => {
+      const row = element.getBoundingClientRect();
+      const view = element.closest('section')!.getBoundingClientRect();
+      return row.top >= view.top && row.bottom <= view.bottom;
+    });
+
+  // Opened in the background (like a Cmd+click): the list stays put.
+  await open('Background', false);
+  await expect(list.getByRole('button', { name: 'Background', exact: true })).toBeAttached();
+  await panel.waitForTimeout(300);
+  expect(await list.evaluate((element) => element.scrollTop)).toBe(0);
+
+  // A new tab in front (like Cmd+T): the list glides down to it.
+  await open('Newest', true);
+  await expect.poll(() => shown('Newest')).toBe(true);
+});

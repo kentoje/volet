@@ -97,6 +97,9 @@ Three layers, each with a single job. Dependencies point downward only.
   the row it opened on keeps its hover look: `ContextMenu` sets `data-hovered` on its trigger's first element, which
   rows style like hover (give new rows the same rule). Closing a menu sends focus back where it was,
   except when an item just focused a text field (an inline rename): that field keeps it (`keepFieldFocus`).
+- **Active row in view**: the active tab's row scrolls its page to show itself when it becomes active or appears
+  (a new tab at the end of a long list), gliding (`primitives/reveal-row.ts`, attached by `TabRow`). It scrolls only
+  the page: `scrollIntoView` would also move the overflow-hidden strip the pages slide in.
 - **Tooltips**: wrap a trigger in `primitives/tooltip/Tooltip.svelte` instead of a native `title` (`IconButton` does it
   for you). They show right away, close as soon as the pointer leaves the trigger, and fade in and out
   (`.tooltip-surface` in `app.css`); one `Tooltip.Provider` sits in `Sidebar.svelte`. Wrap neighboring triggers in a
