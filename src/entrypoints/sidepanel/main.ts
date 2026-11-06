@@ -1,4 +1,5 @@
 import { mount } from 'svelte';
+import { ChromeArcClient } from '@/lib/state/arc.svelte';
 import { ChromeSidebarStore } from '@/lib/state/chrome/chrome-store.svelte';
 import { chromePaletteClient } from '@/lib/state/chrome/palette-client';
 import { watchPaletteRequests } from '@/lib/state/chrome/palette-requests';
@@ -12,7 +13,9 @@ async function main() {
   const store = new ChromeSidebarStore(windowId);
   await store.start();
   const palette = { ...chromePaletteClient(windowId), onOpenRequest: watchPaletteRequests(windowId) };
-  mount(Sidebar, { target: document.getElementById('app')!, props: { store, palette } });
+  const arc = new ChromeArcClient();
+  await arc.start();
+  mount(Sidebar, { target: document.getElementById('app')!, props: { store, palette, arc } });
 }
 
 void main();

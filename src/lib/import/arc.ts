@@ -50,7 +50,9 @@ export function parseArcSidebar(json: unknown): ImportedSidebar {
       seen.add(id);
       const tab = item.data?.tab;
       if (tab?.savedURL) {
-        return [{ kind: 'pin', title: item.title || tab.savedTitle || tab.savedURL, url: tab.savedURL }];
+        // Arc's `title` is a name the user gave the tab; `savedTitle` is the page's own.
+        const named = item.title ? ({ named: true } as const) : {};
+        return [{ kind: 'pin', title: item.title || tab.savedTitle || tab.savedURL, url: tab.savedURL, ...named }];
       }
       if (item.data && 'list' in item.data) {
         return [{ kind: 'folder', title: item.title || 'Folder', children: toNodes(item.childrenIds, seen) }];
@@ -64,12 +66,17 @@ export function parseArcSidebar(json: unknown): ImportedSidebar {
     const pinnedContainer = typeof pinnedId === 'string' ? items.get(pinnedId) : undefined;
     const tone = space.customInfo?.windowTheme?.primaryColorPalette?.midTone;
     const hue = tone ? rgbToHue(tone.red ?? 0, tone.green ?? 0, tone.blue ?? 0) : undefined;
-    return { name: space.title?.trim() || 'Volet', hue, pinned: toNodes(pinnedContainer?.childrenIds, new Set()) };
+    return {
+      id: space.id,
+      name: space.title?.trim() || 'Volet',
+      hue,
+      pinned: toNodes(pinnedContainer?.childrenIds, new Set()),
+    };
   });
 
   const topAppsId = (container.topAppsContainerIDs ?? []).find((entry): entry is string => typeof entry === 'string');
   const favorites: ImportedLink[] = toNodes(items.get(topAppsId ?? '')?.childrenIds, new Set()).flatMap((node) =>
-    node.kind === 'pin' ? [{ title: node.title, url: node.url }] : [],
+    node.kind === 'pin' ? [{ title: node.title, url: node.url, ...(node.named && { named: node.named }) }] : [],
   );
 
   return { spaces, favorites };

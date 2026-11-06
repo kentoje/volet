@@ -1,5 +1,8 @@
-import { ArcImportError, parseArcSidebar } from '@/lib/import/arc';
+import { importedArcSpacesItem } from '@/lib/engine/storage';
+import { ArcImportError } from '@/lib/import/arc';
 import type { ImportedSidebar } from '@/lib/import/types';
+import { type ArcFileHandle, loadArcFile, readArcFile } from './arc-file';
+import { rememberArcFile } from './arc.svelte';
 import { sendCommand } from './chrome/command-client';
 import { range, toggled } from './tree';
 
@@ -7,6 +10,7 @@ export interface ImportResult {
   spaces: number;
   pins: number;
   favorites: number;
+  spaceIds: string[];
 }
 
 /** The Arc import flow: choose the file, review what's in it, import the chosen Spaces. */
@@ -18,16 +22,26 @@ export class ImportState {
   chosen = $state.raw<ReadonlySet<number>>(range(0));
   includeFavorites = $state(true);
   result = $state.raw<ImportResult>();
+  /** Arc's file, if it was chosen before: it can be read again without the file picker. */
+  remembered = $state.raw<ArcFileHandle>();
+  /** Ids of the Arc Spaces already imported (they start unchecked). */
+  imported = $state.raw<readonly string[]>([]);
 
-  async readFile(file: File): Promise<void> {
+  async start(): Promise<void> {
+    this.remembered = await loadArcFile();
+    this.imported = await importedArcSpacesItem.getValue();
+  }
+
+  async readFile(file: File, handle?: FileSystemFileHandle): Promise<void> {
     this.error = undefined;
     try {
-      const sidebar = parseArcSidebar(JSON.parse(await file.text()));
+      const sidebar = await rememberArcFile(file, handle);
       if (sidebar.spaces.length === 0 && sidebar.favorites.length === 0) {
         throw new ArcImportError('This file has no Spaces or favorites to import.');
       }
+      if (handle) this.remembered = handle;
       this.sidebar = sidebar;
-      this.chosen = range(sidebar.spaces.length);
+      this.chosen = range(sidebar.spaces.length, (index) => !this.isImported(index));
       this.step = 'review';
     } catch (error) {
       this.error =
@@ -35,6 +49,19 @@ export class ImportState {
           ? error.message
           : `Couldn't read this file. Choose Arc's StorableSidebar.json (${(error as Error).message}).`;
     }
+  }
+
+  /** Read the remembered file again (Chrome may ask for permission first: call it from a click). */
+  async readRemembered(): Promise<void> {
+    if (!this.remembered) return;
+    const file = await readArcFile(this.remembered, true);
+    if (file) await this.readFile(file, this.remembered);
+    else this.error = "Couldn't open Arc's file this time. Choose it below.";
+  }
+
+  isImported(index: number): boolean {
+    const id = this.sidebar?.spaces[index]?.id;
+    return id !== undefined && this.imported.includes(id);
   }
 
   toggle(index: number): void {

@@ -264,6 +264,6 @@ export function withKey<K, V>(map: ReadonlyMap<K, V>, key: K, value: V | undefin
 }
 
 /** A set of the numbers 0 to count - 1 (e.g. "every item chosen"). */
-export function range(count: number): ReadonlySet<number> {
-  return new Set(Array.from({ length: count }, (_, index) => index));
+export function range(count: number, keep: (index: number) => boolean = () => true): ReadonlySet<number> {
+  return new Set(Array.from({ length: count }, (_, index) => index).filter(keep));
 }

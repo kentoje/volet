@@ -4,6 +4,8 @@ import { listenForMessages } from '@/lib/engine/messaging';
 import { listenForShortcuts } from '@/lib/engine/shortcuts';
 import { forgetGroup, forgetTab, forgetWindow, replaceTab, stampActivity } from '@/lib/engine/session';
 import { trackSidePanels } from '@/lib/engine/side-panel';
+import { arcInviteItem } from '@/lib/engine/storage';
+import { refreshBoundTitle } from '@/lib/engine/titles';
 
 const ARCHIVE_ALARM = 'archive-idle-tabs';
 
@@ -24,7 +26,11 @@ export default defineBackground(() => {
     // Session restore can trail behind startup: look again once it has settled.
     setTimeout(() => engine.reconcileAll({ recover: true }).catch(log('late recovery')), 5000);
   };
-  browser.runtime.onInstalled.addListener(() => startup().catch(log('install')));
+  browser.runtime.onInstalled.addListener(({ reason }) => {
+    // A first install greets people coming from Arc (the sidebar's "Coming from Arc?" card).
+    if (reason === 'install') arcInviteItem.setValue(true).catch(log('arc invite'));
+    startup().catch(log('install'));
+  });
   browser.runtime.onStartup.addListener(() => startup().catch(log('startup')));
 
   listenForMessages(engine);
@@ -35,8 +41,9 @@ export default defineBackground(() => {
     queue('stamp', () => stampActivity([tab.id!]));
     engine.scheduleReconcile(tab.windowId);
   });
-  browser.tabs.onUpdated.addListener((_tabId, info, tab) => {
+  browser.tabs.onUpdated.addListener((tabId, info, tab) => {
     if ('pinned' in info || 'groupId' in info) engine.scheduleReconcile(tab.windowId);
+    if (info.status === 'complete') queue('title', () => refreshBoundTitle(tabId));
   });
   browser.tabs.onAttached.addListener((_tabId, info) => engine.scheduleReconcile(info.newWindowId));
   browser.tabs.onActivated.addListener(({ tabId, windowId }) => {

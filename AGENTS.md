@@ -41,6 +41,14 @@ Three layers, each with a single job. Dependencies point downward only.
 
 - **Reads are local, writes are central.** Each side panel derives its state from Chrome's events. Every change is a `Command` (see `engine/commands.ts`) sent to the service worker, which runs commands one at a time through a serial queue and retries calls Chrome rejects while the user drags a tab.
 - **Bookmarks are the source of truth**: the `Spaces` folder holds `Favorites` and one folder per Space; pins are bookmarks. Session-only links (tab to pin, group to Space, active Space per window) live in `chrome.storage.session` and are rebuilt after restarts.
+- **Pin titles follow the page**: when a pin's or favorite's tab finishes loading the bookmark's own URL, the engine
+  gives the bookmark the page's title (`engine/titles.ts`), unless the user named it (renamed in Volet, or a custom
+  name in Arc). Named titles are kept as signatures of URL and title (`namedTitlesItem`, synced), not bookmark ids.
+- **Arc import**: `import/arc.ts` parses Arc's `StorableSidebar.json` (pure). The import page remembers the file (a
+  handle in IndexedDB, `state/arc-file.ts`) and what's in it (`arcSidebarItem`); the engine records which Arc Spaces
+  came in (`importedArcSpacesItem`). The side panel gets an `ArcClient` (`model/arc.ts`, passed to `Sidebar` like the
+  palette client): while Arc Spaces are left, the New Volet button opens a menu offering them, and after install a
+  "Coming from Arc?" card (`ArcInvite`, `arcInviteItem`) opens the import until it's dismissed or used.
 - **Pure logic is kept pure** (`derive.ts`, `snapshot.ts`, `colors.ts`, importers, search ranking) so it can be unit tested without Chrome.
 - **Entry points** (`src/entrypoints/`): `background.ts` (the engine), `sidepanel/` (the sidebar), `palette.ts`
   (unlisted script injected into the current page by the palette shortcut, rendered in a shadow root),
@@ -75,7 +83,8 @@ Three layers, each with a single job. Dependencies point downward only.
   scrolls (`primitives/scroll-strip.ts`): no scrollbar, a fade on each edge that hides dots, the wheel scrolls it, and
   the active Space's dot is kept in view. Wheel events the row uses stop there, so they don't also swipe Spaces.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
-  `primitives/menu/ContextMenu.svelte`. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
+  `primitives/menu/ContextMenu.svelte` (right-click) or `DropdownMenu.svelte` (from a button, like New Volet); a
+  `group` item puts items under a small heading in the menu itself. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`): menus open below the pointer so they can
   slide sideways and flip up to stay inside the panel, and scroll when taller than it. Submenus expand in place under
   their item (`SubMenu.svelte`) instead of flying out: there's no room beside a menu in a side panel, and one laid

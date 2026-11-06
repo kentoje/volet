@@ -1,4 +1,5 @@
 import { mount } from 'svelte';
+import { FakeArcClient } from '@/lib/state/fake/fake-arc.svelte';
 import { fakePaletteClient } from '@/lib/state/fake/fake-palette';
 import { FakeSidebarStore } from '@/lib/state/fake/fake-store.svelte';
 import Sidebar from '@/lib/ui/sidebar/Sidebar.svelte';
@@ -11,5 +12,5 @@ const scheme = theme === 'dark' || theme === 'light' ? theme : undefined;
 const store = new FakeSidebarStore();
 mount(Sidebar, {
   target: document.getElementById('app')!,
-  props: { store, palette: fakePaletteClient(store), scheme },
+  props: { store, palette: fakePaletteClient(store), arc: new FakeArcClient(store), scheme },
 });

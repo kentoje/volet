@@ -13,6 +13,8 @@ export type MenuItem =
   | ({ kind: 'action'; label: string; onSelect: () => void; destructive?: boolean; disabled?: boolean } & Leading)
   | { kind: 'separator' }
   | ({ kind: 'submenu'; label: string; items: MenuItem[] } & Leading)
+  /** Items under a small heading, in the menu itself (unlike a submenu). */
+  | { kind: 'group'; label: string; items: MenuItem[] }
   | { kind: 'swatches'; label: string; hues: number[]; selected?: number; onSelect: (hue: number) => void };
 
 export const separator: MenuItem = { kind: 'separator' };

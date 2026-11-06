@@ -6,6 +6,7 @@
   import ImportReview from './ImportReview.svelte';
 
   const importer = new ImportState();
+  void importer.start();
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 </script>
 
@@ -20,7 +21,10 @@
   {/if}
 
   {#if importer.step === 'choose'}
-    <ImportChoose onfile={(file) => void importer.readFile(file)} />
+    <ImportChoose
+      onfile={(file, handle) => void importer.readFile(file, handle)}
+      onremembered={importer.remembered ? () => void importer.readRemembered() : undefined}
+    />
   {:else if importer.step === 'review'}
     <ImportReview {importer} />
   {:else if importer.step === 'importing'}
@@ -35,6 +39,11 @@
           ? `, and ${plural(importer.result.favorites, 'favorite')}`
           : ''}. Open the sidebar to see them.
       </p>
+      {#if importer.sidebar && importer.result.spaces < importer.sidebar.spaces.length}
+        <p class="mt-2 text-[13px] leading-relaxed text-ink-muted">
+          The Arc Spaces you left out stay a click away: the + button at the bottom of the sidebar offers them.
+        </p>
+      {/if}
     </Card>
   {/if}
 </PageShell>

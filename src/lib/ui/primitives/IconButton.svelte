@@ -7,20 +7,23 @@
     label: string;
     /** Tooltip, when it should say more than the label. */
     hint?: string;
-    onclick: () => void;
+    /** Optional when the button gets its behavior from `rest` (e.g. a menu's trigger props). */
+    onclick?: () => void;
     /** Only visible while the parent row is hovered or focused. */
     reveal?: boolean;
     children: Snippet;
+    /** Extra attributes and handlers for the button (e.g. a menu's trigger props). */
+    [key: string]: unknown;
   }
 
-  let { label, hint, onclick, reveal = false, children }: Props = $props();
+  let { label, hint, onclick, reveal = false, children, ...rest }: Props = $props();
 </script>
 
 <Tooltip label={hint ?? label}>
   {#snippet trigger(props)}
     <button
       type="button"
-      {...mergeProps(props, {
+      {...mergeProps(props, rest, {
         class: [
           // Icons don't take the pointer: the button does, so a shared tooltip sees it go button to button.
           'grid size-6 place-items-center rounded-[7px] text-ink-muted transition-opacity duration-100 hover:bg-hover hover:text-ink *:pointer-events-none',
@@ -30,7 +33,7 @@
         'data-no-drag': '',
         onclick: (event: MouseEvent) => {
           event.stopPropagation();
-          onclick();
+          onclick?.();
         },
       })}
     >

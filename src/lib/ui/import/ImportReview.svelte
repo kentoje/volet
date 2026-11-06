@@ -17,7 +17,7 @@
     {#each sidebar.spaces as space, index (index)}
       <Choice
         label={space.name}
-        detail={plural(countPins(space.pinned), 'pin')}
+        detail={`${plural(countPins(space.pinned), 'pin')}${importer.isImported(index) ? ', already imported' : ''}`}
         hue={space.hue}
         checked={importer.chosen.has(index)}
         ontoggle={() => importer.toggle(index)}

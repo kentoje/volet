@@ -1,10 +1,12 @@
 <script lang="ts">
   import { Tooltip } from 'bits-ui';
   import { MediaQuery } from 'svelte/reactivity';
+  import { type ArcClient, setArcClient } from '@/lib/model/arc';
   import { setSidebar } from '@/lib/model/context';
   import type { PaletteClient } from '@/lib/model/palette';
   import type { SidebarStore } from '@/lib/model/types';
   import Pager from '../primitives/Pager.svelte';
+  import ArcInvite from './ArcInvite.svelte';
   import DragLayer from './drag/DragLayer.svelte';
   import ConfirmHost from './editing/ConfirmHost.svelte';
   import { ConfirmState } from './editing/confirm-state.svelte';
@@ -24,11 +26,13 @@
     store: SidebarStore;
     /** Enables search (the bottom bar button, ⌘K, and the shortcut's side panel fallback). */
     palette?: PaletteClient;
+    /** Arc's first-run card and the Arc Spaces offered by the New Volet button. */
+    arc?: ArcClient;
     /** Force a color scheme (the prototype uses this); defaults to the system's. */
     scheme?: 'light' | 'dark';
   }
 
-  let { store, palette, scheme }: Props = $props();
+  let { store, palette, arc, scheme }: Props = $props();
 
   // The store is created once at mount and never replaced.
   // svelte-ignore state_referenced_locally
@@ -36,6 +40,8 @@
   setRename(new RenameState());
   setConfirm(new ConfirmState());
   setSelection(new Selection(sidebar));
+  // svelte-ignore state_referenced_locally
+  setArcClient(arc);
   // svelte-ignore state_referenced_locally
   const panelPalette = setPanelPalette(palette ? new PanelPaletteState() : undefined);
 
@@ -76,6 +82,7 @@
           <SpacePage {space} />
         {/snippet}
       </Pager>
+      <ArcInvite />
       <SpaceSwitcher />
       <ConfirmHost />
       <SelectionDismiss />

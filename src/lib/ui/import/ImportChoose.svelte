@@ -5,7 +5,13 @@
 
   const ARC_FILE = '~/Library/Application Support/Arc/StorableSidebar.json';
 
-  let { onfile }: { onfile: (file: File) => void } = $props();
+  interface Props {
+    onfile: (file: File, handle?: FileSystemFileHandle) => void;
+    /** Arc's file was chosen before: offer to read it again, without the file picker. */
+    onremembered?: () => void;
+  }
+
+  let { onfile, onremembered }: Props = $props();
 
   let copied = $state(false);
 
@@ -16,7 +22,16 @@
   }
 </script>
 
-<Card title="Find Arc's sidebar file">
+{#if onremembered}
+  <Card title="Your Arc file">
+    <p class="mb-4 text-[14px] leading-relaxed">
+      Volet remembers where Arc's sidebar file is. Read it again to see what's in it now.
+    </p>
+    <Button primary onclick={onremembered}>Use your Arc file</Button>
+  </Card>
+{/if}
+
+<Card title={onremembered ? 'Or choose the file again' : "Find Arc's sidebar file"}>
   <p class="text-[14px] leading-relaxed">Arc keeps your sidebar in this file on your Mac:</p>
   <div class="my-3 flex items-center gap-2">
     <code class="min-w-0 flex-1 truncate rounded-lg bg-hover px-3 py-2 text-[12px]">{ARC_FILE}</code>

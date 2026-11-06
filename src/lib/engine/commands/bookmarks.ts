@@ -6,6 +6,7 @@ import { ensureRoot } from '../root';
 import { setBinding } from '../session';
 import { findBookmark, pinsIn, spaceOfBookmark } from '../snapshot';
 import { bindingsItem } from '../storage';
+import { markNamed } from '../titles';
 import type { CommandOf, Handlers } from './types';
 
 /** Move a pin, folder, favorite or Space. `index` is the final position among its new siblings. */
@@ -60,6 +61,8 @@ export const bookmarkHandlers = {
   deleteBookmark,
 
   async renameBookmark({ id, title }) {
-    await browser.bookmarks.update(id, { title });
+    const renamed = await browser.bookmarks.update(id, { title });
+    // A pin or favorite the user named keeps its name: its title no longer follows the page.
+    if (renamed.url) await markNamed([{ url: renamed.url, title }]);
   },
 } satisfies Partial<Handlers>;

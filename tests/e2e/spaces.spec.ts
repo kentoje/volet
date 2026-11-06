@@ -296,3 +296,35 @@ test('when the Volet dots stop fitting they narrow, then scroll, keeping the act
   await expect.poll(() => shown('Volet 1 (click to rename)')).toBe(true);
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Extra 20');
 });
+
+test("a pin takes its page's title when its tab loads, unless the user named it", async ({ worker, windowId, panel }) => {
+  // One of the extension's own pages: its address doesn't contain its title, unlike a data: URL.
+  const url = `chrome-extension://${new URL(worker.url()).host}/options.html`;
+  const tabId = await worker.evaluate(async ({ id, url }) => (await chrome.tabs.create({ windowId: id, url })).id!, {
+    id: windowId,
+    url,
+  });
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).title, tabId)).toBe('Volet settings');
+  const homeId = await worker.evaluate(async () => {
+    const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+    return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
+  });
+  await command(panel, { type: 'pinTab', windowId, tabId, parentId: homeId });
+  const pinId = await worker.evaluate(async (url) => (await chrome.bookmarks.search({ url }))[0]!.id, url);
+  const pinTitle = () => worker.evaluate(async (id) => (await chrome.bookmarks.get(id))[0]!.title, pinId);
+  const reload = () => worker.evaluate(async (id) => chrome.tabs.reload(id), tabId);
+
+  // A title saved while the page was broken (as Arc can hand over) is replaced once the page loads.
+  await worker.evaluate(async (id) => chrome.bookmarks.update(id, { title: 'Page not found' }), pinId);
+  await expect(visiblePage(panel).getByRole('button', { name: 'Page not found', exact: true })).toBeVisible();
+  await reload();
+  await expect.poll(pinTitle).toBe('Volet settings');
+  await expect(visiblePage(panel).getByRole('button', { name: 'Volet settings', exact: true })).toBeVisible();
+
+  // A name the user chose stays.
+  await command(panel, { type: 'renameBookmark', id: pinId, title: 'My settings' });
+  await reload();
+  await expect.poll(() => worker.evaluate(async (id) => (await chrome.tabs.get(id)).status, tabId)).toBe('complete');
+  await panel.waitForTimeout(300);
+  expect(await pinTitle()).toBe('My settings');
+});

@@ -1,8 +1,10 @@
 <script lang="ts">
   import { Plus, Search } from '@lucide/svelte';
+  import { getArcClient } from '@/lib/model/arc';
   import { getSidebar } from '@/lib/model/context';
   import IconButton from '../primitives/IconButton.svelte';
   import ContextMenu from '../primitives/menu/ContextMenu.svelte';
+  import DropdownMenu from '../primitives/menu/DropdownMenu.svelte';
   import { reveal, scrollStrip } from '../primitives/scroll-strip';
   import SpaceDot from '../primitives/SpaceDot.svelte';
   import Tooltip from '../primitives/tooltip/Tooltip.svelte';
@@ -10,6 +12,7 @@
   import { getSpaceOrder } from './drag/context';
   import SortableSpaceDot from './drag/SortableSpaceDot.svelte';
   import { getMenuContext } from './menus/menu-context';
+  import { newVoletMenu } from './menus/new-volet-menu';
   import { spaceMenu } from './menus/space-menu';
   import { getPanelPalette } from './palette/panel-palette-state.svelte';
 
@@ -17,6 +20,7 @@
   const menus = getMenuContext();
   const palette = getPanelPalette();
   const order = getSpaceOrder();
+  const arc = getArcClient();
 
   /** Keeps the active Space's dot in view: at once when the panel opens, then gliding. */
   let shown = false;
@@ -72,8 +76,19 @@
     </ul>
   </TooltipGroup>
   <div class="w-6 flex-none">
-    <IconButton label="New Volet" onclick={() => sidebar.createSpace()}>
-      <Plus size={16} strokeWidth={2} />
-    </IconButton>
+    <!-- While Arc Spaces are left to import, the button offers them next to a blank Volet. -->
+    {#if arc?.offers.length}
+      <DropdownMenu items={() => newVoletMenu(sidebar, arc)}>
+        {#snippet trigger(props)}
+          <IconButton {...props} label="New Volet">
+            <Plus size={16} strokeWidth={2} />
+          </IconButton>
+        {/snippet}
+      </DropdownMenu>
+    {:else}
+      <IconButton label="New Volet" onclick={() => sidebar.createSpace()}>
+        <Plus size={16} strokeWidth={2} />
+      </IconButton>
+    {/if}
   </div>
 </nav>

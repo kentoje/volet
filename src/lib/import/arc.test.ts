@@ -63,12 +63,13 @@ describe('parseArcSidebar', () => {
         kind: 'folder',
         title: 'Docs',
         children: [
-          { kind: 'pin', title: 'Wiki', url: 'https://wiki.example' },
+          { kind: 'pin', title: 'Wiki', url: 'https://wiki.example', named: true }, // renamed in Arc
           { kind: 'folder', title: 'Old', children: [] },
         ],
       },
     ]);
-    expect(untitled).toEqual({ name: 'Volet', hue: undefined, pinned: [] });
+    expect(work!.id).toBe('S1');
+    expect(untitled).toEqual({ id: 'S2', name: 'Volet', hue: undefined, pinned: [] });
   });
 
   it('skips the unpinned (temporary) tabs', () => {
