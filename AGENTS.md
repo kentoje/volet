@@ -50,8 +50,8 @@ Three layers, each with a single job. Dependencies point downward only.
   change a `spaces` array, a pin or folder, or a bookmark tree in place: make a new one (every helper already does).
 - **Bookmarks are the source of truth**: the `Volet` folder holds `Favorites` and one folder per Space; pins are bookmarks. Session-only links (tab to pin, group to Space, active Space per window) live in `chrome.storage.session` and are rebuilt after restarts.
 - **Switching to a Space with no open tab opens none**: the page in front stays (it's parked, `parkedTabsItem`), and
-  the sidebar doesn't follow it back to its own Space; picking any other tab ends that. A new Volet still starts with a
-  new tab. Never collapse the group holding the active tab (`collapseOtherSpaces` skips it): Chrome would pick, or
+  the sidebar doesn't follow it back to its own Space; picking any other tab ends that. A new Volet is no different: it
+  opens no tab. Never collapse the group holding the active tab (`collapseOtherSpaces` skips it): Chrome would pick, or
   open, another tab.
 - **Pin titles follow the page, until renamed**: when a pin's or favorite's tab finishes loading the bookmark's own
   URL, the engine gives the bookmark the page's title (`engine/titles.ts`), but only while its title is still the one

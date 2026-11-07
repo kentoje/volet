@@ -31,9 +31,22 @@ test('tabs opened outside the sidebar join the active Space', async ({ worker, w
   await expect(page.getByRole('button', { name: 'Two', exact: true })).toHaveAttribute('aria-current', 'page');
 });
 
+test('a new Volet opens no tab: the page in front stays', async ({ worker, windowId, panel }) => {
+  const before = await stripState(worker, windowId);
+  await panel.getByRole('button', { name: 'New Volet' }).click();
+  await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  await panel.waitForTimeout(300);
+  const after = await stripState(worker, windowId);
+  expect(after).toHaveLength(before.length);
+  expect(after.find((tab) => tab.active)?.group).toBe('Volet 1 (click to rename)');
+  await expect(visiblePage(panel).getByRole('button', { name: 'New tab', exact: true })).toBeVisible();
+});
+
 test('creating and switching Spaces collapses the other groups', async ({ worker, windowId, panel }) => {
   await panel.getByRole('button', { name: 'New Volet' }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  // A new Volet opens no tab: give it one.
+  await visiblePage(panel).getByRole('button', { name: 'New tab', exact: true }).click();
   await expect
     .poll(async () => {
       const strip = await stripState(worker, windowId);
@@ -159,9 +172,10 @@ test("closing a Volet's last tab shows a favorite and leaves the Volet empty", a
 });
 
 test('a lone New Tab page closes instead of coming back', async ({ worker, windowId, panel }) => {
-  // A new Volet starts with one New Tab page, and no favorite is open.
+  // A new Volet with one New Tab page, opened from the sidebar; no favorite is open.
   await panel.getByRole('button', { name: 'New Volet' }).click();
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  await visiblePage(panel).getByRole('button', { name: 'New tab', exact: true }).click();
   await expect
     .poll(async () => (await stripState(worker, windowId)).filter((tab) => tab.group === 'Volet 2').length)
     .toBe(1);

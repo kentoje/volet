@@ -24,7 +24,7 @@ import type { Handlers } from './types';
 /**
  * Show a Space in a window: activate its last used tab and collapse the other Spaces. A Space with
  * no open tab (only pins, say) gets none: the page in front stays there (`park`) until another tab
- * is picked, unless `open` asks for a new tab (a new Space, or when the page in front is closing).
+ * is picked, unless `open` asks for a new tab (when the page in front is closing).
  */
 export async function switchSpace(ctx: Context, spaceId: string, { open = false } = {}): Promise<void> {
   if (!findSpace(ctx, spaceId)) return;
@@ -71,8 +71,8 @@ export const spaceHandlers = {
     const color = hue ?? nextHue(ctx.spaces.map((space) => hueOf(ctx, space.id)));
     await spaceMetaItem.setValue({ ...ctx.spaceMeta, [title]: { hue: color } });
     const folder = await browser.bookmarks.create({ parentId: ctx.ids.rootId, title });
-    // A new Volet starts with a new tab.
-    await switchSpace(await loadContext(windowId), folder.id, { open: true });
+    // A new Volet opens no tab: like any Volet with none open, the page in front stays (parked).
+    await switchSpace(await loadContext(windowId), folder.id);
     return folder.id;
   },
 
