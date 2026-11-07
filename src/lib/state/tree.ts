@@ -230,8 +230,16 @@ export function withoutTab(spaces: Space[], tabId: TabId): Space[] {
   );
 }
 
-export function withTemporaryCleared(spaces: Space[], spaceId: SpaceId): Space[] {
-  return spaces.map((space) => (space.id === spaceId ? { ...space, tabIds: [] } : space));
+/** The temporary tabs "Clear" closes: all of them but the active tab, which stays open. */
+export function tabsToClear(space: Space, activeTabId: TabId | undefined): TabId[] {
+  return space.tabIds.filter((id) => id !== activeTabId);
+}
+
+/** A Space's temporary tabs cleared: only the active tab is left, if it was one of them. */
+export function withTemporaryCleared(spaces: Space[], spaceId: SpaceId, activeTabId: TabId | undefined): Space[] {
+  return spaces.map((space) =>
+    space.id === spaceId ? { ...space, tabIds: space.tabIds.filter((id) => id === activeTabId) } : space,
+  );
 }
 
 /** Put a tab among a Space's temporary tabs at `index` (end if omitted), removing it from anywhere else. */

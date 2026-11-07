@@ -21,8 +21,10 @@ import {
   renameNode,
   spaceOfNode,
   spaceOfTab,
+  tabsToClear,
   unpinNode,
   withPinTab,
+  withTemporaryCleared,
 } from './tree';
 
 const spaces = (): Space[] => [
@@ -168,6 +170,17 @@ describe('changes both stores make', () => {
     const made = findNode(next.spaces, 'nf');
     expect(made?.kind === 'folder' && made.children.map((child) => child.id)).toEqual(['p1', 'pin-1']);
     expect(next.spaces[0]!.tabIds).toEqual([2]);
+  });
+
+  it('clears temporary tabs but the active one', () => {
+    const before = spaces();
+    expect(tabsToClear(before[0]!, 2)).toEqual([1]);
+    expect(tabsToClear(before[0]!, 7)).toEqual([1, 2]); // a pin's tab is in front
+    const cleared = withTemporaryCleared(before, 's1', 2);
+    expect(cleared[0]!.tabIds).toEqual([2]);
+    expect(cleared[0]!.pinned).toBe(before[0]!.pinned);
+    expect(cleared[1]).toBe(before[1]);
+    expect(withTemporaryCleared(before, 's1', undefined)[0]!.tabIds).toEqual([]);
   });
 
   it('names the Space that takes the place of a deleted one', () => {

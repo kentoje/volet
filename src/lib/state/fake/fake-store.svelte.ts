@@ -50,10 +50,10 @@ export class FakeSidebarStore implements SidebarStore {
   }
 
   clearTemporary(spaceId: SpaceId) {
-    const cleared = this.spaces.find((space) => space.id === spaceId)?.tabIds ?? [];
-    this.spaces = tree.withTemporaryCleared(this.spaces, spaceId);
+    const space = this.spaces.find((candidate) => candidate.id === spaceId);
+    const cleared = space ? tree.tabsToClear(space, this.activeTabId) : [];
+    this.spaces = tree.withTemporaryCleared(this.spaces, spaceId, this.activeTabId);
     for (const id of cleared) this.#setTab(id, undefined);
-    if (this.activeTabId !== undefined && cleared.includes(this.activeTabId)) this.#activateOrClear(undefined);
   }
 
   moveTab(tabId: TabId, spaceId: SpaceId, index?: number) {

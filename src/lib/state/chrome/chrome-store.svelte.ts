@@ -119,7 +119,7 @@ export class ChromeSidebarStore implements SidebarStore {
 
   async clearTemporary(spaceId: SpaceId) {
     await this.#run({ type: 'clearTemporary', windowId: this.windowId, spaceId }, () => {
-      this.spaces = tree.withTemporaryCleared(this.spaces, spaceId);
+      this.spaces = tree.withTemporaryCleared(this.spaces, spaceId, this.activeTabId);
     });
   }
 

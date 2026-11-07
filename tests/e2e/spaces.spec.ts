@@ -460,11 +460,13 @@ test('a new active tab at the end of a long list scrolls into view; one opened i
 });
 
 test('"Clear" shows whenever there are tabs to clear, beside the line', async ({ worker, windowId, panel }) => {
-  await worker.evaluate(async (id) => {
-    await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Scratch</title>' });
+  const scratchId = await worker.evaluate(async (id) => {
+    await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Background</title>', active: false });
+    return (await chrome.tabs.create({ windowId: id, url: 'data:text/html,<title>Scratch</title>' })).id!;
   }, windowId);
   const page = visiblePage(panel);
   await expect(page.getByRole('button', { name: 'Scratch', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Background', exact: true })).toBeVisible();
   const clear = page.getByRole('button', { name: 'Clear', exact: true });
   // Shown without hovering anything, and the line stops before it.
   await panel.mouse.move(0, 0);
@@ -476,8 +478,15 @@ test('"Clear" shows whenever there are tabs to clear, beside the line', async ({
   });
   expect(overlap).toBeLessThanOrEqual(0);
 
+  // Every unpinned tab closes but the active one, which stays in front.
   await clear.click();
-  await expect(page.getByRole('button', { name: 'Scratch', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Background', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Scratch', exact: true })).toBeVisible();
+  await expect
+    .poll(async () => (await stripState(worker, windowId)).map((tab) => ({ id: tab.id, active: tab.active })))
+    .toEqual([{ id: scratchId, active: true }]);
+  // Only the active tab is left, and it never clears: no button.
+  await expect(clear).toHaveCount(0);
 
   // Nothing left to clear (only a favorite is open): no button.
   await worker.evaluate(async (id) => {

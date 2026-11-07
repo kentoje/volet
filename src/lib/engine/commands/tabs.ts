@@ -46,9 +46,9 @@ export const tabHandlers = {
 
   async clearTemporary({ windowId, spaceId }) {
     const ctx = await loadContext(windowId);
-    const ids = tabIds(temporaryTabs(ctx, spaceId));
+    // The active tab stays open: clearing tidies up around the page in use, it never takes it away.
+    const ids = tabIds(temporaryTabs(ctx, spaceId).filter((tab) => !tab.active));
     if (ids.length === 0) return;
-    await keepActiveInSpace(ctx, ids);
     await retry(() => browser.tabs.remove(ids));
   },
 

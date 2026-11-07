@@ -2,6 +2,7 @@
   import { Plus } from '@lucide/svelte';
   import { getSidebar } from '@/lib/model/context';
   import type { Space } from '@/lib/model/types';
+  import { tabsToClear } from '@/lib/state/tree';
   import ListActionButton from '../primitives/ListActionButton.svelte';
   import { scrolled } from '../primitives/scrolled';
   import SectionDivider from '../primitives/SectionDivider.svelte';
@@ -12,11 +13,15 @@
   let { space }: { space: Space } = $props();
 
   const sidebar = getSidebar();
+  // The active tab is never cleared, so with only it left there's nothing to clear.
+  const keepsActive = $derived(sidebar.activeTabId !== undefined && space.tabIds.includes(sidebar.activeTabId));
   const clear = $derived(
-    space.tabIds.length > 0
+    tabsToClear(space, sidebar.activeTabId).length > 0
       ? {
           label: 'Clear',
-          description: `Close all unpinned tabs in ${space.name}`,
+          description: keepsActive
+            ? `Close the other unpinned tabs in ${space.name}`
+            : `Close all unpinned tabs in ${space.name}`,
           onclick: () => sidebar.clearTemporary(space.id),
         }
       : undefined,
