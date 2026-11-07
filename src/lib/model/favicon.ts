@@ -21,5 +21,7 @@ function faviconSrc(pageUrl: string, size: number): string {
   if (runtime?.id && runtime.getURL) {
     return runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(pageUrl)}&size=${px}`);
   }
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostOf(pageUrl))}&sz=${px}`;
+  // By address, not domain: a domain gets its parent's icon (Gmail and Calendar would both show Google's).
+  const site = `https://${hostOf(pageUrl)}/`;
+  return `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(site)}&sz=${px}`;
 }
