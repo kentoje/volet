@@ -95,7 +95,7 @@ test('pins can be renamed and folders created from menus', async ({ worker, wind
   await expect(visiblePage(panel).getByRole('button', { name: 'New folder' })).toBeVisible();
 });
 
-test('"New folder" on a folder or a tab adds a folder at the top of the Space, not inside', async ({
+test('"New folder" on a folder adds one at the top of the Space; on a tab, puts the tab in it', async ({
   worker,
   windowId,
   panel,
@@ -118,11 +118,16 @@ test('"New folder" on a folder or a tab adds a folder at the top of the Space, n
   await panel.keyboard.press('Enter');
   await expect.poll(homeOutline).toEqual([['Inbox', 0], ['Docs', 0]]);
 
+  // A tab goes into its new folder, pinned, and the folder lands after the pins (where the tab was).
   await visiblePage(panel).getByRole('button', { name: 'Loose', exact: true }).click({ button: 'right' });
   await menuItem(panel, 'New folder').click();
   await expect(folderName).toBeFocused();
   await panel.keyboard.press('Escape');
-  await expect.poll(homeOutline).toEqual([['New folder', 0], ['Inbox', 0], ['Docs', 0]]);
+  await expect.poll(homeOutline).toEqual([['Inbox', 0], ['Docs', 0], ['New folder', 1]]);
+  const space = (await bookmarkTree(worker)).children!.find((c) => c.title === 'Volet 1 (click to rename)')!;
+  expect(space.children!.at(-1)!.children!.map((c) => c.title)).toEqual(['Loose']);
+  // The tab stays open, now as the folder's pin.
+  await expect(visiblePage(panel).getByRole('button', { name: 'Unpin', exact: true })).toHaveCount(1);
 });
 
 test('a row keeps its hover look while its menu is open', async ({ worker, panel }) => {

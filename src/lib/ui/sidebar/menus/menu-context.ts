@@ -1,7 +1,8 @@
 import { ArrowRightLeft, FolderPlus } from '@lucide/svelte';
 import { getSidebar } from '@/lib/model/context';
 import type { MenuItem } from '@/lib/model/menu';
-import type { SidebarStore, SpaceId } from '@/lib/model/types';
+import { folderPlace } from '@/lib/model/selection';
+import type { SidebarStore, Space, SpaceId, SpaceItem } from '@/lib/model/types';
 import type { ConfirmState } from '../editing/confirm-state.svelte';
 import { getConfirm, getRename } from '../editing/context';
 import type { RenameState } from '../editing/rename-state.svelte';
@@ -30,6 +31,29 @@ export async function createAndRename({ store, rename }: MenuContext, parentId: 
 export function newFolder(menus: MenuContext, spaceId: SpaceId | undefined): MenuItem | false {
   if (spaceId === undefined) return false;
   return { kind: 'action', label: 'New folder', icon: FolderPlus, onSelect: () => createAndRename(menus, spaceId) };
+}
+
+/**
+ * Put `items` in a new folder where the first of them is (tabs are pinned in, so a folder of tabs goes after
+ * the pins), then rename it right away.
+ */
+export async function createWithAndRename({ store, rename }: MenuContext, space: Space, items: SpaceItem[]): Promise<void> {
+  const first = items[0];
+  if (!first) return;
+  const place = folderPlace(space, first);
+  const id = await store.createFolderWith(items, place.parentId, place.index);
+  if (id) rename.start(id);
+}
+
+/** "New folder" holding the row it was opened on. */
+export function newFolderWith(menus: MenuContext, space: Space | undefined, item: SpaceItem): MenuItem | false {
+  if (!space) return false;
+  return {
+    kind: 'action',
+    label: 'New folder',
+    icon: FolderPlus,
+    onSelect: () => void createWithAndRename(menus, space, [item]),
+  };
 }
 
 /** "Move to Volet" submenu listing every other Space, each with its color. */

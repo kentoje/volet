@@ -1,9 +1,8 @@
 import { FolderPlus, X } from '@lucide/svelte';
 import { type MenuItem, separator, tidy } from '@/lib/model/menu';
-import { folderPlace } from '@/lib/model/selection';
 import type { SidebarStore, SpaceId, SpaceItem } from '@/lib/model/types';
 import { findNode } from '@/lib/state/tree';
-import { type MenuContext, moveToSpace } from './menu-context';
+import { createWithAndRename, type MenuContext, moveToSpace } from './menu-context';
 
 /** A row's menu: the selection's menu when the row is one of several selected rows. */
 export function rowMenu(entry: SpaceItem, menus: MenuContext, own: () => MenuItem[]): MenuItem[] {
@@ -11,7 +10,8 @@ export function rowMenu(entry: SpaceItem, menus: MenuContext, own: () => MenuIte
 }
 
 /** Right-click menu of several selected rows. */
-export function selectionMenu({ store, selection, rename }: MenuContext): MenuItem[] {
+export function selectionMenu(menus: MenuContext): MenuItem[] {
+  const { store, selection } = menus;
   const items = selection.group();
   const space = store.spaces.find((s) => s.id === store.activeSpaceId);
   const first = items[0];
@@ -29,11 +29,7 @@ export function selectionMenu({ store, selection, rename }: MenuContext): MenuIt
         kind: 'action',
         label: `New folder with ${items.length} ${noun}`,
         icon: FolderPlus,
-        onSelect: thenClear(async () => {
-          const place = folderPlace(space, first);
-          const id = await store.createFolderWith(items, place.parentId, place.index);
-          if (id) rename.start(id);
-        }),
+        onSelect: thenClear(() => createWithAndRename(menus, space, items)),
       },
     moveToSpace(store, space?.id, (spaceId) => thenClear(() => moveAll(store, items, spaceId))()),
     separator,

@@ -24,8 +24,8 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
   adds or removes one, <kbd>Esc</kbd> clears. Drag them together (they move as a stack), or right-click to put them in a new
   folder (a selected folder nests inside it), move them to another Space, or close them. A click anywhere else clears it.
 - **Right-click menus** on every tab, pin, folder, favorite and Space: rename (or double-click a pin or folder, click a
-  Space's name), move to another Space, add a new folder at the top of the Space (from a tab, pin, folder or the
-  Space) or inside a folder, Space colors, reorder and delete Spaces, and more.
+  Space's name), move to another Space, put a tab in a new folder, add a new folder at the top of the Space (from a
+  pin, folder or the Space) or inside a folder, Space colors, reorder and delete Spaces, and more.
 - **Search palette.** Press <kbd>Alt</kbd>+<kbd>T</kbd> on any page for an Arc-style palette over it: open tabs (all windows),
   pins, favorites, archived tabs, Spaces, actions, a web address, or a web search. In the sidebar: the search button,
   <kbd>⌘K</kbd>/<kbd>Ctrl+K</kbd>, or <kbd>/</kbd>.
