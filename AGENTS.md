@@ -159,6 +159,8 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
   (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
+  `rem` there is the page's root font size, not ours (YouTube's is 10px), so `palette.css` sets Tailwind's spacing,
+  radius and text scales in px: size anything else in px too (an e2e test renders it over a 10px root).
 
 ## Coding guidelines
 
