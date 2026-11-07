@@ -52,15 +52,14 @@ const test = base.extend<{ customPrevious: boolean; configuredNext: boolean; cle
 });
 
 async function createRecentPages(context: BrowserContext, worker: Worker, windowId: number): Promise<number[]> {
-  const ids: number[] = [];
-  for (const name of ['A', 'B', 'C', 'D', 'E', 'F']) {
-    const tabId = await worker.evaluate(async ({ windowId, name }) => {
-      const tab = await chrome.tabs.create({ windowId, url: `https://recent-tabs.test/${name}`, active: true });
-      return tab.id!;
-    }, { windowId, name });
-    ids.push(tabId);
-    await expect(await recentPage(context, name)).toHaveTitle(`Recent ${name}`);
-  }
+  const names = ['A', 'B', 'C', 'D', 'E', 'F'];
+  // Opened by Playwright, each becoming the active tab in turn (F is the most recent): it serves the test pages only
+  // once attached to a tab, so a tab the worker opens starts loading too early, and each had to wait about a second.
+  for (const name of names) await (await context.newPage()).goto(`https://recent-tabs.test/${name}`);
+  const ids = await worker.evaluate(async ({ windowId, names }) => {
+    const tabs = await chrome.tabs.query({ windowId });
+    return names.map((name) => tabs.find((tab) => tab.url === `https://recent-tabs.test/${name}`)!.id!);
+  }, { windowId, names });
   await worker.evaluate(async ({ ids, windowId }) => {
     // Put an older tab in another Space to exercise switching across groups.
     const groupId = await chrome.tabs.group({ tabIds: [ids[3]!], createProperties: { windowId } });
@@ -84,7 +83,9 @@ async function activeId(worker: Worker, windowId: number) {
 }
 
 async function recentPage(context: BrowserContext, name: string): Promise<Page> {
-  await expect.poll(() => context.pages().some((page) => page.url() === `https://recent-tabs.test/${name}`)).toBe(true);
+  // Check often: a new page shows up about a second after its tab opens, and the default backoff waits up to a second more.
+  await expect.poll(() => context.pages().some((page) => page.url() === `https://recent-tabs.test/${name}`), { intervals: [50] })
+    .toBe(true);
   const page = context.pages().find((page) => page.url() === `https://recent-tabs.test/${name}`)!;
   await page.waitForLoadState();
   return page;
@@ -656,12 +657,14 @@ test('screenshots are kept in Chrome session storage, so they outlive the backgr
   const ids = await createRecentPages(context, worker, windowId);
   const page = await recentPage(context, 'F');
   await page.bringToFront();
-  // What the switcher's page asks for: recent tabs, each with its screenshot if one is kept.
-  const options = await context.newPage();
-  await options.goto(`chrome-extension://${new URL(worker.url()).host}/options.html`);
+  // What the switcher asks for from F's page: recent tabs, each with its screenshot if one is kept. (Opening another
+  // tab to ask would move F to the back before its screenshot is taken.)
   const previewed = async () => {
-    const response = await options.evaluate(() => chrome.runtime.sendMessage({ type: 'recent-tabs:query' }));
-    return ((response as { tabs?: { title: string; preview?: string }[] }).tabs ?? [])
+    const [result] = await worker.evaluate((id) => chrome.scripting.executeScript({
+      target: { tabId: id },
+      func: async () => chrome.runtime.sendMessage({ type: 'recent-tabs:query' }),
+    }), ids[5]!);
+    return ((result?.result as { tabs?: { title: string; preview?: string }[] } | undefined)?.tabs ?? [])
       .filter((tab) => tab.preview?.startsWith('data:image/jpeg;base64,')).map((tab) => tab.title);
   };
   await expect.poll(previewed, { timeout: 10_000 }).toContain('Recent F');
