@@ -12,8 +12,8 @@
 <Card title="Recent tabs">
   <p class="text-[14px]">Cycle through your five most recent tabs across Volets in this window.</p>
   <p class="mt-3 text-[13px] leading-relaxed text-ink-muted">
-    Hold the shortcut's modifier and press it again to go further back, then let go to switch. Change the back and
-    forward shortcuts under Keyboard shortcuts, or remove both to turn the switcher off.
+    Hold the shortcut's modifier and press it again to go further back, then let go to switch. Change the next and
+    previous shortcuts under Keyboard shortcuts, or remove both to turn the switcher off.
   </p>
   <p class="mt-3 text-[13px] leading-relaxed text-ink-muted">
     To notice when you let go, Volet listens for keys on websites, and it keeps temporary previews of the pages you

@@ -9,22 +9,24 @@ export function recentTabModifier(shortcut: string): CycleModifier | undefined {
   return undefined;
 }
 
-/** The switcher's two shortcuts, named by what they do: back goes to older tabs, forward to newer ones. */
-export const BACK_COMMAND = 'cycle-recent-tabs-previous';
-export const FORWARD_COMMAND = 'cycle-recent-tabs';
-export type RecentTabCommand = typeof BACK_COMMAND | typeof FORWARD_COMMAND;
+/** The switcher's two shortcuts: previous goes to older tabs, next to newer ones. */
+export const PREVIOUS_COMMAND = 'cycle-recent-tabs-previous';
+/** Named so it sorts after "previous": Chrome's shortcuts page lists commands by id. */
+export const NEXT_COMMAND = 'cycle-recent-tabs-subsequent';
+export type RecentTabCommand = typeof PREVIOUS_COMMAND | typeof NEXT_COMMAND;
 
 /**
- * A step along the recent tabs, most recent first: back goes one tab further into the past, forward comes back toward
- * the current tab. Either one's first press selects the previous tab (`RecentTabCycle.step`).
+ * A step along the recent tabs, most recent first, from the current tab: previous goes one tab further into the past
+ * (first, the previous tab), next comes back toward the current tab (first, wrapping to the oldest). See
+ * `RecentTabCycle.step`.
  */
 export function recentTabOffset(command: RecentTabCommand): 1 | -1 {
-  return command === BACK_COMMAND ? 1 : -1;
+  return command === PREVIOUS_COMMAND ? 1 : -1;
 }
 
 /** Whether either switcher shortcut is assigned: removing both turns the switcher off. */
 export function hasRecentTabShortcut(commands: readonly { name?: string; shortcut?: string }[]): boolean {
-  return commands.some((command) => (command.name === BACK_COMMAND || command.name === FORWARD_COMMAND) && Boolean(command.shortcut));
+  return commands.some((command) => (command.name === PREVIOUS_COMMAND || command.name === NEXT_COMMAND) && Boolean(command.shortcut));
 }
 
 /** Validate a modifier at the extension message boundary. */

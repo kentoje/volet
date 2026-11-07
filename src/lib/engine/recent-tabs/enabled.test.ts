@@ -8,7 +8,7 @@ import { recentTabsEnabled } from './enabled';
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.access.mockResolvedValue(true);
-  mocks.commands.mockResolvedValue([{ name: 'cycle-recent-tabs', shortcut: 'Alt+Period' }]);
+  mocks.commands.mockResolvedValue([{ name: 'cycle-recent-tabs-subsequent', shortcut: 'Alt+Period' }]);
 });
 
 it('requires an assigned shortcut and site access, with no separate enable preference', async () => {

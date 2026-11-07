@@ -95,10 +95,17 @@ test('the settings page changes how long unpinned tabs stay open', async ({ cont
 test('both tab cycling directions are listed in settings with their defaults, and configurable in Chrome', async ({ context, worker }) => {
   const page = await context.newPage();
   await page.goto(extensionPage(worker, 'options.html'));
+  // Previous above next, in Volet's settings and on Chrome's shortcuts page (which lists commands by id).
+  const previousFirst = async (target: typeof page) => {
+    const [previous, next] = await Promise.all(['Switch to the previous recent tab', 'Switch to the next recent tab']
+      .map(async (label) => (await target.getByText(label, { exact: true }).boundingBox())!.y));
+    return previous! < next!;
+  };
   const preview = page.getByRole('region', { name: 'Cycle through preview', exact: true });
-  await expect(preview.getByText('Go forward through recent tabs', { exact: true })).toBeVisible();
-  await expect(preview.getByText('Go back through recent tabs', { exact: true })).toBeVisible();
+  await expect(preview.getByText('Switch to the previous recent tab', { exact: true })).toBeVisible();
+  await expect(preview.getByText('Switch to the next recent tab', { exact: true })).toBeVisible();
   await expect(preview.locator('dd')).toHaveText([/Alt\+Comma\s*Default/, /Alt\+Period\s*Default/]);
+  expect(await previousFirst(page)).toBe(true);
   await expect(preview.getByRole('button', { name: 'Set close highlighted tab shortcut' })).toHaveText('Not set');
   for (const name of ['General', 'Volets', 'Tabs']) await expect(page.getByRole('region', { name, exact: true })).toBeVisible();
   const opened = context.waitForEvent('page');
@@ -106,8 +113,9 @@ test('both tab cycling directions are listed in settings with their defaults, an
   const shortcuts = await opened;
   await shortcuts.waitForLoadState();
   await expect(shortcuts).toHaveURL('chrome://extensions/shortcuts');
-  await expect(shortcuts.getByText('Go forward through recent tabs', { exact: true })).toBeVisible();
-  await expect(shortcuts.getByText('Go back through recent tabs', { exact: true })).toBeVisible();
+  await expect(shortcuts.getByText('Switch to the previous recent tab', { exact: true })).toBeVisible();
+  await expect(shortcuts.getByText('Switch to the next recent tab', { exact: true })).toBeVisible();
+  expect(await previousFirst(shortcuts)).toBe(true);
 });
 
 test('the preview close shortcut can be recorded, persisted, cancelled and cleared', async ({ context, worker }) => {

@@ -56,11 +56,11 @@ test('shortcut removal is the only switcher control and an old disabled preferen
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/options.html`);
   await expect(page.getByRole('switch')).toHaveCount(0);
-  await expect(page.getByText('forward shortcuts under Keyboard shortcuts, or remove both to turn the switcher off.', { exact: false })).toBeVisible();
+  await expect(page.getByText('previous shortcuts under Keyboard shortcuts, or remove both to turn the switcher off.', { exact: false })).toBeVisible();
   const manager = await context.newPage();
   await manager.goto('chrome://extensions/');
   await manager.evaluate(async (id) => {
-    for (const commandName of ['cycle-recent-tabs', 'cycle-recent-tabs-previous']) {
+    for (const commandName of ['cycle-recent-tabs-subsequent', 'cycle-recent-tabs-previous']) {
       await chrome.developerPrivate.updateExtensionCommand({ extensionId: id, commandName, keybinding: '' });
     }
   }, extensionId);

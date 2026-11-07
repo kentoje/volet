@@ -48,8 +48,9 @@ export default defineConfig({
     commands: {
       'toggle-sidebar': { suggested_key: { default: 'Alt+S' }, description: 'Show or hide the sidebar' },
       'open-palette': { suggested_key: { default: 'Alt+T' }, description: 'Search tabs, pins and archived tabs' },
-      'cycle-recent-tabs-previous': { suggested_key: { default: 'Alt+Comma' }, description: 'Go back through recent tabs' },
-      'cycle-recent-tabs': { suggested_key: { default: 'Alt+Period' }, description: 'Go forward through recent tabs' },
+      // Chrome's shortcuts page lists commands by id: "subsequent" (next) sorts after "previous", as in Volet's settings.
+      'cycle-recent-tabs-previous': { suggested_key: { default: 'Alt+Comma' }, description: 'Switch to the previous recent tab' },
+      'cycle-recent-tabs-subsequent': { suggested_key: { default: 'Alt+Period' }, description: 'Switch to the next recent tab' },
       'next-space': { description: 'Switch to the next Volet' },
       'previous-space': { description: 'Switch to the previous Volet' },
       'toggle-pin': { description: 'Pin or unpin the current tab' },

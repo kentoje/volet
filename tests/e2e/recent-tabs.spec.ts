@@ -18,19 +18,19 @@ const test = base.extend<{ customPrevious: boolean; configuredNext: boolean; cle
     const manifestPath = path.join(extension, 'manifest.json');
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
     if (configuredNext) {
-      // Model a user-assigned forward binding (⌘E on a Mac); production suggests Alt+Period.
-      manifest.commands['cycle-recent-tabs'].suggested_key = { default: 'Alt+Q', mac: 'Command+E' };
+      // Model a user-assigned next binding (⌘E on a Mac); production suggests Alt+Period.
+      manifest.commands['cycle-recent-tabs-subsequent'].suggested_key = { default: 'Alt+Q', mac: 'Command+E' };
     }
     if (clearedNext) {
-      // Model a user who cleared the forward binding in Chrome.
-      delete manifest.commands['cycle-recent-tabs'].suggested_key;
+      // Model a user who cleared the next binding in Chrome.
+      delete manifest.commands['cycle-recent-tabs-subsequent'].suggested_key;
     }
     if (clearedPrevious) {
-      // Model a user who cleared the backward binding in Chrome.
+      // Model a user who cleared the previous binding in Chrome.
       delete manifest.commands['cycle-recent-tabs-previous'].suggested_key;
     }
     if (customPrevious) {
-      // Model a user-assigned backward binding; production suggests Alt+Comma.
+      // Model a user-assigned previous binding; production suggests Alt+Comma.
       manifest.commands['cycle-recent-tabs-previous'].suggested_key = {
         default: 'Ctrl+Shift+Y', mac: 'Command+Shift+Y',
       };
@@ -71,8 +71,8 @@ async function createRecentPages(context: BrowserContext, worker: Worker, window
 
 async function step(worker: Worker, tabId: number, shortcut = '⌘E', offset: 1 | -1 = 1) {
   // Exercise the exact message sent by chrome.commands; browser-level shortcut gestures themselves
-  // require a real keyboard and are not dispatched by Playwright's page keyboard API. The back shortcut
-  // sends offset 1 (older tabs), the forward one -1 (`recentTabOffset`).
+  // require a real keyboard and are not dispatched by Playwright's page keyboard API. The previous shortcut
+  // sends offset 1 (older tabs), the next one -1 (`recentTabOffset`).
   await worker.evaluate(async ({ tabId, shortcut, offset }) => {
     await chrome.tabs.sendMessage(tabId, { type: 'recent-tabs:step', shortcut, offset });
   }, { tabId, shortcut, offset });
@@ -132,12 +132,12 @@ test('quick taps toggle the two most recent tabs even if the command arrives aft
   await expect(page.getByRole('dialog', { name: 'Recent tabs' })).toHaveCount(0);
 });
 
-test.describe('cleared back shortcut', () => {
+test.describe('cleared previous shortcut', () => {
   test.use({ clearedPrevious: true });
 
-  test('an assigned forward shortcut never supplies an unassigned back shortcut', async ({ context, worker, windowId }) => {
+  test('an assigned next shortcut never supplies an unassigned previous shortcut', async ({ context, worker, windowId }) => {
     const commands = await worker.evaluate(() => chrome.commands.getAll());
-    expect(commands.find((command) => command.name === 'cycle-recent-tabs')?.shortcut).not.toBe('');
+    expect(commands.find((command) => command.name === 'cycle-recent-tabs-subsequent')?.shortcut).not.toBe('');
     expect(commands.find((command) => command.name === 'cycle-recent-tabs-previous')?.shortcut).toBe('');
     const previous = await context.newPage();
     await previous.goto('https://recent-tabs.test/Previous');
@@ -150,9 +150,11 @@ test.describe('cleared back shortcut', () => {
     await expect(dialog).toHaveCount(0);
     await page.keyboard.down('Meta');
     await step(worker, current, '⌘E', -1);
-    await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent Previous');
+    // Next starts at the far right, the oldest.
+    const oldest = dialog.locator('.recent-tab').last();
+    await expect(oldest).toHaveAttribute('aria-current', 'true');
     await page.keyboard.press('Shift+E');
-    await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent Previous');
+    await expect(oldest).toHaveAttribute('aria-current', 'true');
     await page.keyboard.press('Escape');
     await page.keyboard.up('Meta');
     expect(await activeId(worker, windowId)).toBe(current);
@@ -207,7 +209,7 @@ test('visited tabs gain local screenshots in the centered preview', async ({ con
   await page.keyboard.up('Meta');
 });
 
-test('forward starts on the previous tab too, then comes back toward newer tabs, and directions can be mixed', async ({ context, worker, windowId }) => {
+test('next starts at the far right, the oldest, then moves left, and directions can be mixed', async ({ context, worker, windowId }) => {
   const ids = await createRecentPages(context, worker, windowId);
   const page = await recentPage(context, 'F');
   await page.bringToFront();
@@ -216,38 +218,38 @@ test('forward starts on the previous tab too, then comes back toward newer tabs,
   await step(worker, ids[5]!, '⌘⇧E', -1);
   const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent E');
+  // F, E, D, C, B: next wraps from the current tab to the far right, like Cmd+Shift+Tab on a Mac.
+  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent B');
   await expect(dialog.getByText('Release the shortcut modifier', { exact: false })).toHaveCount(0);
   await step(worker, ids[5]!, '⌘⇧E', -1);
-  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent F');
+  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent C');
   await page.keyboard.up('Shift');
   expect(await activeId(worker, windowId)).toBe(ids[5]);
-  // Changing direction returns to the previous tab in the same frozen order.
+  // Previous moves back right, in the same frozen order.
   await step(worker, ids[5]!);
-  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent E');
+  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent B');
   await page.keyboard.up('Meta');
-  await expect.poll(() => activeId(worker, windowId)).toBe(ids[4]);
+  await expect.poll(() => activeId(worker, windowId)).toBe(ids[1]);
   await expect(dialog).toHaveCount(0);
 });
 
-test('quick taps of the forward shortcut toggle the same two recent tabs as the back one', async ({ context, worker, windowId }) => {
+test('a quick tap of next switches to the oldest of the five, like Cmd+Shift+Tab, and previous comes straight back', async ({ context, worker, windowId }) => {
   const ids = await createRecentPages(context, worker, windowId);
-  let currentId = ids[5]!;
-  for (const expectedId of [ids[4]!, ids[5]!]) {
-    const page = await recentPage(context, currentId === ids[5] ? 'F' : 'E');
-    await page.bringToFront();
-    await page.keyboard.down('Meta');
-    await page.keyboard.down('Shift');
-    await step(worker, currentId, '⌘⇧E', -1);
-    await page.keyboard.up('Shift');
-    await page.keyboard.up('Meta');
-    await expect.poll(() => activeId(worker, windowId)).toBe(expectedId);
-    await expect(page.getByRole('dialog', { name: 'Recent tabs' })).toHaveCount(0);
-    currentId = expectedId;
-  }
-  // Switching the direction on the next gesture keeps the same toggle pair.
-  await step(worker, currentId);
-  await expect.poll(() => activeId(worker, windowId)).toBe(ids[4]);
+  const page = await recentPage(context, 'F');
+  await page.bringToFront();
+  await page.keyboard.down('Meta');
+  await page.keyboard.down('Shift');
+  await step(worker, ids[5]!, '⌘⇧E', -1);
+  await page.keyboard.up('Shift');
+  await page.keyboard.up('Meta');
+  // F, E, D, C, B: the far right is B.
+  await expect.poll(() => activeId(worker, windowId)).toBe(ids[1]);
+  await expect(page.getByRole('dialog', { name: 'Recent tabs' })).toHaveCount(0);
+  const oldest = await recentPage(context, 'B');
+  await oldest.keyboard.down('Meta');
+  await oldest.keyboard.up('Meta');
+  await step(worker, ids[1]!);
+  await expect.poll(() => activeId(worker, windowId)).toBe(ids[5]);
 });
 
 test('tabs without screenshots use favicon placeholders with no visible footer', async ({ context, worker, windowId }, testInfo) => {
@@ -411,13 +413,13 @@ test('switcher favicons load inline on a page that restricts cross-origin images
   await page.keyboard.up('Meta');
 });
 
-test.describe('custom back shortcut', () => {
+test.describe('custom previous shortcut', () => {
   test.use({ customPrevious: true });
 
-  test('a custom back binding walks back through the frozen list without an implicit Shift binding', async ({ context, worker, windowId }) => {
+  test('a custom previous binding walks back through the frozen list without an implicit Shift binding', async ({ context, worker, windowId }) => {
     const ids = await createRecentPages(context, worker, windowId);
     const commands = await worker.evaluate(() => chrome.commands.getAll());
-    const next = commands.find((command) => command.name === 'cycle-recent-tabs')!.shortcut!;
+    const next = commands.find((command) => command.name === 'cycle-recent-tabs-subsequent')!.shortcut!;
     const previous = commands.find((command) => command.name === 'cycle-recent-tabs-previous')!.shortcut!;
     expect(previous).not.toBe('');
     expect(previous).not.toBe(next);
@@ -426,7 +428,7 @@ test.describe('custom back shortcut', () => {
     const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
     await page.keyboard.down(modifier);
     await page.keyboard.down('Shift');
-    // Shift+forward never hijacks the page; only the assigned native back command can step.
+    // Shift+next never hijacks the page; only the assigned native previous command can step.
     await page.keyboard.press(process.platform === 'darwin' ? 'E' : 'Q');
     const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
     await expect(dialog).toHaveCount(0);
@@ -442,26 +444,28 @@ test.describe('custom back shortcut', () => {
     await expect.poll(() => activeId(worker, windowId)).toBe(ids[2]);
   });
 
-  test('late commands from either shortcut toggle consistently, also with only two or one tabs', async ({ context, worker, windowId }) => {
+  test('late commands switch at once: previous toggles the last two tabs, next goes to the oldest, also with two or one tabs', async ({ context, worker, windowId }) => {
     const ids = await createRecentPages(context, worker, windowId);
     const commands = await worker.evaluate(() => chrome.commands.getAll());
-    const next = commands.find((command) => command.name === 'cycle-recent-tabs')!.shortcut!;
+    const next = commands.find((command) => command.name === 'cycle-recent-tabs-subsequent')!.shortcut!;
     const previous = commands.find((command) => command.name === 'cycle-recent-tabs-previous')!.shortcut!;
-    const gestures: { shortcut: string; offset: 1 | -1 }[] = [
-      { shortcut: previous, offset: 1 }, { shortcut: previous, offset: 1 },
-      { shortcut: next, offset: -1 }, { shortcut: previous, offset: 1 },
+    // F, E, D, C, B: previous toggles F and E, next goes to the far right (B), and previous from B returns to F.
+    const gestures: { from: string; shortcut: string; offset: 1 | -1; to: number }[] = [
+      { from: 'F', shortcut: previous, offset: 1, to: ids[4]! },
+      { from: 'E', shortcut: previous, offset: 1, to: ids[5]! },
+      { from: 'F', shortcut: next, offset: -1, to: ids[1]! },
+      { from: 'B', shortcut: previous, offset: 1, to: ids[5]! },
     ];
     let currentId = ids[5]!;
     for (const gesture of gestures) {
-      const page = await recentPage(context, currentId === ids[5] ? 'F' : 'E');
+      const page = await recentPage(context, gesture.from);
       const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
       await page.keyboard.down(modifier);
       await page.keyboard.up(modifier);
       // Deliver the browser command after release, before the async tab query completes.
       await step(worker, currentId, gesture.shortcut, gesture.offset);
-      const expectedId = currentId === ids[5] ? ids[4]! : ids[5]!;
-      await expect.poll(() => activeId(worker, windowId)).toBe(expectedId);
-      currentId = expectedId;
+      await expect.poll(() => activeId(worker, windowId)).toBe(gesture.to);
+      currentId = gesture.to;
     }
     await worker.evaluate(async ({ windowId, keep }) => {
       const tabs = await chrome.tabs.query({ windowId });
@@ -483,12 +487,12 @@ test.describe('custom back shortcut', () => {
 test.describe('default preview shortcuts', () => {
   test.use({ configuredNext: false });
 
-  test('fresh installs go back with Alt+, and forward with Alt+. while Alt is held, and have no close key until one is recorded', async ({ context, worker, windowId }) => {
+  test('fresh installs go to previous tabs with Alt+, and next ones with Alt+. while Alt is held, and have no close key until one is recorded', async ({ context, worker, windowId }) => {
     const commands = await worker.evaluate(() => chrome.commands.getAll());
     const shortcut = (name: string) => commands.find((command) => command.name === name)?.shortcut ?? '';
     const back = shortcut('cycle-recent-tabs-previous');
     expect(back).toMatch(/^(⌥,|Alt\+(Comma|,))$/);
-    expect(shortcut('cycle-recent-tabs')).toMatch(/^(⌥\.|Alt\+(Period|\.))$/);
+    expect(shortcut('cycle-recent-tabs-subsequent')).toMatch(/^(⌥\.|Alt\+(Period|\.))$/);
     // Chrome won't load an extension suggesting more than four shortcuts: pinning gave up its default.
     expect(shortcut('toggle-pin')).toBe('');
     const previous = await context.newPage();

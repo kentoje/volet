@@ -31,15 +31,14 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
   <kbd>⌘K</kbd>/<kbd>Ctrl+K</kbd>, or <kbd>/</kbd>.
 - **Import from Arc.** Settings → Import from Arc reads Arc's `StorableSidebar.json` and brings over your Spaces, their
   colors, pinned tabs, folders and favorites. The file never leaves your computer.
-- **Recent tab switcher.** Hold <kbd>Alt</kbd> (<kbd>⌥</kbd> on a Mac) and press <kbd>,</kbd> to go back through your
-  five most recent tabs across Spaces in this window, one tab further back with each press, then let go to switch;
-  <kbd>.</kbd> goes forward again if you went too far. A quick tap of either goes back to the previous tab. Newly
-  opened background tabs take priority, so opening a link with Cmd/Ctrl+click makes it the next selection. A centered
-  preview highlights the selection, the arrow keys move it and Escape cancels. Record a close shortcut in Settings →
-  Keyboard shortcuts to close the highlighted tab without switching to it, or hover a preview and use its close button
-  (Chrome reserves Cmd+W). Remove both shortcuts to turn the switcher off.
-  Screenshots appear after you visit tabs
-  and stay in memory on your device.
+- **Recent tab switcher.** Hold <kbd>Alt</kbd> (<kbd>⌥</kbd> on a Mac) and press <kbd>,</kbd> to step back through
+  your five most recent tabs across Spaces in this window, one previous tab per press, then let go to switch. A quick
+  tap of <kbd>,</kbd> goes back to your previous tab. <kbd>.</kbd> goes the other way, like Cmd+Shift+Tab on a Mac: it
+  starts from the far right (the oldest of the five) and moves left. Newly opened background tabs take priority, so
+  opening a link with Cmd/Ctrl+click makes it the next selection. A centered preview highlights the selection, the
+  arrow keys move it and Escape cancels. Record a close shortcut in Settings → Keyboard shortcuts to close the
+  highlighted tab without switching to it, or hover a preview and use its close button (Chrome reserves Cmd+W). Remove
+  both shortcuts to turn the switcher off. Screenshots appear after you visit tabs and stay in memory on your device.
 
 Spaces, pins, folders and favorites live in your bookmarks (an "Other bookmarks → Volet" folder), so they sync across
 your computers with Chrome sync and survive reinstalling. Space colors and settings sync through Chrome too. Nothing is
@@ -51,8 +50,8 @@ sent anywhere else: see the [privacy policy](PRIVACY.md).
 | --- | --- |
 | Show or hide the sidebar | <kbd>Alt</kbd>+<kbd>S</kbd> |
 | Search tabs, pins and archived tabs | <kbd>Alt</kbd>+<kbd>T</kbd> |
-| Go back through recent tabs | <kbd>Alt</kbd>+<kbd>,</kbd> |
-| Go forward through recent tabs | <kbd>Alt</kbd>+<kbd>.</kbd> |
+| Switch to the previous recent tab | <kbd>Alt</kbd>+<kbd>,</kbd> |
+| Switch to the next recent tab | <kbd>Alt</kbd>+<kbd>.</kbd> |
 | Close highlighted preview tab | not set, record in Volet settings |
 | Next / previous Space | not set |
 | Pin or unpin the current tab | not set |

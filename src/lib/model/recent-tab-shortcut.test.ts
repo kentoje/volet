@@ -1,17 +1,17 @@
 import { expect, it } from 'vitest';
-import { BACK_COMMAND, FORWARD_COMMAND, hasRecentTabShortcut, recentTabOffset } from './recent-tab-shortcut';
+import { NEXT_COMMAND, PREVIOUS_COMMAND, hasRecentTabShortcut, recentTabOffset } from './recent-tab-shortcut';
 
-it('goes back to older tabs with the back shortcut and forward to newer ones with the forward shortcut', () => {
-  // Visiting A, B, then C lists C, B, A: back, back goes from C to B to A.
-  expect(recentTabOffset(BACK_COMMAND)).toBe(1);
-  expect(recentTabOffset(FORWARD_COMMAND)).toBe(-1);
+it('goes to older tabs with the previous shortcut and to newer ones with the next shortcut', () => {
+  // Visiting A, B, then C lists C, B, A: previous, previous goes from C to B to A.
+  expect(recentTabOffset(PREVIOUS_COMMAND)).toBe(1);
+  expect(recentTabOffset(NEXT_COMMAND)).toBe(-1);
 });
 
 it('is on while either shortcut is assigned, and off once both are removed', () => {
-  const commands = (back: string, forward: string) => [
+  const commands = (previous: string, next: string) => [
     { name: 'toggle-sidebar', shortcut: '⌥S' },
-    { name: BACK_COMMAND, shortcut: back },
-    { name: FORWARD_COMMAND, shortcut: forward },
+    { name: PREVIOUS_COMMAND, shortcut: previous },
+    { name: NEXT_COMMAND, shortcut: next },
   ];
   expect(hasRecentTabShortcut(commands('⌥,', '⌥.'))).toBe(true);
   expect(hasRecentTabShortcut(commands('', '⌥.'))).toBe(true);

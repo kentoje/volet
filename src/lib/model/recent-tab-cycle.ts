@@ -29,11 +29,14 @@ export class RecentTabCycle {
     return this.#gesture !== undefined;
   }
 
-  /** The first press always selects the previous tab; direction applies while the gesture stays open. */
+  /**
+   * The highlight starts on the current tab, like the macOS switcher: previous (1) moves right, so its first press
+   * selects the previous tab; next (-1) moves left, so its first press wraps to the far right, the oldest.
+   */
   step(offset = 1): void {
     let gesture = this.#gesture;
     if (!gesture) {
-      gesture = { steps: 1, canceled: false, closing: false, tabs: this.#committed.then(() => this.#client.load()) };
+      gesture = { steps: offset, canceled: false, closing: false, tabs: this.#committed.then(() => this.#client.load()) };
       this.#gesture = gesture;
     } else gesture.steps += offset;
     this.#show(gesture);

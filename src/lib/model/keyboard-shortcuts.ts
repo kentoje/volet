@@ -9,7 +9,8 @@ export interface KeyboardShortcut {
 /** Settings groups are explicit so opposite actions always appear together. */
 export const KEYBOARD_SHORTCUT_GROUPS = [
   { title: 'General', commands: ['toggle-sidebar', 'open-palette'] },
-  { title: 'Cycle through preview', commands: ['cycle-recent-tabs-previous', 'cycle-recent-tabs'] },
+  // Previous before next, as on Chrome's shortcuts page, which sorts by command id: hence "subsequent" for next.
+  { title: 'Cycle through preview', commands: ['cycle-recent-tabs-previous', 'cycle-recent-tabs-subsequent'] },
   { title: 'Volets', commands: ['next-space', 'previous-space'] },
   { title: 'Tabs', commands: ['toggle-pin'] },
 ];

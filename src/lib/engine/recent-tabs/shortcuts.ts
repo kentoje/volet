@@ -11,14 +11,19 @@ export async function cycleRecentTabs(engine: Engine, tab: Browser.tabs.Tab | un
     await browser.runtime.openOptionsPage();
     return;
   }
+  const offset = recentTabOffset(command);
   const commands = await browser.commands.getAll();
   const shortcut = commands.find((candidate) => candidate.name === command)?.shortcut;
   if (!shortcut) return;
   try {
-    await browser.tabs.sendMessage(tab.id, { type: 'recent-tabs:step', shortcut, offset: recentTabOffset(command) });
+    await browser.tabs.sendMessage(tab.id, { type: 'recent-tabs:step', shortcut, offset });
   } catch {
-    // Chrome pages and the Web Store cannot host an overlay: either direction starts with the previous tab.
-    const target = await engine.enqueue(async () => (await loadRecentTabs(tab.windowId))[1]);
+    // Chrome pages and the Web Store cannot host an overlay: switch where a quick tap would, the previous tab for
+    // previous, the oldest for next (wrapping around from the current tab).
+    const target = await engine.enqueue(async () => {
+      const tabs = await loadRecentTabs(tab.windowId);
+      return tabs.length > 1 ? tabs.at(offset) : undefined;
+    });
     if (target) await engine.run({ type: 'activateTab', tabId: target.id });
   }
 }

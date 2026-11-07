@@ -14,23 +14,23 @@ function fixture(load = async () => tabs) {
 }
 
 describe('recent tab cycle', () => {
-  it.each([1, -1])('the first press in direction %s selects the previous tab even before loading completes', async (direction) => {
+  it.each([[1, 1], [-1, 4]])('a quick tap in direction %s selects tab %s from the current one, even before loading completes', async (direction, selected) => {
     let resolveTabs: (tabs: RecentTab[]) => void = () => {};
     const loaded = new Promise<RecentTab[]>((resolve) => { resolveTabs = resolve; });
     const { cycle, activate } = fixture(() => loaded);
     cycle.step(direction);
     cycle.commit();
     resolveTabs(tabs);
-    await vi.waitFor(() => expect(activate).toHaveBeenCalledWith(1));
+    await vi.waitFor(() => expect(activate).toHaveBeenCalledWith(selected));
   });
 
-  it('applies backward movement only after the first press and wraps from the current tab', async () => {
+  it('next starts at the far right, the oldest, and moves left, like the macOS switcher', async () => {
     const { cycle, onchange } = fixture();
     cycle.step(-1);
-    await vi.waitFor(() => expect(onchange).toHaveBeenLastCalledWith({ tabs, selected: 1 }));
+    await vi.waitFor(() => expect(onchange).toHaveBeenLastCalledWith({ tabs, selected: 4 }));
     cycle.step(-1);
-    await vi.waitFor(() => expect(onchange).toHaveBeenLastCalledWith({ tabs, selected: 0 }));
-    cycle.step(-1);
+    await vi.waitFor(() => expect(onchange).toHaveBeenLastCalledWith({ tabs, selected: 3 }));
+    cycle.step(1);
     await vi.waitFor(() => expect(onchange).toHaveBeenLastCalledWith({ tabs, selected: 4 }));
     cycle.step(1);
     await vi.waitFor(() => expect(onchange).toHaveBeenLastCalledWith({ tabs, selected: 0 }));
