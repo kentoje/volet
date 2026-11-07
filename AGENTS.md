@@ -7,8 +7,8 @@ Volet: Arc-like vertical tab Spaces for Chrome, a side panel extension built wit
 ```bash
 pnpm proto          # sidebar UI as a plain web page on fake data (fast visual iteration)
 pnpm dev            # extension dev mode: launches a fresh Chrome profile, live reload
-pnpm dev:own        # same, without launching Chrome (load .output/chrome-mv3-dev in your own profile)
-pnpm build          # production build in .output/chrome-mv3
+pnpm dev:own        # same, without launching Chrome (load output/chrome-mv3-dev in your own profile)
+pnpm build          # production build in output/chrome-mv3
 pnpm check          # svelte-check + TypeScript
 pnpm test           # unit tests (Vitest)
 pnpm test:e2e       # builds, then drives real Chromium with the extension loaded (Playwright)
@@ -175,7 +175,7 @@ Engine specifics:
 ## Tests
 
 - Unit tests (`*.test.ts`, Vitest) next to pure modules.
-- End-to-end tests (`tests/e2e/*.spec.ts`, Playwright) load `.output/chrome-mv3` into Chromium, open the panel page in its own window (`sidepanel.html?windowId=<id>`), and assert on Chrome's real state from the service worker.
+- End-to-end tests (`tests/e2e/*.spec.ts`, Playwright) load `output/chrome-mv3` into Chromium, open the panel page in its own window (`sidepanel.html?windowId=<id>`), and assert on Chrome's real state from the service worker.
 - New behavior in the engine gets an e2e test; new pure logic gets a unit test.
 - `tests/e2e/resilience.spec.ts` covers multiple windows and a real browser restart (same profile, session restored).
 - The palette's in-page overlay can't be triggered from Playwright (shortcuts are browser-level gestures); the panel

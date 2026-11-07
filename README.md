@@ -61,14 +61,14 @@ pnpm install
 pnpm build
 ```
 
-Then open `chrome://extensions`, enable Developer mode, click "Load unpacked" and pick `.output/chrome-mv3`.
+Then open `chrome://extensions`, enable Developer mode, click "Load unpacked" and pick `output/chrome-mv3`.
 
 ## Development
 
 ```bash
 pnpm proto      # sidebar UI as a plain web page on fake data (fast visual iteration)
 pnpm dev        # dev mode: opens a fresh Chrome profile with the extension, live reload
-pnpm dev:own    # same dev server, no browser: load .output/chrome-mv3-dev in your own profile
+pnpm dev:own    # same dev server, no browser: load output/chrome-mv3-dev in your own profile
 pnpm check      # svelte-check + TypeScript
 pnpm test       # unit tests (Vitest)
 pnpm test:e2e   # builds, then drives real Chromium with the extension loaded (Playwright)
@@ -77,7 +77,7 @@ pnpm test:e2e   # builds, then drives real Chromium with the extension loaded (P
 ### Developing in your own Chrome profile
 
 1. `pnpm dev:own`
-2. In `chrome://extensions` (Developer mode on), "Load unpacked" → `.output/chrome-mv3-dev` (once).
+2. In `chrome://extensions` (Developer mode on), "Load unpacked" → `output/chrome-mv3-dev` (once).
 3. Keep `pnpm dev:own` running: the side panel updates as you edit; background and palette changes reload the
    extension (or press <kbd>Alt</kbd>+<kbd>R</kbd>). Without the dev server, the dev build's pages stay blank.
 
