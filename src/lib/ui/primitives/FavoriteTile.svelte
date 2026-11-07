@@ -33,7 +33,9 @@
   {onclick}
   {@attach handle}
 >
-  <Favicon {url} {icon} size={20} />
+  <!-- 16px like rows: most favicons are 32px bitmaps (sites drawing a count or a date on theirs too),
+       exact on a 2x screen at this size, and soft when stretched to fill a bigger one. -->
+  <Favicon {url} {icon} size={16} />
   {#if playing}
     <span class="absolute right-1 bottom-1 text-ink-muted" aria-label="Playing audio">
       <Volume2 size={11} strokeWidth={2.25} />
