@@ -54,6 +54,10 @@ Three layers, each with a single job. Dependencies point downward only.
   `snapshot.ts` (`findBookmark`, `spaceOfBookmark`) each bookmark tree, the first time they're asked. So never
   change a `spaces` array, a pin or folder, or a bookmark tree in place: make a new one (every helper already does).
 - **Bookmarks are the source of truth**: the `Volet` folder holds `Favorites` and one folder per Space; pins are bookmarks. Session-only links (tab to pin, group to Space, active Space per window) live in `chrome.storage.session` and are rebuilt after restarts.
+  Restarting Chrome and installing, updating or reloading the extension all clear them, so tabs find their pin or
+  favorite again by URL (`ownerOf`): the bookmark's own page, else the page its tab was last on (`lastPagesItem`,
+  local, recorded as bound tabs navigate). Without that, a favorite's tab that had moved on would come back as a new
+  favorite, and a pin's as a temporary tab.
 - **Switching to a Space with no open tab opens none**: the page in front stays (it's parked, `parkedTabsItem`), and
   the sidebar doesn't follow it back to its own Space; picking any other tab ends that. A new Volet is no different: it
   opens no tab. Never collapse the group holding the active tab (`collapseOtherSpaces` skips it): Chrome would pick, or

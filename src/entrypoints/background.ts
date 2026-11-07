@@ -1,5 +1,6 @@
 import { archiveIdleTabs } from '@/lib/engine/archive';
 import { Engine } from '@/lib/engine/engine';
+import { rememberPage } from '@/lib/engine/last-pages';
 import { listenForMessages } from '@/lib/engine/messaging';
 import { listenForShortcuts } from '@/lib/engine/shortcuts';
 import { forgetGroup, forgetTab, forgetWindow, replaceTab, stampActivity } from '@/lib/engine/session';
@@ -45,6 +46,9 @@ export default defineBackground(() => {
   browser.tabs.onUpdated.addListener((tabId, info, tab) => {
     if ('pinned' in info || 'groupId' in info) engine.scheduleReconcile(tab.windowId);
     if (info.status === 'complete') queue('title', () => refreshBoundTitle(tabId));
+    // Where a pin's or favorite's tab goes, to find it again after a restart (`lastPagesItem`).
+    const url = info.url;
+    if (url) queue('page', () => rememberPage(tabId, url));
   });
   browser.tabs.onAttached.addListener((_tabId, info) => engine.scheduleReconcile(info.newWindowId));
   browser.tabs.onActivated.addListener(({ tabId, windowId }) => {

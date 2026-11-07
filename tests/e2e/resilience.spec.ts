@@ -81,6 +81,82 @@ test.describe('after a browser restart', () => {
       .toBe('pin in Volet 1 (click to rename)');
     await context.close();
   });
+
+  test("a pin's or favorite's tab that left its page finds it again, without a new favorite", async () => {
+    test.setTimeout(90_000);
+    const profile = await mkdtemp(path.join(os.tmpdir(), 'spaces-restart-'));
+
+    // First session: a pin and a favorite, each with its tab moved on to another page.
+    let context = await launch(profile);
+    let worker = await serviceWorker(context);
+    // The extension's own pages: Chrome doesn't let extensions navigate tabs to data: URLs.
+    const origin = `chrome-extension://${new URL(worker.url()).host}`;
+    const home = (who: string) => `${origin}/options.html?for=${who}`;
+    const away = (who: string) => `${origin}/import.html?for=${who}`;
+    const windowId = await worker.evaluate(async () => (await chrome.windows.getAll({ windowTypes: ['normal'] }))[0]!.id!);
+    const urlOf = (id: number) => worker.evaluate(async (tabId) => (await chrome.tabs.get(tabId)).url, id);
+    const open = (url: string, pinned = false) =>
+      worker.evaluate(async ({ id, url, pinned }) => (await chrome.tabs.create({ windowId: id, url, pinned })).id!, {
+        id: windowId,
+        url,
+        pinned,
+      });
+    const goTo = (id: number, url: string) => worker.evaluate(({ id, url }) => chrome.tabs.update(id, { url }), { id, url });
+    const favorites = () =>
+      worker.evaluate(async () => {
+        const { root } = (await chrome.storage.local.get('root')) as { root: { favoritesId: string } };
+        return (await chrome.bookmarks.getChildren(root.favoritesId)).map((c) => c.url);
+      });
+
+    const pinTab = await open(home('pin'));
+    await expect.poll(() => urlOf(pinTab)).toBe(home('pin'));
+    await expect.poll(async () => (await stripState(worker, windowId)).find((t) => t.id === pinTab)?.group).toBe('Volet 1 (click to rename)');
+    const panel = await openPanel(context, worker, windowId);
+    const homeId = await worker.evaluate(async () => {
+      const { root } = (await chrome.storage.local.get('root')) as { root: { rootId: string } };
+      return (await chrome.bookmarks.getChildren(root.rootId)).find((c) => c.title === 'Volet 1 (click to rename)')!.id;
+    });
+    await command(panel, { type: 'pinTab', windowId, tabId: pinTab, parentId: homeId });
+    await goTo(pinTab, away('pin'));
+    await expect.poll(() => urlOf(pinTab)).toBe(away('pin'));
+
+    // A tab pinned in Chrome becomes a favorite.
+    const favoriteTab = await open(home('favorite'), true);
+    await expect.poll(favorites).toEqual([home('favorite')]);
+    await goTo(favoriteTab, away('favorite'));
+    await expect.poll(() => urlOf(favoriteTab)).toBe(away('favorite'));
+    await expect
+      .poll(() => worker.evaluate(async () => Object.values((await chrome.storage.local.get('lastPages')).lastPages ?? {}).sort()))
+      .toEqual([away('favorite'), away('pin')]);
+    await panel.close();
+    await context.close();
+
+    const prefsPath = path.join(profile, 'Default', 'Preferences');
+    const prefs = JSON.parse(await readFile(prefsPath, 'utf8'));
+    await writeFile(prefsPath, JSON.stringify({ ...prefs, session: { ...prefs.session, restore_on_startup: 1 } }));
+    context = await launch(profile, true);
+    worker = await serviceWorker(context);
+
+    // Each restored tab is its pin's or favorite's again, though neither is on its own page.
+    await expect
+      .poll(
+        () =>
+          worker.evaluate(async (urls) => {
+            const { bindings = {} } = (await chrome.storage.session.get('bindings')) as {
+              bindings?: Record<string, { kind: string }>;
+            };
+            const tabs = await chrome.tabs.query({});
+            return urls.map((url) => {
+              const tab = tabs.find((t) => t.url === url);
+              return tab ? (bindings[tab.id!]?.kind ?? 'none') : 'not restored yet';
+            });
+          }, [away('pin'), away('favorite')]),
+        { timeout: 20_000 },
+      )
+      .toEqual(['pin', 'favorite']);
+    expect(await favorites()).toEqual([home('favorite')]);
+    await context.close();
+  });
 });
 
 async function launch(profile: string, restore = false) {

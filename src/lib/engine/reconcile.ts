@@ -1,5 +1,4 @@
 import { browser } from 'wxt/browser';
-import { sameUrl } from '../model/url';
 import { groupColorFor } from './colors';
 import {
   type Context,
@@ -14,6 +13,8 @@ import {
   spaceTabs,
 } from './context';
 import { collapseOtherSpaces, groupTabs } from './groups';
+import { prunePages } from './last-pages';
+import { ownerOf } from './owner';
 import { retry } from './retry';
 import { parkedTab, setActiveSpace, setBinding, setGroupSpace } from './session';
 import {
@@ -27,6 +28,7 @@ import {
   tabUrl,
 } from './snapshot';
 import { newSpaceName } from './space-names';
+import { lastPagesItem } from './storage';
 import { rememberAutoTitles } from './titles';
 
 /**
@@ -37,9 +39,13 @@ export async function reconcile(windowId: number, options: { recover?: boolean }
   const window = await browser.windows.get(windowId).catch(() => undefined);
   if (window?.type !== 'normal') return;
   const ctx = await loadContext(windowId);
+  const lastPages = await lastPagesItem.getValue();
   await mapGroupsToSpaces(ctx);
-  await syncFavorites(ctx);
-  if (options.recover) await recoverPins(ctx);
+  await syncFavorites(ctx, lastPages);
+  if (options.recover) {
+    await recoverPins(ctx, lastPages);
+    await prunePages(bookmarkIds(ctx.root));
+  }
   const activeSpace = await followActiveTab(ctx);
   await adoptLooseTabs(ctx, activeSpace);
 }
@@ -68,8 +74,11 @@ async function mapGroupsToSpaces(ctx: Context): Promise<void> {
   }
 }
 
-/** Favorites are Chrome's native pinned tabs: adopt new native pins, release unpinned ones. */
-async function syncFavorites(ctx: Context): Promise<void> {
+/**
+ * Favorites are Chrome's native pinned tabs: adopt new native pins, release unpinned ones. A pinned tab Volet has
+ * forgotten (after a restart or a reload) finds its favorite again, even if it left the favorite's page.
+ */
+async function syncFavorites(ctx: Context, lastPages: Record<string, string>): Promise<void> {
   const liveIds = bookmarkIds(ctx.root);
   const favorites = (favoritesFolder(ctx.root, ctx.ids.favoritesId)?.children ?? []).filter(isPin);
   for (const tab of ctx.tabs) {
@@ -81,8 +90,7 @@ async function syncFavorites(ctx: Context): Promise<void> {
     if (tab.pinned && live?.kind !== 'favorite') {
       const url = tabUrl(tab);
       if (!url) continue;
-      const taken = boundIdsInWindow(ctx);
-      let favorite: BookmarkNode | undefined = favorites.find((fav) => !taken.has(fav.id) && sameUrl(fav.url, url));
+      let favorite: BookmarkNode | undefined = ownerOf(favorites, url, lastPages, boundIdsInWindow(ctx));
       if (!favorite) {
         favorite = await browser.bookmarks.create({ parentId: ctx.ids.favoritesId, title: tab.title || url, url });
         await rememberAutoTitles([favorite]);
@@ -94,15 +102,14 @@ async function syncFavorites(ctx: Context): Promise<void> {
   }
 }
 
-/** After a restart, tabs restored by Chrome have new ids: re-attach them to their pins by URL. */
-async function recoverPins(ctx: Context): Promise<void> {
+/** After a restart, tabs restored by Chrome have new ids: re-attach them to their pins by URL (see `ownerOf`). */
+async function recoverPins(ctx: Context, lastPages: Record<string, string>): Promise<void> {
   for (const space of ctx.spaces) {
     const pins = pinsIn(space);
     for (const tab of spaceTabs(ctx, space.id)) {
       const url = tabUrl(tab);
       if (tab.id === undefined || liveBinding(ctx, tab.id) || !url) continue;
-      const taken = boundIdsInWindow(ctx);
-      const pin = pins.find((p) => !taken.has(p.id) && sameUrl(p.url, url));
+      const pin = ownerOf(pins, url, lastPages, boundIdsInWindow(ctx));
       if (pin) await setBinding(ctx, tab.id, { kind: 'pin', id: pin.id });
     }
   }

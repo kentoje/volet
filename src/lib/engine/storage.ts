@@ -41,6 +41,11 @@ export const arcSidebarItem = storage.defineItem<ImportedSidebar | null>('local:
  * title, it follows the page (`engine/titles.ts`); once someone renames it, it's theirs.
  */
 export const autoTitlesItem = storage.defineItem<Record<string, string>>('local:autoTitles', { fallback: {} });
+/**
+ * bookmark id → the page its tab was last on. Which tab is whose (`bindingsItem`) is forgotten when Chrome restarts or
+ * the extension reloads; this finds a tab that had left its pin's or favorite's page again (`ownerOf`).
+ */
+export const lastPagesItem = storage.defineItem<Record<string, string>>('local:lastPages', { fallback: {} });
 /** Ids of the Arc Spaces imported on this device. */
 export const importedArcSpacesItem = storage.defineItem<string[]>('local:importedArcSpaces', { fallback: [] });
 /** Show the "Coming from Arc?" card: set on install, cleared when dismissed or once something is imported. */
