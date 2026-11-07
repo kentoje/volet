@@ -101,9 +101,13 @@ Three layers, each with a single job. Dependencies point downward only.
   slide away and the open ones stay in place (`hasOpenTab` in `model/pinned.ts`). Those slides are local
   transitions on purpose, so rows added or removed for other reasons (drags, optimistic ids) just appear.
 - **Volet switcher**: there's no limit on Volets; every tab group in Chrome is one, so a first run starts with the
-  user's groups. Their dots (`SpaceSwitcher`) narrow from 28px to 20px to fit between the two buttons, then the row
-  scrolls (`primitives/scroll-strip.ts`): no scrollbar, a fade on each edge that hides dots, the wheel scrolls it, and
-  the active Space's dot is kept in view. Wheel events the row uses stop there, so they don't also swipe Spaces.
+  user's groups. Each one is a shutter (`SpaceDot`, a volet; the code still calls them dots): closed, a small panel in
+  its color with its initial (`spaceInitial`); the active one opens into a pill with its name, its width animating
+  (`interpolate-size`). While a row is dragged, the shutter open at its start stays open (`DragState.startSpaceId`):
+  hovering another one switches Space, and opening it then would move the shutters under the pointer. Closed shutters narrow from 26px slots to 20px to fit next to the open one between the two
+  buttons (`SpaceSwitcher`), then the row scrolls (`primitives/scroll-strip.ts`): no scrollbar, a fade on each edge
+  that hides shutters, the wheel scrolls it, and the open shutter is kept in view (again once it has opened). Wheel
+  events the row uses stop there, so they don't also swipe Spaces.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte` (right-click) or `DropdownMenu.svelte` (from a button, like New Volet); a
   `group` item puts items under a small heading in the menu itself. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.

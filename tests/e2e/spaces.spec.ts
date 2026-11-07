@@ -273,7 +273,7 @@ test('every tab group made in Chrome becomes a Volet, however many there are', a
   expect((await bookmarkTree(worker)).children).toHaveLength(11); // Favorites and ten Volets
 });
 
-test('when the Volet dots stop fitting they narrow, then scroll, keeping the active one in view', async ({
+test('when the Volet shutters stop fitting they narrow, then scroll, keeping the open one in view', async ({
   worker,
   windowId,
   panel,
@@ -283,8 +283,13 @@ test('when the Volet dots stop fitting they narrow, then scroll, keeping the act
   const strip = panel.getByRole('navigation', { name: 'Volets' }).getByRole('list');
   const dots = strip.locator('li button');
   await expect(dots).toHaveCount(20);
-  // Narrowed as far as they go, and the row scrolls, its far edge faded.
-  expect(await dots.first().evaluate((el) => Math.round(el.getBoundingClientRect().width))).toBe(20);
+  // The active Volet's shutter is open (wider, showing its name); the closed ones narrowed as far as they go,
+  // and the row scrolls, its far edge faded.
+  const width = (index: number) => dots.nth(index).evaluate((el) => Math.round(el.getBoundingClientRect().width));
+  await expect(dots.first()).toHaveAttribute('aria-current', 'true');
+  await expect(dots.first()).toHaveAttribute('data-open', '');
+  expect(await width(1)).toBe(20);
+  expect(await width(0)).toBeGreaterThan(40);
   expect(await strip.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
   await expect(strip).toHaveAttribute('data-hidden-end', '');
   await expect(strip).not.toHaveAttribute('data-hidden-start');

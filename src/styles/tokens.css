@@ -18,6 +18,8 @@
   --focus: oklch(0.52 0.17 var(--space-hue));
   --dot-l: 0.62;
   --dot-c: 0.16;
+  --dot-ink: oklch(1 0 0);
+  --dot-ring: var(--pill);
   --menu: oklch(0.985 0.012 var(--space-hue));
   --danger: oklch(0.55 0.2 25);
 
@@ -38,6 +40,8 @@
   --focus: oklch(0.8 0.13 var(--space-hue));
   --dot-l: 0.74;
   --dot-c: 0.14;
+  --dot-ink: oklch(0.22 0.03 var(--space-hue));
+  --dot-ring: oklch(0.95 0.015 var(--space-hue) / 0.7);
   --menu: oklch(0.27 0.035 var(--space-hue));
   --danger: oklch(0.72 0.17 25);
   color-scheme: dark;

@@ -59,6 +59,12 @@ export class DragState {
    * a dropped entry into something else (a pin into a tab), and the draft still shows it as it was.
    */
   kept = $state.raw<SidebarContent | undefined>();
+  /**
+   * The Space that was active when the drag started, until it ends. Its shutter in the switcher stays
+   * open meanwhile: hovering another one switches Space after a moment, and opening that one then would
+   * move the shutters under the pointer (onto a neighbor, which would switch again).
+   */
+  startSpaceId = $state.raw<SpaceId | undefined>();
 
   /** Called after hovering a dot switched Space: the drop zones moved and need re-measuring. */
   onSpaceSwitched: (() => void) | undefined;
@@ -136,6 +142,7 @@ export class DragState {
   start(entry: Entry): void {
     this.group = this.groupFor(entry);
     if (!this.#selection.has(entry)) this.#selection.clear();
+    this.startSpaceId = this.#store.activeSpaceId;
     this.active = entry;
   }
 
@@ -188,6 +195,7 @@ export class DragState {
     this.draft = undefined;
     this.kept = undefined;
     this.active = undefined;
+    this.startSpaceId = undefined;
     this.group = [];
     this.released = false;
   }

@@ -4,12 +4,28 @@ import { bookmarkTree, command, expect, stripState, test } from './fixtures';
 const visiblePage = (panel: Page) => panel.locator('section:not([inert])');
 
 /** Drag with real pointer events, the way a person would (past dnd-kit's activation distance). */
+/**
+ * Waits for the panel to stop moving (pages sliding after a Volet switch, shutters opening and closing),
+ * so a drag grabs and aims where things will stay. Endless animations (a loading tab's spinner) don't count.
+ */
+async function settled(panel: Page) {
+  await panel.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().endTime !== Infinity)
+        .map((animation) => animation.finished.catch(() => {})),
+    ).then(() => {}),
+  );
+}
+
 async function drag(
   panel: Page,
   from: Locator,
   to: Locator,
   { offsetY = 0, beforeDrop }: { offsetY?: number; beforeDrop?: () => Promise<void> } = {},
 ) {
+  await settled(panel);
   const a = (await from.boundingBox())!;
   const b = (await to.boundingBox())!;
   await panel.mouse.move(a.x + 30, a.y + a.height / 2);
@@ -174,7 +190,7 @@ test('dropping a tab on a Space dot moves it to that Space', async ({ worker, wi
     .toBe('Volet 1 (click to rename)');
   const dot = panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Volet 2', exact: true });
   // Release only once the dot shows it's the drop target, as a person would.
-  await drag(panel, row(panel, 'Traveler'), dot, { beforeDrop: () => expect(dot).toHaveClass(/scale-125/) });
+  await drag(panel, row(panel, 'Traveler'), dot, { beforeDrop: () => expect(dot).toHaveClass(/scale-110/) });
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Traveler'))?.group)
     .toBe('Volet 2');
@@ -314,6 +330,7 @@ test('holding a tab over a Space dot switches to it, so the tab can be placed th
 
   // Grab the tab, hold it over Volet 2's dot until Volet 2 shows, then drop it on Volet 2's pinned area.
   const dot = panel.getByRole('navigation', { name: 'Volets' }).getByRole('button', { name: 'Volet 2' });
+  await settled(panel);
   const a = (await mover.boundingBox())!;
   const d = (await dot.boundingBox())!;
   await panel.mouse.move(a.x + 30, a.y + a.height / 2);
@@ -321,6 +338,9 @@ test('holding a tab over a Space dot switches to it, so the tab can be placed th
   await panel.mouse.move(a.x + 30, a.y + a.height / 2 + 10, { steps: 4 });
   await panel.mouse.move(d.x + d.width / 2, d.y + d.height / 2, { steps: 15 });
   await expect(visiblePage(panel).getByRole('heading')).toHaveText('Volet 2');
+  // Mid-drag the shutters keep their shape (Volet 2's stays closed), so none moves under the pointer.
+  await expect(dot).toHaveAttribute('aria-current', 'true');
+  await expect(dot).not.toHaveAttribute('data-open');
   await panel.waitForTimeout(600); // the pages finish sliding
   const hint = visiblePage(panel).getByText('Drag tabs here to pin them to Volet 2');
   const h = (await hint.boundingBox())!;
@@ -331,6 +351,7 @@ test('holding a tab over a Space dot switches to it, so the tab can be placed th
   await expect
     .poll(async () => (await bookmarkTree(worker)).children!.find((c) => c.title === 'Volet 2')!.children!.map((c) => c.title))
     .toEqual(['Mover']);
+  await expect(dot).toHaveAttribute('data-open', ''); // opened once the drag is over
   await expect
     .poll(async () => (await stripState(worker, windowId)).find((tab) => tab.url.includes('Mover'))?.group)
     .toBe('Volet 2');
