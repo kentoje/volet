@@ -3,6 +3,7 @@
   import Button from '../primitives/page/Button.svelte';
   import Card from '../primitives/page/Card.svelte';
   import PageShell from '../primitives/page/PageShell.svelte';
+  import PinShortcutSettings from './PinShortcutSettings.svelte';
 
   const settings = new SettingsStore();
   void settings.load();
@@ -56,6 +57,7 @@
     <div class="mt-4 flex justify-end">
       <Button onclick={() => void settings.editShortcuts()}>Change shortcuts</Button>
     </div>
+    <PinShortcutSettings />
   </Card>
 
   <Card title="Import">

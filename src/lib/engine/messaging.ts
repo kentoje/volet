@@ -3,6 +3,7 @@ import { activeSpaceOf, loadContext } from './context';
 import type { Engine } from './engine';
 import { searchPalette } from './palette/search';
 import { toCommand } from './palette/to-command';
+import { runPagePinShortcut } from './page-shortcuts';
 import type { CommandResult, RuntimeMessage } from './protocol';
 import { errorMessage } from './retry';
 
@@ -25,6 +26,8 @@ export function listenForMessages(engine: Engine): void {
     const windowOf = (windowId: number | undefined) => windowId ?? sender.tab?.windowId;
 
     switch (message?.type) {
+      case 'shortcut:pin':
+        return respond(runPagePinShortcut(engine, message.shortcut, sender));
       case 'command':
         return respond(engine.run(message.command));
       case 'hello':

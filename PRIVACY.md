@@ -16,6 +16,9 @@ To do its job, Volet reads, on your device only:
   "Volet", and reads that folder to show them.
 - **An Arc sidebar file, only if you pick one** on the "Import from Arc" page. Volet reads it in the browser to
   import your Arc Spaces, and the file never leaves your computer.
+- **Keyboard events on websites, only if you enable a custom pin shortcut and grant website access**. Volet
+  checks whether the pressed key and modifiers match that shortcut. It does not record what you type, read form
+  values or send keystrokes anywhere. Only a matching shortcut sends a pin/unpin request inside the extension.
 
 When you search from Volet's palette, the search goes to your default search engine through Chrome, the same way as
 a search typed in the address bar.
@@ -24,7 +27,7 @@ a search typed in the address bar.
 
 - **Bookmarks** (the "Volet" folder): your Volets, pins, folders and favorites.
 - **Extension storage on your device**: archived tabs (title, address, Volet name, date), which folders are open,
-  the titles Volet gave to pins, and the content of an imported Arc sidebar.
+  the titles Volet gave to pins, the content of an imported Arc sidebar, and your custom pin shortcut, if set.
 - **Temporary storage**: which tab belongs to which pin and Volet, cleared when Chrome quits.
 - **Synced extension storage**: your Volets' colors and Volet's settings.
 

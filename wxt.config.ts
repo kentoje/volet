@@ -37,6 +37,8 @@ export default defineConfig({
       'activeTab',
       'scripting',
     ],
+    // Custom punctuation shortcuts listen on websites only after the user enables them in Settings.
+    optional_host_permissions: ['http://*/*', 'https://*/*'],
     // The in-page palette shows favicons from Chrome's cache, served from the extension's origin.
     web_accessible_resources: [{ resources: ['_favicon/*'], matches: ['<all_urls>'] }],
     // An action is required so clicking the toolbar icon can open the side panel.

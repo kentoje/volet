@@ -2,6 +2,7 @@ import { archiveIdleTabs } from '@/lib/engine/archive';
 import { Engine } from '@/lib/engine/engine';
 import { rememberPage } from '@/lib/engine/last-pages';
 import { listenForMessages } from '@/lib/engine/messaging';
+import { listenForPageShortcuts } from '@/lib/engine/page-shortcuts';
 import { listenForShortcuts } from '@/lib/engine/shortcuts';
 import { forgetGroup, forgetTab, forgetWindow, replaceTab, stampActivity } from '@/lib/engine/session';
 import { trackSidePanels } from '@/lib/engine/side-panel';
@@ -37,6 +38,7 @@ export default defineBackground(() => {
 
   listenForMessages(engine);
   listenForShortcuts(engine);
+  listenForPageShortcuts(engine);
   trackSidePanels();
 
   browser.tabs.onCreated.addListener((tab) => {

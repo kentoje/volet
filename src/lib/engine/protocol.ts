@@ -77,6 +77,11 @@ export interface PaletteRunMessage {
   item: PaletteItem;
 }
 
-export type RuntimeMessage = CommandMessage | HelloMessage | PaletteQueryMessage | PaletteRunMessage;
+export type RuntimeMessage =
+  | CommandMessage
+  | HelloMessage
+  | PaletteQueryMessage
+  | PaletteRunMessage
+  | { type: 'shortcut:pin'; shortcut: unknown };
 
 export type CommandResult = { ok: true; value?: unknown } | { ok: false; error: string };

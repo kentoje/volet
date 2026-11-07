@@ -59,6 +59,7 @@ KEYBOARD SHORTCUTS
 • Alt+S: show or hide the sidebar
 • Alt+T: search
 • Alt+P: pin or unpin the current tab
+• Custom pin shortcut in Settings: use punctuation such as Cmd+\ or Cmd+Shift+\ on websites (optional website access)
 • Next and previous Volet: set your own in chrome://extensions/shortcuts
 
 GOOD TO KNOW
@@ -147,10 +148,17 @@ When the user presses the search shortcut, the search palette opens over the pag
 `scripting`
 
 ```
-Injects the search palette into the current page when the user presses its shortcut (together with activeTab, so only that page and only then). The palette is part of the extension package; no remote code.
+Injects the search palette into the current page when the user presses its shortcut (together with activeTab, so only that page and only then). If the user enables a custom pin shortcut and grants optional website access, it also installs the packaged keyboard listener on those websites. No remote code.
 ```
 
-**Host permissions**: none. (The manifest makes `_favicon/*` web accessible so the in-page search palette can show
+`http://*/*`, `https://*/*` (optional host permissions)
+
+```
+Requested only when the user saves a custom pin shortcut. Chrome's native extension shortcuts do not support keys such as backslash. Website access lets a packaged listener match the chosen key and modifiers while a page has focus and ask the extension to pin or unpin that tab. No typing or form values are recorded. Removing the shortcut removes this access.
+```
+
+**Host permissions**: no required host permissions. Optional HTTP/HTTPS access is requested only for custom pin
+shortcuts. (The manifest makes `_favicon/*` web accessible so the in-page search palette can show
 site icons from Chrome's favicon cache; it grants no access to pages.)
 
 **Are you using remote code?** No, I am not using remote code.

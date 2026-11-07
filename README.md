@@ -47,6 +47,11 @@ sent anywhere else: see the [privacy policy](PRIVACY.md).
 
 Change them in `chrome://extensions/shortcuts` (Settings has a link).
 
+For punctuation Chrome cannot bind, such as `Cmd+\` or `Cmd+Shift+\`, record a **Custom pin shortcut** in Settings
+and save it. Shift is matched exactly. This additional pin/unpin binding is saved on the current device and asks
+for optional website access. It works while a website or its text fields have focus, including frames, but not
+in the address bar, Chrome pages, the Chrome Web Store or the sidebar. The native shortcuts above remain available.
+
 ### Limits of a Chrome extension
 
 - Chrome's own tab strip stays at the top. Spaces keep it tidy by collapsing other Spaces' groups; Chrome's built-in

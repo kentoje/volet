@@ -1,5 +1,6 @@
 import { storage } from 'wxt/utils/storage';
 import type { ImportedSidebar } from '../import/types';
+import type { PageShortcut } from '../model/page-shortcut';
 import { type ArchiveEntry, type Binding, DEFAULT_SETTINGS, type RootIds, type Settings, type SpaceMeta } from './schema';
 
 export * from './schema';
@@ -31,6 +32,8 @@ export const openPanelsItem = storage.defineItem<Record<string, true>>('session:
 
 // Local: device-specific (bookmark ids differ between devices).
 export const rootItem = storage.defineItem<RootIds | null>('local:root', { fallback: null });
+/** A custom pin shortcut on this device; its website permission is device-specific too. */
+export const pinShortcutItem = storage.defineItem<PageShortcut | null>('local:pinShortcut', { fallback: null });
 /** Folders shown open. Every other folder is collapsed: one Volet didn't make (an import, a reinstall, Chrome's bookmarks, sync). */
 export const openFoldersItem = storage.defineItem<string[]>('local:openFolders', { fallback: [] });
 export const archiveItem = storage.defineItem<ArchiveEntry[]>('local:archive', { fallback: [] });
