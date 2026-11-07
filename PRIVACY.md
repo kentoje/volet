@@ -27,7 +27,7 @@ a search typed in the address bar.
 
 - **Bookmarks** (the "Volet" folder): your Volets, pins, folders and favorites.
 - **Extension storage on your device**: archived tabs (title, address, Volet name, date), which folders are open,
-  the titles Volet gave to pins, the preview-only close shortcut, and the content of an imported Arc sidebar.
+  the titles Volet gave to pins, the tab switcher toggle, its preview-only close shortcut, and the content of an imported Arc sidebar.
 - **Temporary storage**: which tab belongs to which pin and Volet, cleared when Chrome quits.
 - **Temporary tab switcher data**: the five most recently visited or opened tab ids per window, plus up to ten page
   screenshots, in Chrome's session storage, which Chrome keeps in memory. Screenshots are never synced or written to

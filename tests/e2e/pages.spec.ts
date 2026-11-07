@@ -98,7 +98,7 @@ test('both tab cycling directions are listed in settings with their defaults, an
   const preview = page.getByRole('region', { name: 'Cycle through preview', exact: true });
   await expect(preview.getByText('Go forward through recent tabs', { exact: true })).toBeVisible();
   await expect(preview.getByText('Go back through recent tabs', { exact: true })).toBeVisible();
-  await expect(preview.locator('dd')).toHaveText([/^(⌥,|Alt\+(Comma|,))$/, /^(⌥\.|Alt\+(Period|\.))$/]);
+  await expect(preview.locator('dd')).toHaveText([/Alt\+Comma\s*Default/, /Alt\+Period\s*Default/]);
   await expect(preview.getByRole('button', { name: 'Set close highlighted tab shortcut' })).toHaveText('Not set');
   for (const name of ['General', 'Volets', 'Tabs']) await expect(page.getByRole('region', { name, exact: true })).toBeVisible();
   const opened = context.waitForEvent('page');
@@ -116,14 +116,15 @@ test('the preview close shortcut can be recorded, persisted, cancelled and clear
   const recorder = page.getByRole('button', { name: 'Set close highlighted tab shortcut' });
   await recorder.click();
   await recorder.press('Meta+Backspace');
-  await expect(recorder).toHaveText('Cmd+Backspace');
+  await expect(recorder).toContainText('Cmd+Backspace');
+  await expect(recorder).toHaveAttribute('data-binding', 'custom');
   await expect.poll(() => worker.evaluate(async () => (await chrome.storage.local.get('previewCloseShortcut')).previewCloseShortcut))
     .toBe('Cmd+Backspace');
   await page.reload();
-  await expect(recorder).toHaveText('Cmd+Backspace');
+  await expect(recorder).toContainText('Cmd+Backspace');
   await recorder.click();
   await recorder.press('Escape');
-  await expect(recorder).toHaveText('Cmd+Backspace');
+  await expect(recorder).toContainText('Cmd+Backspace');
   await recorder.click();
   // Dispatch locally: a real Cmd+W would close this browser tab before the recorder could see it.
   await recorder.dispatchEvent('keydown', { key: 'w', code: 'KeyW', metaKey: true });

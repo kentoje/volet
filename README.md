@@ -37,7 +37,8 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
   opened background tabs take priority, so opening a link with Cmd/Ctrl+click makes it the next selection. A centered
   preview highlights the selection, the arrow keys move it and Escape cancels. Record a close shortcut in Settings →
   Keyboard shortcuts to close the highlighted tab without switching to it, or hover a preview and use its close button
-  (Chrome reserves Cmd+W). Remove both shortcuts to turn the switcher off. Screenshots appear after you visit tabs
+  (Chrome reserves Cmd+W). Use the settings toggle to turn it off without clearing shortcuts, or remove both bindings.
+  Screenshots appear after you visit tabs
   and stay in memory on your device.
 
 Spaces, pins, folders and favorites live in your bookmarks (an "Other bookmarks → Volet" folder), so they sync across
@@ -90,6 +91,7 @@ pnpm proto      # sidebar UI as a plain web page on fake data (fast visual itera
 pnpm dev        # dev mode: opens a fresh Chrome profile with the extension, live reload
 pnpm dev:own    # same dev server, no browser: load output/chrome-mv3-dev in your own profile
 pnpm check      # svelte-check + TypeScript
+pnpm check:extension  # builds, checks runtime diagnostics and reloads in isolated Chromium
 pnpm test       # unit tests (Vitest)
 pnpm test:e2e   # builds, then drives real Chromium with the extension loaded (Playwright)
 pnpm zip        # production build zipped for the Chrome Web Store (output/volet-<version>-chrome.zip)
@@ -109,6 +111,22 @@ Releasing to the Chrome Web Store: the listing copy, permission justifications a
 Don't enable the dev build and a production build in the same profile at the same time: both would manage your tabs.
 
 Architecture, coding guidelines and the Svelte MCP setup are in [AGENTS.md](AGENTS.md).
+
+### Checking extension errors
+
+Run `pnpm check:extension` before sharing an extension build. It builds production output, opens it in a disposable
+Chromium profile, exercises the settings, import, sidebar and tab preview, and reloads the extension twice with website
+tabs left open. It checks console warnings/errors, uncaught page errors, and Chrome's own extension runtime and
+manifest error records. Findings fail the command and are saved to `test-results/extension-check/report.json`.
+The check uses local test pages and pregrants website access in a temporary copy only. Your profile and build stay unchanged.
+It checks the exercised flows, rather than guaranteeing that every possible browser interaction is error-free.
+
+To inspect a different built extension without rebuilding, use `node scripts/check-extension.mjs --extension /path/to/build`.
+
+Keyboard shortcut values share the same presentation: manifest defaults are muted and labeled Default; bindings that
+differ from the defaults are green and labeled Custom. Unassigned shortcuts stay Not set. Native actions are edited
+in the browser shortcut editor; Close highlighted tab is recorded in Volet because it is scoped to the preview.
+Reserved browser and OS shortcuts still take precedence over webpage handlers.
 
 ## License
 

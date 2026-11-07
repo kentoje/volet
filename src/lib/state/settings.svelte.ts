@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_SETTINGS, archiveItem, settingsItem } from '@/lib/engine/storage';
 import { KEYBOARD_SHORTCUT_GROUPS, type KeyboardShortcut } from '@/lib/model/keyboard-shortcuts';
+import { defaultShortcutKeys } from '@/lib/model/shortcut-display';
 
 /**
  * The shortcuts the manifest declares, listed in this order (Chrome returns them in no particular one). Chrome also
@@ -30,13 +31,15 @@ export class SettingsStore {
 
   /** Refresh bindings after returning from Chrome's shortcut editor. */
   async refreshShortcuts(): Promise<void> {
-    const commands = await browser.commands.getAll();
+    const [commands, platform] = await Promise.all([browser.commands.getAll(), browser.runtime.getPlatformInfo()]);
+    const defaults = browser.runtime.getManifest().commands;
     this.shortcuts = commands
       .filter((command) => SHORTCUT_ORDER.includes(command.name ?? ''))
       .map((command) => ({
         name: command.name ?? '',
         description: command.description ?? '',
         keys: command.shortcut ?? '',
+        defaultKeys: defaultShortcutKeys(defaults?.[command.name ?? '']?.suggested_key, platform.os),
       }))
       .sort((a, b) => SHORTCUT_ORDER.indexOf(a.name) - SHORTCUT_ORDER.indexOf(b.name));
   }
