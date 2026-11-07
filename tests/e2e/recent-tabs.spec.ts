@@ -543,7 +543,7 @@ test('a custom close chord recorded in settings only acts inside the preview, an
   const recorder = options.getByRole('button', { name: 'Set close highlighted tab shortcut' });
   await recorder.click();
   await recorder.press('Meta+Shift+K');
-  await expect(recorder).toHaveText('Cmd+Shift+K');
+  await expect(recorder).toContainText('Cmd+Shift+K');
   const previous = await context.newPage();
   await previous.goto('https://recent-tabs.test/Previous');
   const page = await context.newPage();

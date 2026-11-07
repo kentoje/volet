@@ -3,6 +3,7 @@ export interface KeyboardShortcut {
   name: string;
   description: string;
   keys: string;
+  defaultKeys?: string;
 }
 
 /** Settings groups are explicit so opposite actions always appear together. */

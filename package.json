@@ -13,6 +13,7 @@
     "zip": "wxt zip",
     "store:images": "node store/capture.mjs",
     "check": "svelte-check --tsconfig ./tsconfig.json",
+    "check:extension": "wxt build && node scripts/check-extension.mjs",
     "test": "vitest run",
     "test:e2e": "wxt build && playwright test",
     "postinstall": "wxt prepare"

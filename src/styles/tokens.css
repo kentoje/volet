@@ -22,6 +22,7 @@
   --dot-ring: var(--pill);
   --menu: oklch(0.985 0.012 var(--space-hue));
   --danger: oklch(0.55 0.2 25);
+  --shortcut-custom: oklch(0.44 0.12 155);
 
   color: var(--ink);
 }
@@ -44,5 +45,6 @@
   --dot-ring: oklch(0.95 0.015 var(--space-hue) / 0.7);
   --menu: oklch(0.27 0.035 var(--space-hue));
   --danger: oklch(0.72 0.17 25);
+  --shortcut-custom: oklch(0.82 0.13 155);
   color-scheme: dark;
 }

@@ -7,7 +7,7 @@ export function websiteAccess(): Promise<boolean> {
   return browser.permissions.contains(RECENT_TABS_PERMISSION);
 }
 
-/** On while either shortcut is assigned (removing both turns it off: no previews are taken) and Chrome grants site access. */
+/** On while either shortcut is assigned and Chrome grants site access; removing both stops new previews. */
 export async function recentTabsEnabled(): Promise<boolean> {
   const [access, commands] = await Promise.all([websiteAccess(), browser.commands.getAll()]);
   return access && hasRecentTabShortcut(commands);

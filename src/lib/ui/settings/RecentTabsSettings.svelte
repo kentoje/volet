@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { RecentTabsSettings } from '@/lib/state/recent-tabs-settings.svelte';
   import Button from '../primitives/page/Button.svelte';
+  import { RecentTabsSettings } from '@/lib/state/recent-tabs-settings.svelte';
   import Card from '../primitives/page/Card.svelte';
 
   const settings = new RecentTabsSettings();
