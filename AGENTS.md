@@ -175,6 +175,8 @@ Three layers, each with a single job. Dependencies point downward only.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
   (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
+  `rem` there is the page's root font size, not ours (YouTube's is 10px), so `palette.css` sets Tailwind's spacing,
+  radius and text scales in px: size anything else in px too (an e2e test renders it over a 10px root).
   Shadow roots Volet adds to web pages (palette, recent tab switcher) start with `:host { all: initial !important; }`:
   the page's own rules for the host win over a normal `:host` rule, and sites built from web components hide undefined
   elements (`:not(:defined)`, reddit), which a content script's host always is.

@@ -1,4 +1,6 @@
-import { expect, stripState, test } from './fixtures';
+import path from 'node:path';
+import type { BrowserContext } from '@playwright/test';
+import { expect, extensionPath, stripState, test } from './fixtures';
 
 test('the palette finds an open tab and switches to it', async ({ worker, windowId, panel }) => {
   await worker.evaluate(async (id) => {
@@ -41,6 +43,45 @@ test('the shortcut on a page that cannot host it opens the palette in the panel'
   await expect
     .poll(() => worker.evaluate(async () => (await chrome.storage.session.get('pendingPalette')).pendingPalette))
     .toEqual({});
+});
+
+/**
+ * The palette the shortcut injects into a web page (the built `palette.js`), over a plain page whose root font
+ * size is `rootFontSize`, answered by a fake worker. Returns every element's box and corners in its shadow root.
+ */
+async function paletteLayout(context: BrowserContext, rootFontSize?: string) {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await page.setContent(`<!doctype html><html${rootFontSize ? ` style="font-size: ${rootFontSize}"` : ''}><body></body></html>`);
+  await page.evaluate(() => {
+    const items = [
+      { id: 'space:1', kind: 'space', title: 'Switch to Work', hue: 152, ref: '1' },
+      { id: 'action:new-tab', kind: 'action', title: 'New tab', ref: 'new-tab' },
+      { id: 'tab:1', kind: 'tab', title: 'Quarterly plan', detail: 'Work · docs.example', url: 'https://docs.example/', ref: 1 },
+    ];
+    // WXT's `browser` is this object when it has a runtime id, so the palette talks to it instead of the worker.
+    Object.assign(globalThis, {
+      browser: { runtime: { id: 'test', sendMessage: async () => ({ ok: true, value: { hue: 268, items } }) } },
+    });
+  });
+  await page.addScriptTag({ path: path.join(extensionPath, 'palette.js') });
+  await expect(page.getByRole('option')).toHaveCount(3);
+  const layout = await page.evaluate(() =>
+    [...document.querySelector('spaces-palette')!.shadowRoot!.querySelectorAll('*')].map((node) => {
+      const { x, y, width, height } = node.getBoundingClientRect();
+      return { role: node.getAttribute('role'), x, y, width, height, corners: getComputedStyle(node).borderRadius };
+    }),
+  );
+  await page.close();
+  return layout;
+}
+
+test('the palette over a page keeps its size when the page changes the root font size', async ({ context }) => {
+  // YouTube sets its root font size to 10px: rem-based sizes would shrink by a third.
+  const usual = await paletteLayout(context);
+  const small = await paletteLayout(context, '10px');
+  expect(usual.filter((node) => node.role === 'option').map((node) => node.height)).toEqual([40, 40, 40]);
+  expect(small).toEqual(usual);
 });
 
 test('the in-page palette shows on a page that hides undefined custom elements, like reddit.com', async ({ context, worker }) => {
