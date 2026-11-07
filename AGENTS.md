@@ -186,7 +186,7 @@ Three layers, each with a single job. Dependencies point downward only.
 
 Prioritize **modularity, reusability, and separation of concerns**.
 
-- **Opposite actions get separate bindings.** Expose both directions (such as next/previous) as independently configurable shortcuts in Settings. An unassigned action has no implicit modifier binding. Chrome refuses to load an extension that suggests more than four shortcuts (`suggested_key`), so the rest start unassigned. Chrome's shortcuts page lists commands by id, so name opposite ones to sort the way Settings lists them (`cycle-recent-tabs-previous`, then `cycle-recent-tabs-subsequent`).
+- **Opposite actions get separate bindings.** Expose both directions (such as next/previous) as independently configurable shortcuts in Settings. An unassigned action has no implicit modifier binding. Chrome refuses to load an extension that suggests more than four shortcuts (`suggested_key`), so the rest start unassigned. Chrome's shortcuts page lists commands by id, so name opposite ones to sort the way Settings lists them (`cycle-recent-tabs`, then `cycle-recent-tabs-reverse`).
 
 - **One responsibility per component, kept small and focused.** When a component or module grows, extract helpers, sub-components, or state modules instead of expanding it. Never add "just one more thing" to a file when it deserves its own abstraction.
 - **Generic and data-driven.** Components take clear inputs (props) and outputs (callback props or snippets). No hardcoded business rules or tight coupling: presentational components (`TabRow`, `IconButton`, `Favicon`, ...) know nothing about the store; thin container components connect them to `SidebarStore`.

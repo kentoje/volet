@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { groupKeyboardShortcuts, type KeyboardShortcut } from '@/lib/model/keyboard-shortcuts';
+  import { TAB_SWITCHER_GROUP, groupKeyboardShortcuts, type KeyboardShortcut } from '@/lib/model/keyboard-shortcuts';
   import Button from '../primitives/page/Button.svelte';
   import Card from '../primitives/page/Card.svelte';
   import ShortcutBinding from '../primitives/page/ShortcutBinding.svelte';
   import PreviewCloseShortcut from './PreviewCloseShortcut.svelte';
+  import TabSwitcherNote from './TabSwitcherNote.svelte';
 
   let { shortcuts, onedit }: { shortcuts: readonly KeyboardShortcut[]; onedit: () => void } = $props();
   const groups = $derived(groupKeyboardShortcuts(shortcuts));
@@ -29,8 +30,9 @@
             </div>
           {/each}
         </dl>
-        {#if group.title === 'Cycle through preview'}
-          <div class="mt-1"><PreviewCloseShortcut /></div>
+        {#if group.title === TAB_SWITCHER_GROUP}
+          <TabSwitcherNote />
+          <div class="mt-3"><PreviewCloseShortcut /></div>
         {/if}
       </section>
     {/each}

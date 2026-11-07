@@ -30,8 +30,8 @@ export class RecentTabCycle {
   }
 
   /**
-   * The highlight starts on the current tab, like the macOS switcher: previous (1) moves right, so its first press
-   * selects the previous tab; next (-1) moves left, so its first press wraps to the far right, the oldest.
+   * The highlight starts on the current tab, like the macOS switcher: cycling (1) moves right, so its first press
+   * selects the last used tab; in reverse (-1) it moves left, so its first press wraps to the far right, the oldest.
    */
   step(offset = 1): void {
     let gesture = this.#gesture;

@@ -3,7 +3,6 @@
   import Button from '../primitives/page/Button.svelte';
   import Card from '../primitives/page/Card.svelte';
   import PageShell from '../primitives/page/PageShell.svelte';
-  import RecentTabsSettings from './RecentTabsSettings.svelte';
   import KeyboardShortcutsSettings from './KeyboardShortcutsSettings.svelte';
 
   const settings = new SettingsStore();
@@ -47,8 +46,6 @@
       <Button disabled={settings.archivedCount === 0} onclick={() => void settings.clearArchive()}>Clear archive</Button>
     </div>
   </Card>
-
-  <RecentTabsSettings />
 
   <KeyboardShortcutsSettings shortcuts={settings.shortcuts} onedit={() => void settings.editShortcuts()} />
 

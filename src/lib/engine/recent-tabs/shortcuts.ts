@@ -18,8 +18,8 @@ export async function cycleRecentTabs(engine: Engine, tab: Browser.tabs.Tab | un
   try {
     await browser.tabs.sendMessage(tab.id, { type: 'recent-tabs:step', shortcut, offset });
   } catch {
-    // Chrome pages and the Web Store cannot host an overlay: switch where a quick tap would, the previous tab for
-    // previous, the oldest for next (wrapping around from the current tab).
+    // Chrome pages and the Web Store cannot host an overlay: switch where a quick tap would, the last used tab when
+    // cycling, the oldest in reverse (wrapping around from the current tab).
     const target = await engine.enqueue(async () => {
       const tabs = await loadRecentTabs(tab.windowId);
       return tabs.length > 1 ? tabs.at(offset) : undefined;

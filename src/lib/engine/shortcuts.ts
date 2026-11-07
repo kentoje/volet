@@ -21,8 +21,8 @@ export function listenForShortcuts(engine: Engine): void {
       case 'open-palette':
         openPalette(tab);
         break;
-      case 'cycle-recent-tabs-subsequent':
-      case 'cycle-recent-tabs-previous':
+      case 'cycle-recent-tabs-reverse':
+      case 'cycle-recent-tabs':
         void cycleRecentTabs(engine, tab, command)
           .catch((error) => console.warn('Recent tab shortcut failed', error));
         break;

@@ -48,9 +48,10 @@ export default defineConfig({
     commands: {
       'toggle-sidebar': { suggested_key: { default: 'Alt+S' }, description: 'Show or hide the sidebar' },
       'open-palette': { suggested_key: { default: 'Alt+T' }, description: 'Search tabs, pins and archived tabs' },
-      // Chrome's shortcuts page lists commands by id: "subsequent" (next) sorts after "previous", as in Volet's settings.
-      'cycle-recent-tabs-previous': { suggested_key: { default: 'Alt+Comma' }, description: 'Switch to the previous recent tab' },
-      'cycle-recent-tabs-subsequent': { suggested_key: { default: 'Alt+Period' }, description: 'Switch to the next recent tab' },
+      // Like Cmd+Tab and Cmd+Shift+Tab. Chrome's shortcuts page lists commands by id, so cycling comes first, as in settings.
+      // Keys are named in manifests: Alt+Comma, not Alt+, (Chrome refuses to load the extension otherwise).
+      'cycle-recent-tabs': { suggested_key: { default: 'Alt+Comma' }, description: 'Cycle through recent tabs' },
+      'cycle-recent-tabs-reverse': { suggested_key: { default: 'Alt+Period' }, description: 'Cycle through recent tabs in reverse' },
       'next-space': { description: 'Switch to the next Volet' },
       'previous-space': { description: 'Switch to the previous Volet' },
       'toggle-pin': { description: 'Pin or unpin the current tab' },
