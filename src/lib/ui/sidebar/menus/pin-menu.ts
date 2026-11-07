@@ -1,4 +1,4 @@
-import { CornerUpLeft, House, PencilLine, PinOff, Star, X } from '@lucide/svelte';
+import { CornerUpLeft, PencilLine, Pin as PinIcon, PinOff, Star, X } from '@lucide/svelte';
 import { type MenuItem, separator, tidy } from '@/lib/model/menu';
 import type { Pin } from '@/lib/model/types';
 import { spaceOfNode } from '@/lib/state/tree';
@@ -12,7 +12,7 @@ export function pinMenu(pin: Pin, away: boolean, menus: MenuContext): MenuItem[]
   return tidy([
     { kind: 'action', label: 'Rename', icon: PencilLine, onSelect: () => rename.start(pin.id) },
     away && { kind: 'action', label: 'Back to pinned page', icon: CornerUpLeft, onSelect: () => store.resetPin(pin.id) },
-    away && { kind: 'action', label: 'Pin this page instead', icon: House, onSelect: () => store.setPinHome(pin.id) },
+    away && { kind: 'action', label: 'Pin this page instead', icon: PinIcon, onSelect: () => store.setPinHome(pin.id) },
     { kind: 'action', label: 'Add to favorites', icon: Star, onSelect: () => store.favoritePin(pin.id) },
     moveToSpace(store, space?.id, (spaceId) => store.moveNode(pin.id, spaceId)),
     newFolder(menus, space?.id),

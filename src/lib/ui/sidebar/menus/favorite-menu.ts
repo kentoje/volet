@@ -1,4 +1,4 @@
-import { House, StarOff, X } from '@lucide/svelte';
+import { Star, StarOff, X } from '@lucide/svelte';
 import { type MenuItem, tidy } from '@/lib/model/menu';
 import type { Favorite } from '@/lib/model/types';
 import { sameUrl } from '@/lib/model/url';
@@ -14,7 +14,7 @@ export function favoriteMenu(favorite: Favorite, { store }: MenuContext): MenuIt
     away && {
       kind: 'action',
       label: 'Favorite this page instead',
-      icon: House,
+      icon: Star,
       onSelect: () => store.setFavoriteHome(favorite.id),
     },
     tabId !== undefined && { kind: 'action', label: 'Close tab', icon: X, onSelect: () => store.closeTab(tabId) },
