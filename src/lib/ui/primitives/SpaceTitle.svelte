@@ -12,7 +12,8 @@
   let { name, onrename, editor }: Props = $props();
 </script>
 
-<h2 class="px-2.5 pb-2 font-display text-[19px] leading-tight font-bold tracking-[-0.01em]">
+<!-- 6px below, plus the 2px strip the list starts with (where a drop line before its first row shows). -->
+<h2 class="px-2.5 pb-1.5 font-display text-[19px] leading-tight font-bold tracking-[-0.01em]">
   {#if editor}
     {@render editor()}
   {:else}

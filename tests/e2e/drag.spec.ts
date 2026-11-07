@@ -229,6 +229,31 @@ test('a tab can be dropped as the last pin', async ({ worker, windowId, panel })
   await expect.poll(() => homePins(worker)).toEqual(['First', 'Second', 'Newcomer']);
 });
 
+/** Whether `locator` lies inside its scrolling page's visible box (`toBeVisible` doesn't count clipping). */
+const insidePage = (locator: Locator) =>
+  locator.evaluate((node) => {
+    const page = node.closest<HTMLElement>('[data-page-scroll]')!;
+    const [box, frame] = [node.getBoundingClientRect(), page.getBoundingClientRect()];
+    return box.top >= frame.top + page.clientTop && box.bottom <= frame.top + page.clientTop + page.clientHeight;
+  });
+
+test('a tab can be dropped as the first pin, and the line shows above it', async ({ worker, windowId, panel }) => {
+  await pinned(worker, windowId, panel, ['First', 'Second']);
+  await openTabs(worker, windowId, ['Newcomer']);
+  await expect(row(panel, 'Newcomer')).toBeVisible();
+  // The upper half of the first pin means "before it".
+  await drag(panel, row(panel, 'Newcomer'), row(panel, 'First'), {
+    offsetY: -8,
+    beforeDrop: async () => {
+      const line = block(panel, 'First').locator('[data-drop-line="before"]');
+      await expect(line).toBeVisible();
+      // It sits above the first row, at the top of the scrolling page: still on screen.
+      expect(await insidePage(line)).toBe(true);
+    },
+  });
+  await expect.poll(() => homePins(worker)).toEqual(['Newcomer', 'First', 'Second']);
+});
+
 test('dropping a tab on the middle of a folder puts it inside, and the folder lights up meanwhile', async ({
   worker,
   windowId,
