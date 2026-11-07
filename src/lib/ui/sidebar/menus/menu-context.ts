@@ -6,6 +6,7 @@ import type { SidebarStore, Space, SpaceId, SpaceItem } from '@/lib/model/types'
 import type { ConfirmState } from '../editing/confirm-state.svelte';
 import { getConfirm, getRename } from '../editing/context';
 import type { RenameState } from '../editing/rename-state.svelte';
+import { getHuePreview, type HuePreview } from '../hue-preview.svelte';
 import { getSelection, type Selection } from '../selection/selection.svelte';
 
 /** What menu builders can act on. */
@@ -14,11 +15,18 @@ export interface MenuContext {
   rename: RenameState;
   confirm: ConfirmState;
   selection: Selection;
+  huePreview: HuePreview;
 }
 
 /** Call during component setup (it reads contexts). */
 export function getMenuContext(): MenuContext {
-  return { store: getSidebar(), rename: getRename(), confirm: getConfirm(), selection: getSelection() };
+  return {
+    store: getSidebar(),
+    rename: getRename(),
+    confirm: getConfirm(),
+    selection: getSelection(),
+    huePreview: getHuePreview(),
+  };
 }
 
 /** Create a folder at the top of `parentId` (a Space or a folder), then rename it right away. */

@@ -15,7 +15,15 @@ export type MenuItem =
   | ({ kind: 'submenu'; label: string; items: MenuItem[] } & Leading)
   /** Items under a small heading, in the menu itself (unlike a submenu). */
   | { kind: 'group'; label: string; items: MenuItem[] }
-  | { kind: 'swatches'; label: string; hues: number[]; selected?: number; onSelect: (hue: number) => void };
+  | {
+      kind: 'swatches';
+      label: string;
+      hues: number[];
+      selected?: number;
+      onSelect: (hue: number) => void;
+      /** Adds a slider for any hue: called with each hue while it moves, then `undefined` once it's saved. */
+      onPreview?: (hue: number | undefined) => void;
+    };
 
 export const separator: MenuItem = { kind: 'separator' };
 

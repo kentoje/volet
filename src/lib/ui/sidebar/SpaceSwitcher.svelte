@@ -12,6 +12,7 @@
   import TooltipGroup from '../primitives/tooltip/TooltipGroup.svelte';
   import { getDrag, getSpaceOrder } from './drag/context';
   import SortableSpaceDot from './drag/SortableSpaceDot.svelte';
+  import { getHuePreview } from './hue-preview.svelte';
   import { getMenuContext } from './menus/menu-context';
   import { newVoletMenu } from './menus/new-volet-menu';
   import { spaceMenu } from './menus/space-menu';
@@ -23,6 +24,7 @@
   const order = getSpaceOrder();
   const drag = getDrag();
   const arc = getArcClient();
+  const huePreview = getHuePreview();
 
   /** The open shutter: the active Space's, except mid-drag (see `DragState.startSpaceId`). */
   const openSpaceId = $derived(drag.startSpaceId ?? sidebar.activeSpaceId);
@@ -81,7 +83,7 @@
                     data-space-dot={space.id}
                     name={space.name}
                     initial={spaceInitial(space.name)}
-                    hue={space.hue}
+                    hue={huePreview.hueOf(space)}
                     active={space.id === sidebar.activeSpaceId}
                     open={space.id === openSpaceId}
                     {highlighted}

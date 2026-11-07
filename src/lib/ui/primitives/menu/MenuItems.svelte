@@ -43,6 +43,12 @@
       <MenuItems items={item.items} column={iconColumn} />
     </ContextMenu.Group>
   {:else if item.kind === 'swatches'}
-    <Swatches label={item.label} hues={item.hues} selected={item.selected} onSelect={item.onSelect} />
+    <Swatches
+      label={item.label}
+      hues={item.hues}
+      selected={item.selected}
+      onSelect={item.onSelect}
+      onPreview={item.onPreview}
+    />
   {/if}
 {/each}

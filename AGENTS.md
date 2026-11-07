@@ -119,7 +119,10 @@ Three layers, each with a single job. Dependencies point downward only.
   events the row uses stop there, so they don't also swipe Spaces.
 - **Menus are data** (`model/menu.ts`), built by plain functions in `ui/sidebar/menus/` and rendered by the generic
   `primitives/menu/ContextMenu.svelte` (right-click) or `DropdownMenu.svelte` (from a button, like New Volet); a
-  `group` item puts items under a small heading in the menu itself. Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
+  `group` item puts items under a small heading in the menu itself. A `swatches` item with `onPreview` adds a slider
+  for any hue (`HueSlider`, a Volet's color): the panel and the Volet's shutter follow it through `HuePreview`
+  (`ui/sidebar/hue-preview.svelte.ts`, purely visual), and it's saved with one command once it settles (let go, a
+  pause after a key, or left). Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`): menus open below the pointer so they can
   slide sideways and flip up to stay inside the panel, and scroll when taller than it. Submenus expand in place under
   their item (`SubMenu.svelte`) instead of flying out: there's no room beside a menu in a side panel, and one laid

@@ -14,6 +14,7 @@
   import { setConfirm, setRename } from './editing/context';
   import { RenameState } from './editing/rename-state.svelte';
   import FavoritesGrid from './FavoritesGrid.svelte';
+  import { HuePreview, setHuePreview } from './hue-preview.svelte';
   import { setMountQueue } from './mount';
   import { PanelPaletteState, setPanelPalette } from './palette/panel-palette-state.svelte';
   import PanelPalette from './palette/PanelPalette.svelte';
@@ -42,6 +43,7 @@
   setRename(new RenameState());
   setConfirm(new ConfirmState());
   setSelection(new Selection(sidebar));
+  const huePreview = setHuePreview(new HuePreview());
   setMountQueue(new MountQueue());
   // svelte-ignore state_referenced_locally
   setArcClient(arc);
@@ -57,13 +59,19 @@
       if (target) sidebar.switchSpace(target.id);
     },
   });
-  const tint = new SpaceTint({ spaces: () => sidebar.spaces, activeIndex: () => activeIndex, swipe });
+  const tint = new SpaceTint({
+    spaces: () => sidebar.spaces,
+    activeIndex: () => activeIndex,
+    swipe,
+    hueOf: (space) => huePreview.hueOf(space),
+  });
 </script>
 
 <div
   class="sidebar @container relative flex h-full flex-col overflow-hidden select-none"
   data-scheme={colorScheme(scheme)}
   data-swiping={swipe.dragging}
+  data-tint-live={huePreview.active || undefined}
   style:--space-hue={tint.hue}
   bind:clientWidth={swipe.width}
   {@attach swipe.attach}

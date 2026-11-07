@@ -7,7 +7,7 @@ import { type MenuContext, newFolder } from './menu-context';
 
 /** Right-click menu of a Space (its title or its dot in the switcher). */
 export function spaceMenu(space: Space, menus: MenuContext): MenuItem[] {
-  const { store, rename, confirm } = menus;
+  const { store, rename, confirm, huePreview } = menus;
   const index = store.spaces.findIndex((s) => s.id === space.id);
   const last = store.spaces.length - 1;
   return tidy([
@@ -27,6 +27,7 @@ export function spaceMenu(space: Space, menus: MenuContext): MenuItem[] {
       hues: HUE_SWATCHES,
       selected: space.hue,
       onSelect: (hue) => store.setSpaceHue(space.id, hue),
+      onPreview: (hue) => (hue === undefined ? huePreview.end() : huePreview.show(space.id, hue)),
     },
     newFolder(menus, space.id),
     separator,

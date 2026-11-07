@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Page, Worker } from '@playwright/test';
 import { bookmarkTree, command, expect, stripState, test } from './fixtures';
 
 const visiblePage = (panel: Page) => panel.locator('section:not([inert])');
@@ -51,6 +51,53 @@ test('the Space menu recolors the Space and its tab group', async ({ worker, win
     )
     .toBe('green');
   expect((await stripState(worker, windowId)).length).toBeGreaterThan(0);
+});
+
+const spaceMeta = (worker: Worker) =>
+  worker.evaluate(async () => (await chrome.storage.sync.get('spaceMeta')).spaceMeta as Record<string, { hue: number }>);
+const panelHue = (panel: Page) =>
+  panel.locator('.sidebar').evaluate((node) => getComputedStyle(node).getPropertyValue('--space-hue'));
+
+test('the Space menu slider picks any hue: shown while it moves, saved once let go', async ({ worker, windowId, panel }) => {
+  await visiblePage(panel).getByRole('heading').click({ button: 'right' });
+  const slider = panel.getByRole('slider', { name: 'Custom color' });
+
+  // While it moves, the panel shows the hue (without its glide) but nothing is saved yet.
+  await slider.evaluate((input: HTMLInputElement) => {
+    input.value = '123';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => panelHue(panel)).toBe('123');
+  await expect(panel.locator('.sidebar')).toHaveAttribute('data-tint-live');
+  expect((await spaceMeta(worker))?.['Volet 1 (click to rename)']?.hue).not.toBe(123);
+
+  // Let go: saved, with the closest tab group color, and the menu stays open to fine-tune.
+  await slider.evaluate((input) => input.dispatchEvent(new Event('change', { bubbles: true })));
+  await expect.poll(() => spaceMeta(worker)).toEqual({ 'Volet 1 (click to rename)': { hue: 123 } });
+  await expect
+    .poll(() => worker.evaluate(async (id) => (await chrome.tabGroups.query({ windowId: id }))[0]?.color, windowId))
+    .toBe('green');
+  await expect(panel.locator('.sidebar')).not.toHaveAttribute('data-tint-live');
+  expect(await panelHue(panel)).toBe('123');
+  await expect(slider).toBeVisible();
+});
+
+test('the Space menu slider works from the keyboard', async ({ worker, panel }) => {
+  await visiblePage(panel).getByRole('heading').click({ button: 'right' });
+  const slider = panel.getByRole('slider', { name: 'Custom color' });
+  const start = Number(await slider.inputValue());
+
+  // Down from the last swatch reaches the slider; Left and Right change the hue, saved after a pause.
+  await panel.getByRole('menuitem', { name: 'Hue 205' }).focus();
+  await panel.keyboard.press('ArrowDown');
+  await expect(slider).toBeFocused();
+  for (let step = 0; step < 3; step++) await panel.keyboard.press('ArrowRight');
+  await expect(slider).toHaveValue(String(start + 3));
+  await expect.poll(() => spaceMeta(worker)).toEqual({ 'Volet 1 (click to rename)': { hue: start + 3 } });
+
+  // Up goes back to the swatches.
+  await panel.keyboard.press('ArrowUp');
+  await expect(panel.getByRole('menuitem', { name: 'Hue 205' })).toBeFocused();
 });
 
 test('deleting a Space asks first, then closes its tabs', async ({ worker, windowId, panel }) => {
