@@ -592,3 +592,24 @@ test('the Volet title stays at the top while its pins and tabs scroll under it',
   expect((await title.boundingBox())!.y).toBe(top); // it didn't move
   await expect(title).toBeInViewport();
 });
+
+test('a line sets the Volet switcher apart only while the list above it scrolls', async ({ worker, windowId, panel }) => {
+  await panel.setViewportSize({ width: 360, height: 500 });
+  const list = visiblePage(panel).locator('[data-page-scroll]');
+  await expect(list.getByRole('button', { name: 'New tab' })).toBeVisible();
+  await expect(list).not.toHaveAttribute('data-overflows');
+
+  const ids = await worker.evaluate(async (id) => {
+    const tabs = [];
+    for (let i = 1; i <= 25; i++) {
+      tabs.push(await chrome.tabs.create({ windowId: id, url: `data:text/html,<title>Tab ${i}</title>`, active: false }));
+    }
+    return tabs.map((tab) => tab.id!);
+  }, windowId);
+  await expect(list.getByRole('button', { name: 'Tab 25', exact: true })).toBeAttached();
+  await expect(list).toHaveAttribute('data-overflows', '');
+
+  await worker.evaluate((tabIds) => chrome.tabs.remove(tabIds), ids);
+  await expect(list.getByRole('button', { name: 'Tab 25', exact: true })).not.toBeAttached();
+  await expect(list).not.toHaveAttribute('data-overflows');
+});

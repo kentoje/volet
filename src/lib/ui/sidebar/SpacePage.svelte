@@ -4,7 +4,7 @@
   import type { Space } from '@/lib/model/types';
   import { tabsToClear } from '@/lib/state/tree';
   import ListActionButton from '../primitives/ListActionButton.svelte';
-  import { scrolled } from '../primitives/scrolled';
+  import { scrollEdges } from '../primitives/scroll-edges';
   import SectionDivider from '../primitives/SectionDivider.svelte';
   import PinnedSection from './PinnedSection.svelte';
   import SpaceHeader from './SpaceHeader.svelte';
@@ -29,14 +29,15 @@
 </script>
 
 <div class="flex h-full flex-col">
-  <!-- The title stays put, like Arc's: the pins and tabs scroll under it, behind a line once scrolled. -->
+  <!-- The title stays put, like Arc's: the pins and tabs scroll under it, behind a line once scrolled.
+       A line below them sets the footer apart too, while they're long enough to scroll. -->
   <div class="flex-none px-2.5 pt-3">
     <SpaceHeader {space} />
   </div>
   <div
-    class="min-h-0 flex-1 overflow-y-auto border-t border-transparent px-2.5 pb-4 transition-colors duration-150 [scrollbar-color:var(--rule)_transparent] [scrollbar-width:thin] data-scrolled:border-rule"
+    class="min-h-0 flex-1 overflow-y-auto border-y border-transparent px-2.5 pb-4 transition-colors duration-150 [scrollbar-color:var(--rule)_transparent] [scrollbar-width:thin] data-overflows:border-b-rule data-scrolled:border-t-rule"
     data-page-scroll
-    {@attach scrolled}
+    {@attach scrollEdges}
   >
     <div class="flex min-h-full flex-col">
       <PinnedSection {space} />
