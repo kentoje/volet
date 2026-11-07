@@ -51,12 +51,7 @@ export function listenForRecentTabs(engine: Engine): void {
     } else {
       const tab = sender.tab;
       if (tab?.id === undefined || sender.frameId !== 0) return;
-      if (message.type === 'recent-tabs:shortcuts') {
-        work = browser.commands.getAll().then((commands) => ({
-          next: commands.find((command) => command.name === 'cycle-recent-tabs')?.shortcut ?? '',
-          previous: commands.find((command) => command.name === 'cycle-recent-tabs-previous')?.shortcut ?? '',
-        }));
-      } else if (message.type === 'recent-tabs:query') {
+      if (message.type === 'recent-tabs:query') {
         work = engine.enqueue(() => loadRecentTabs(tab.windowId)).then(async (tabs) => ({
           tabs: await Promise.all(tabs.map(async (recent) => ({
             ...recent,

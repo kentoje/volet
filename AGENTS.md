@@ -169,7 +169,7 @@ Three layers, each with a single job. Dependencies point downward only.
 
 Prioritize **modularity, reusability, and separation of concerns**.
 
-- **Opposite actions get separate bindings.** Expose both directions (such as next/previous) as independently configurable shortcuts in Settings. Modifier-based fallbacks must not replace either action's binding.
+- **Opposite actions get separate bindings.** Expose both directions (such as next/previous) as independently configurable shortcuts in Settings. An unassigned action has no implicit modifier binding.
 
 - **One responsibility per component, kept small and focused.** When a component or module grows, extract helpers, sub-components, or state modules instead of expanding it. Never add "just one more thing" to a file when it deserves its own abstraction.
 - **Generic and data-driven.** Components take clear inputs (props) and outputs (callback props or snippets). No hardcoded business rules or tight coupling: presentational components (`TabRow`, `IconButton`, `Favicon`, ...) know nothing about the store; thin container components connect them to `SidebarStore`.

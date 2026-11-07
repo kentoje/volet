@@ -1,5 +1,6 @@
 import { mount, unmount } from 'svelte';
 import { browser } from 'wxt/browser';
+import { previewCloseShortcutItem } from '@/lib/engine/recent-tabs/preview-close-shortcut-storage';
 import { chromeRecentTabsClient } from '@/lib/state/chrome/recent-tabs-client';
 import RecentTabsOverlay from '@/lib/ui/recent-tabs/RecentTabsOverlay.svelte';
 import { RecentTabsState } from '@/lib/ui/recent-tabs/recent-tabs-state.svelte';
@@ -14,20 +15,12 @@ declare global {
 export default defineUnlistedScript(() => {
   if (window.__voletRecentTabsDispose) return;
   const state = new RecentTabsState(chromeRecentTabsClient());
-  const keys = listenRecentTabKeys(state.cycle, () => ensureOverlay());
+  const keys = listenRecentTabKeys(state.cycle);
   let removeOverlay: (() => void) | undefined;
 
-  const refreshShortcut = () => {
-    void browser.runtime.sendMessage({ type: 'recent-tabs:shortcuts' }).then((value: unknown) => {
-      if (typeof value === 'object' && value !== null &&
-        'next' in value && typeof value.next === 'string' &&
-        'previous' in value && typeof value.previous === 'string') {
-        keys.configure({ next: value.next, previous: value.previous });
-      }
-    }).catch(() => undefined);
-  };
-  refreshShortcut();
-  window.addEventListener('focus', refreshShortcut);
+  const configureClose = (value: unknown) => keys.configure(typeof value === 'string' ? value : '');
+  void previewCloseShortcutItem.getValue().then(configureClose).catch(() => undefined);
+  const unwatchClose = previewCloseShortcutItem.watch(configureClose);
 
   const ensureOverlay = () => {
     if (removeOverlay) return;
@@ -62,7 +55,7 @@ export default defineUnlistedScript(() => {
   };
   const dispose = () => {
     keys.dispose();
-    window.removeEventListener('focus', refreshShortcut);
+    unwatchClose();
     browser.runtime.onMessage.removeListener(message);
     removeOverlay?.();
     delete window.__voletRecentTabsDispose;

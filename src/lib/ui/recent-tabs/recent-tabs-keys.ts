@@ -1,34 +1,26 @@
 import type { RecentTabCycle } from '@/lib/model/recent-tab-cycle';
-import { isPreviousTabShortcut, recentTabModifier, type CycleModifier, type RecentTabBindings } from '@/lib/model/recent-tab-shortcut';
+import { recentTabModifier, type CycleModifier } from '@/lib/model/recent-tab-shortcut';
+import { matchesPreviewCloseShortcut } from '@/lib/model/preview-close-shortcut';
 
 /** Track modifier releases before Chrome sends a command, including during async loading. */
-export function listenRecentTabKeys(cycle: RecentTabCycle, onstart: () => void): {
-  configure: (bindings: RecentTabBindings) => void;
+export function listenRecentTabKeys(cycle: RecentTabCycle): {
+  configure: (closeShortcut: string) => void;
   step: (shortcut: string, offset?: 1 | -1) => void;
   dispose: () => void;
 } {
   let held = { metaKey: false, ctrlKey: false, altKey: false };
   let modifier: CycleModifier | undefined;
-  let shortcut = '';
-  let previousShortcut = '';
+  let closeShortcut = '';
   const keydown = (event: KeyboardEvent) => {
     held = event;
-    if (!previousShortcut && isPreviousTabShortcut(event, shortcut)) {
+    if (!cycle.active) return;
+    if (matchesPreviewCloseShortcut(event, closeShortcut)) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (!event.repeat) {
-        modifier = recentTabModifier(shortcut);
-        onstart();
-        cycle.step(-1);
-      }
+      if (!event.repeat) cycle.closeSelected();
       return;
     }
-    if (!cycle.active) return;
     switch (event.key) {
-      case 'Backspace':
-      case 'Delete':
-        if (!event.repeat) cycle.closeSelected();
-        break;
       case 'Escape': cycle.cancel(); break;
       case 'Enter': {
         const target = event.composedPath()[0];
@@ -59,12 +51,8 @@ export function listenRecentTabKeys(cycle: RecentTabCycle, onstart: () => void):
   window.addEventListener('blur', cancel);
   document.addEventListener('visibilitychange', visibility);
   return {
-    configure(bindings) {
-      shortcut = bindings.next;
-      previousShortcut = bindings.previous;
-    },
+    configure(value) { closeShortcut = value; },
     step(nextShortcut, offset = 1) {
-      if (offset === 1) shortcut = nextShortcut;
       modifier = recentTabModifier(nextShortcut);
       cycle.step(offset);
       // The command may arrive after the user has already released Cmd.

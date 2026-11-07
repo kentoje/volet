@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isRecentTab, orderRecentTabs } from './recent-tabs';
-import { isPreviousTabShortcut, recentTabModifier } from './recent-tab-shortcut';
+import { recentTabModifier } from './recent-tab-shortcut';
 
 describe('recent tab order', () => {
   it('keeps the active tab first, removes closed tabs, and limits the list to five', () => {
@@ -34,18 +34,4 @@ it('recognizes platform shortcut modifiers without assuming Cmd+E', () => {
   expect(recentTabModifier('⌥Q')).toBe('altKey');
   expect(recentTabModifier('Alt+Q')).toBe('altKey');
   expect(recentTabModifier('')).toBeUndefined();
-});
-
-it('derives backward cycling from the configured shortcut and requires the opposite Shift state', () => {
-  const event = { key: 'E', code: 'KeyE', metaKey: true, ctrlKey: false, altKey: false, shiftKey: true };
-  expect(isPreviousTabShortcut(event, '⌘E')).toBe(true);
-  expect(isPreviousTabShortcut(event, 'Command+E')).toBe(true);
-  expect(isPreviousTabShortcut({ ...event, shiftKey: false }, '⌘E')).toBe(false);
-  expect(isPreviousTabShortcut({ ...event, metaKey: false }, '⌘E')).toBe(false);
-  expect(isPreviousTabShortcut({ ...event, altKey: true }, '⌘E')).toBe(false);
-  expect(isPreviousTabShortcut(event, '⌘Y')).toBe(false);
-  expect(isPreviousTabShortcut(event, '')).toBe(false);
-  expect(isPreviousTabShortcut({ ...event, shiftKey: false }, '⌘⇧E')).toBe(true);
-  expect(isPreviousTabShortcut({ ...event, metaKey: false, ctrlKey: true }, 'Ctrl+E')).toBe(true);
-  expect(isPreviousTabShortcut({ ...event, key: 'Œ', code: 'KeyQ', metaKey: false, altKey: true }, '⌥Q')).toBe(true);
 });

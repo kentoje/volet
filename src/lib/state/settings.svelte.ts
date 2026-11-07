@@ -1,26 +1,17 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_SETTINGS, archiveItem, settingsItem } from '@/lib/engine/storage';
-
-interface Shortcut {
-  name: string;
-  description: string;
-  /** Empty when the user hasn't assigned one. */
-  keys: string;
-}
+import { KEYBOARD_SHORTCUT_GROUPS, type KeyboardShortcut } from '@/lib/model/keyboard-shortcuts';
 
 /**
  * The shortcuts the manifest declares, listed in this order (Chrome returns them in no particular one). Chrome also
  * lists `_execute_action` (clicking the toolbar icon), which the sidebar shortcut already covers.
  */
-const SHORTCUT_ORDER = [
-  'toggle-sidebar', 'open-palette', 'cycle-recent-tabs', 'cycle-recent-tabs-previous',
-  'next-space', 'previous-space', 'toggle-pin',
-];
+const SHORTCUT_ORDER = KEYBOARD_SHORTCUT_GROUPS.flatMap((group) => group.commands);
 
 /** The settings page's data: preferences, shortcuts, the archive. Preferences are written directly. */
 export class SettingsStore {
   archiveAfterHours = $state(DEFAULT_SETTINGS.archiveAfterHours);
-  shortcuts = $state.raw<Shortcut[]>([]);
+  shortcuts = $state.raw<KeyboardShortcut[]>([]);
   archivedCount = $state(0);
   /** The keys that open search, if assigned. */
   readonly searchKeys = $derived(this.shortcuts.find((shortcut) => shortcut.name === 'open-palette')?.keys ?? '');

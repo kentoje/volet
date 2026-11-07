@@ -6,15 +6,20 @@ import { extensionPath, expect, stripState, test as base } from './fixtures';
 
 // Pregrant website access in an isolated copy of the production extension. Chrome's native permission
 // prompt cannot be accepted by Playwright. All switcher code still runs unchanged in real Chromium.
-const test = base.extend<{ customPrevious: boolean }>({
+const test = base.extend<{ customPrevious: boolean; configuredNext: boolean }>({
   customPrevious: [false, { option: true }],
-  context: async ({ customPrevious }, use) => {
+  configuredNext: [true, { option: true }],
+  context: async ({ customPrevious, configuredNext }, use) => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'volet-recent-tabs-'));
     const extension = path.join(directory, 'extension');
     await cp(extensionPath, extension, { recursive: true });
     const manifestPath = path.join(extension, 'manifest.json');
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
     manifest.host_permissions = ['<all_urls>'];
+    if (configuredNext) {
+      // Assign a shortcut only inside this fixture; production starts with both directions unbound.
+      manifest.commands['cycle-recent-tabs'].suggested_key = { default: 'Alt+Q', mac: 'Command+E' };
+    }
     if (customPrevious) {
       // Model a user-assigned backward binding. The fixture removes an unrelated suggested default
       // to stay within Chrome's four-default limit; the production manifest keeps all existing defaults.
@@ -118,6 +123,29 @@ test('quick taps toggle the two most recent tabs even if the command arrives aft
   await expect(page.getByRole('dialog', { name: 'Recent tabs' })).toHaveCount(0);
 });
 
+test('an assigned forward shortcut never supplies an unassigned backward shortcut', async ({ context, worker, windowId }) => {
+  const commands = await worker.evaluate(() => chrome.commands.getAll());
+  expect(commands.find((command) => command.name === 'cycle-recent-tabs')?.shortcut).not.toBe('');
+  expect(commands.find((command) => command.name === 'cycle-recent-tabs-previous')?.shortcut).toBe('');
+  const previous = await context.newPage();
+  await previous.goto('https://recent-tabs.test/Previous');
+  const page = await context.newPage();
+  await page.goto('https://recent-tabs.test/Current');
+  const current = (await stripState(worker, windowId)).find((tab) => tab.active)!.id;
+  await page.keyboard.press('Meta+Shift+E');
+  expect(await activeId(worker, windowId)).toBe(current);
+  const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
+  await expect(dialog).toHaveCount(0);
+  await page.keyboard.down('Meta');
+  await step(worker, current);
+  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent Previous');
+  await page.keyboard.press('Shift+E');
+  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent Previous');
+  await page.keyboard.press('Escape');
+  await page.keyboard.up('Meta');
+  expect(await activeId(worker, windowId)).toBe(current);
+});
+
 test('Escape cancels, arrows wrap, and closed tabs and other windows are excluded', async ({ context, worker, windowId }) => {
   const ids = await createRecentPages(context, worker, windowId);
   await worker.evaluate(async ({ closedId }) => {
@@ -172,12 +200,12 @@ test('Cmd+Shift+E starts on the previous tab, reverses subsequent steps, and sup
   await page.bringToFront();
   await page.keyboard.down('Meta');
   await page.keyboard.down('Shift');
-  await page.keyboard.press('E');
+  await step(worker, ids[5]!, '⌘⇧E', -1);
   const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent E');
   await expect(dialog.getByText('Release the shortcut modifier', { exact: false })).toHaveCount(0);
-  await page.keyboard.press('E');
+  await step(worker, ids[5]!, '⌘⇧E', -1);
   await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent F');
   await page.keyboard.up('Shift');
   expect(await activeId(worker, windowId)).toBe(ids[5]);
@@ -197,7 +225,7 @@ test('quick Cmd+Shift+E taps toggle the same two recent tabs as Cmd+E', async ({
     await page.bringToFront();
     await page.keyboard.down('Meta');
     await page.keyboard.down('Shift');
-    await page.keyboard.press('E');
+    await step(worker, currentId, '⌘⇧E', -1);
     await page.keyboard.up('Shift');
     await page.keyboard.up('Meta');
     await expect.poll(() => activeId(worker, windowId)).toBe(expectedId);
@@ -231,7 +259,8 @@ test('tabs without screenshots use favicon placeholders with no visible footer',
   await page.keyboard.up('Meta');
 });
 
-test('Delete and Backspace close highlighted tabs while the current page and switcher stay open', async ({ context, worker, windowId }) => {
+test('only the configured close shortcut removes highlighted tabs and live rebinding takes effect', async ({ context, worker, windowId }) => {
+  await worker.evaluate(() => chrome.storage.local.set({ previewCloseShortcut: 'Cmd+Backspace' }));
   const ids = await createRecentPages(context, worker, windowId);
   const page = await recentPage(context, 'F');
   await page.bringToFront();
@@ -244,6 +273,10 @@ test('Delete and Backspace close highlighted tabs while the current page and swi
   expect(await activeId(worker, windowId)).toBe(ids[5]);
   await expect(dialog.locator('.recent-tab')).toHaveCount(4);
   await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent D');
+  // Delete is a different key and has no implicit close binding.
+  await page.keyboard.press('Delete');
+  await expect(dialog.locator('.recent-tab')).toHaveCount(4);
+  await worker.evaluate(() => chrome.storage.local.set({ previewCloseShortcut: 'Cmd+Delete' }));
   await page.keyboard.press('Delete');
   await expect.poll(async () => (await stripState(worker, windowId)).some((tab) => tab.id === ids[3])).toBe(false);
   expect(await activeId(worker, windowId)).toBe(ids[5]);
@@ -253,6 +286,7 @@ test('Delete and Backspace close highlighted tabs while the current page and swi
 });
 
 test('hover selects a preview and its close button closes that tab without activating it', async ({ context, worker, windowId }) => {
+  await worker.evaluate(() => chrome.storage.local.set({ previewCloseShortcut: 'Cmd+Backspace' }));
   const ids = await createRecentPages(context, worker, windowId);
   const page = await recentPage(context, 'F');
   await page.bringToFront();
@@ -365,7 +399,7 @@ test('switcher favicons load inline on a page that restricts cross-origin images
 test.describe('independent backward shortcut', () => {
   test.use({ customPrevious: true });
 
-  test('a custom backward binding reverses the same frozen list and disables the Shift fallback', async ({ context, worker, windowId }) => {
+  test('a custom backward binding reverses the same frozen list without an implicit Shift binding', async ({ context, worker, windowId }) => {
     const ids = await createRecentPages(context, worker, windowId);
     const commands = await worker.evaluate(() => chrome.commands.getAll());
     const next = commands.find((command) => command.name === 'cycle-recent-tabs')!.shortcut!;
@@ -377,7 +411,7 @@ test.describe('independent backward shortcut', () => {
     const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
     await page.keyboard.down(modifier);
     await page.keyboard.down('Shift');
-    // With a custom previous binding, the former Shift+forward chord no longer hijacks the page.
+    // Shift+forward never hijacks the page; only the assigned native backward command can step.
     await page.keyboard.press(process.platform === 'darwin' ? 'E' : 'Q');
     const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
     await expect(dialog).toHaveCount(0);
@@ -429,4 +463,77 @@ test.describe('independent backward shortcut', () => {
     expect(await activeId(worker, windowId)).toBe(ids[5]);
     await expect.poll(async () => (await stripState(worker, windowId)).length).toBe(1);
   });
+});
+
+test.describe('unassigned preview shortcuts', () => {
+  test.use({ configuredNext: false });
+
+  test('fresh installs have no cycling defaults, Shift fallback or implicit close key', async ({ context, worker, windowId }) => {
+    const commands = await worker.evaluate(() => chrome.commands.getAll());
+    for (const name of ['cycle-recent-tabs', 'cycle-recent-tabs-previous']) {
+      expect(commands.find((command) => command.name === name)?.shortcut).toBe('');
+    }
+    const previous = await context.newPage();
+    await previous.goto('https://recent-tabs.test/Previous');
+    const page = await context.newPage();
+    await page.goto('https://recent-tabs.test/Current');
+    const current = (await stripState(worker, windowId)).find((tab) => tab.active)!.id;
+    await page.keyboard.press('Meta+E');
+    await page.keyboard.press('Meta+Shift+E');
+    const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
+    await expect(dialog).toHaveCount(0);
+    expect(await activeId(worker, windowId)).toBe(current);
+    // The command message opens the UI for this assertion without assigning any close shortcut.
+    const before = (await stripState(worker, windowId)).map((tab) => tab.id);
+    await page.keyboard.down('Meta');
+    await step(worker, current);
+    await expect(dialog.locator('.recent-tab')).toHaveCount(before.length);
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Delete');
+    await expect(dialog.locator('.recent-tab')).toHaveCount(before.length);
+    expect((await stripState(worker, windowId)).map((tab) => tab.id)).toEqual(before);
+    await page.keyboard.press('Escape');
+    await page.keyboard.up('Meta');
+  });
+});
+
+test('a custom close chord recorded in settings only acts inside the preview, and clearing disables it', async ({ context, worker, windowId }) => {
+  const options = await context.newPage();
+  await options.goto(`chrome-extension://${new URL(worker.url()).host}/options.html`);
+  const recorder = options.getByRole('button', { name: 'Set close highlighted tab shortcut' });
+  await recorder.click();
+  await recorder.press('Meta+Shift+K');
+  await expect(recorder).toHaveText('Cmd+Shift+K');
+  const previous = await context.newPage();
+  await previous.goto('https://recent-tabs.test/Previous');
+  const page = await context.newPage();
+  await page.goto('https://recent-tabs.test/Current');
+  const current = (await stripState(worker, windowId)).find((tab) => tab.active)!.id;
+  await page.keyboard.press('Meta+Shift+K');
+  expect(await activeId(worker, windowId)).toBe(current);
+  expect((await stripState(worker, windowId)).some((tab) => tab.url.endsWith('/Previous'))).toBe(true);
+  await page.keyboard.down('Meta');
+  await step(worker, current);
+  const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
+  await expect(dialog.getByRole('button', { name: 'Recent Previous', exact: true })).toBeVisible();
+  await page.keyboard.press('K');
+  await expect(dialog.getByRole('button', { name: 'Recent Previous', exact: true })).toBeVisible();
+  await page.keyboard.press('Shift+K');
+  await expect.poll(async () => (await stripState(worker, windowId)).some((tab) => tab.url.endsWith('/Previous'))).toBe(false);
+  expect(await activeId(worker, windowId)).toBe(current);
+  await page.keyboard.press('Escape');
+  await page.keyboard.up('Meta');
+  await options.bringToFront();
+  await options.getByRole('button', { name: 'Clear close highlighted tab shortcut' }).click();
+  await expect(recorder).toHaveText('Not set');
+  await page.bringToFront();
+  await page.keyboard.down('Meta');
+  await step(worker, current);
+  await expect(dialog).toBeVisible();
+  const count = await dialog.locator('.recent-tab').count();
+  await page.keyboard.press('Shift+K');
+  await expect(dialog.locator('.recent-tab')).toHaveCount(count);
+  expect(await activeId(worker, windowId)).toBe(current);
+  await page.keyboard.press('Escape');
+  await page.keyboard.up('Meta');
 });

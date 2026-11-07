@@ -47,10 +47,8 @@ export default defineConfig({
       'toggle-sidebar': { suggested_key: { default: 'Alt+S' }, description: 'Show or hide the sidebar' },
       'open-palette': { suggested_key: { default: 'Alt+T' }, description: 'Search tabs, pins and archived tabs' },
       'cycle-recent-tabs': {
-        suggested_key: { default: 'Alt+Q', mac: 'Command+E' },
         description: 'Cycle through recent tabs forward',
       },
-      // Chrome allows four suggested shortcuts; this independent action can be assigned in Settings.
       'cycle-recent-tabs-previous': { description: 'Cycle through recent tabs backward' },
       'next-space': { description: 'Switch to the next Volet' },
       'previous-space': { description: 'Switch to the previous Volet' },

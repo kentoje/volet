@@ -13,7 +13,7 @@
   <p class="text-[14px]">Cycle through your five most recent tabs across Volets in this window.</p>
   <p class="mt-3 text-[13px] leading-relaxed text-ink-muted">
     Set forward and backward bindings independently under Keyboard shortcuts. Hold the shortcut modifier to choose
-    a tab, then release it to switch. Until a backward binding is assigned, Shift reverses the forward shortcut.
+    a tab, then release it to switch. All preview shortcuts start unassigned, with no implicit bindings.
   </p>
   <p class="mt-3 text-[13px] leading-relaxed text-ink-muted">
     Website access lets Volet detect key releases and keep temporary page previews on this device.
