@@ -17,7 +17,13 @@ export default defineConfig({
   }),
   manifest: {
     name: 'Volet',
-    description: 'Arc-like vertical tab spaces for Chrome',
+    // Also the Chrome Web Store summary: 132 characters at most.
+    description:
+      "Vertical tabs in Chrome's side panel: switch between workspaces (Volets), each with its own pinned tabs, folders and colors.",
+    // The source code (GPL-3.0), linked from the store listing and chrome://extensions.
+    homepage_url: 'https://github.com/pierregoutheraud/volet',
+    // sidePanel.open and setPanelBehavior. Newer side panel events are feature-detected (engine/side-panel.ts).
+    minimum_chrome_version: '116',
     // activeTab + scripting: the palette shortcut may show the palette on the current page only.
     permissions: [
       'sidePanel',

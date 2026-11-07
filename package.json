@@ -1,8 +1,8 @@
 {
   "name": "volet",
-  "description": "Arc-like vertical tab spaces for Chrome",
+  "description": "Vertical tabs in Chrome's side panel, sorted into switchable workspaces",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "license": "GPL-3.0-or-later",
   "scripts": {
@@ -11,6 +11,7 @@
     "proto": "vite --config vite.proto.config.ts",
     "build": "wxt build",
     "zip": "wxt zip",
+    "store:images": "node store/capture.mjs",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:e2e": "wxt build && playwright test",

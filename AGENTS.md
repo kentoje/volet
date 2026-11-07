@@ -12,7 +12,12 @@ pnpm build          # production build in output/chrome-mv3
 pnpm check          # svelte-check + TypeScript
 pnpm test           # unit tests (Vitest)
 pnpm test:e2e       # builds, then drives real Chromium with the extension loaded (Playwright)
+pnpm zip            # production build zipped for the Chrome Web Store
+pnpm store:images   # store screenshots and promo tiles (proto/store.html, rendered by store/capture.mjs)
 ```
+
+Store listing copy, permission justifications and the release checklist: `store/listing.md`. Keep its permission
+list in step with the manifest, and `PRIVACY.md` in step with what Volet reads and stores.
 
 ## Svelte MCP
 

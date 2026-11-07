@@ -7,7 +7,7 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
 ## What it does
 
 - **Spaces.** Each Space has its own pinned and temporary tabs, and tints the whole sidebar in its color.
-  Switch with the dots at the bottom, a two-finger swipe (the color follows your fingers), the palette, or a shortcut.
+  Switch with the shutters at the bottom, a two-finger swipe (the color follows your fingers), the palette, or a shortcut.
   Each window shows its own Space. In Chrome's tab strip, every Space is a tab group, and the inactive ones are collapsed.
 - **Pinned tabs and folders.** Pins keep their home page: navigate away and the row shows where you are, with a button back.
   On hover, × closes the tab (the pin stays, dimmed) and the pin-off button unpins it in one click (it becomes a
@@ -17,9 +17,9 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
 - **Favorites.** The grid at the top, shared by all Spaces. Open favorites are Chrome's own pinned tabs, so anything you pin
   in Chrome becomes a favorite.
 - **Drag and drop** everything: reorder tabs, drag across the divider to pin or unpin, into folders, up to the favorites,
-  or onto another Space's dot (hold it there to switch to that Space and drop it at an exact spot). Nothing moves until
+  or onto another Space's shutter (hold it there to switch to that Space and drop it at an exact spot). Nothing moves until
   you let go: a line shows where the tab will land, and a folder lights up when it will go inside (hold it over the
-  folder's middle; its top and bottom edges place it before or after). Drag the dots themselves to reorder your Spaces.
+  folder's middle; its top and bottom edges place it before or after). Drag the shutters themselves to reorder your Spaces.
 - **Select several rows** like in Chrome's tab strip: <kbd>Shift</kbd>+click selects a range, <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+click
   adds or removes one, <kbd>Esc</kbd> clears. Drag them together (they move as a stack), or right-click to put them in a new
   folder (a selected folder nests inside it), move them to another Space, or close them. A click anywhere else clears it.
@@ -32,8 +32,9 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
 - **Import from Arc.** Settings → Import from Arc reads Arc's `StorableSidebar.json` and brings over your Spaces, their
   colors, pinned tabs, folders and favorites. The file never leaves your computer.
 
-Everything lives in your bookmarks (an "Other bookmarks → Spaces" folder), so it syncs across your computers with Chrome
-sync and survives reinstalling. Space colors and settings sync through Chrome too.
+Spaces, pins, folders and favorites live in your bookmarks (an "Other bookmarks → Volet" folder), so they sync across
+your computers with Chrome sync and survive reinstalling. Space colors and settings sync through Chrome too. Nothing is
+sent anywhere else: see the [privacy policy](PRIVACY.md).
 
 ### Keyboard shortcuts
 
@@ -54,7 +55,9 @@ Change them in `chrome://extensions/shortcuts` (Settings has a link).
 - The palette can't appear on Chrome's own pages (`chrome://`, the Web Store); there it opens in the sidebar instead.
 - Arc's Split View, Peek and Little Arc aren't possible.
 
-## Install (development build)
+## Install
+
+From the Chrome Web Store (coming soon), or build it yourself:
 
 ```bash
 pnpm install
@@ -72,7 +75,12 @@ pnpm dev:own    # same dev server, no browser: load output/chrome-mv3-dev in you
 pnpm check      # svelte-check + TypeScript
 pnpm test       # unit tests (Vitest)
 pnpm test:e2e   # builds, then drives real Chromium with the extension loaded (Playwright)
+pnpm zip        # production build zipped for the Chrome Web Store (output/volet-<version>-chrome.zip)
+pnpm store:images  # renders the store screenshots and promo tiles into store/images
 ```
+
+Releasing to the Chrome Web Store: the listing copy, permission justifications and the update checklist are in
+[store/listing.md](store/listing.md).
 
 ### Developing in your own Chrome profile
 
