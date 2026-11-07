@@ -29,12 +29,12 @@
         <img class="recent-tab-screenshot" src={tab.preview} alt="" draggable="false" />
       {:else}
         <div class="recent-tab-placeholder" aria-hidden="true">
-          <span class="recent-tab-placeholder-icon"><Favicon url={tab.url} size={28} {sources} /></span>
+          <span class="recent-tab-placeholder-icon"><Favicon url={tab.url} size={24} {sources} /></span>
         </div>
       {/if}
     </div>
     <span class="recent-tab-caption">
-      <Favicon url={tab.url} size={14} {sources} />
+      <Favicon url={tab.url} size={16} {sources} />
       <span class="recent-tab-title">{tab.title}</span>
     </span>
   </button>

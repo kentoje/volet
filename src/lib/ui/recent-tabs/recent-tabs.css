@@ -1,6 +1,8 @@
-/* Only generate the utilities needed by the shared favicon inside this shadow root. */
+/* Styles for the recent tab switcher shown over web pages, inside its own shadow root: Volet's tokens, like Search. */
 @import 'tailwindcss' source(none);
+@import '../../../styles/tokens.css';
 @import '../../../styles/theme.css';
+/* Only generate the utilities needed by the shared favicon. */
 @source '../primitives/Favicon.svelte';
 
 /*
@@ -9,126 +11,135 @@
  */
 :host { all: initial !important; }
 
+/*
+ * Plain CSS in px: rem is the page's root font size, not ours, and Tailwind utilities that rely on @property
+ * (shadows, rings, transforms) don't work inside a shadow root.
+ */
 .recent-tabs-root {
-  --ink-muted: #a1a1a6;
-  --rule: #ffffff12;
   position: fixed;
   inset: 0;
   z-index: 2147483647;
   display: grid;
   place-items: center;
-  color: #e7e7e8;
-  font: 12px/1.35 system-ui, -apple-system, sans-serif;
+  font: 13px/1.35 system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
+/* No dimming: the switcher is a glance while the shortcut is held, like the macOS switcher. */
 .recent-tabs-backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  padding: 0;
   border: 0;
   background: transparent;
 }
 
+/* Search's surface. */
 .recent-tabs-dialog {
   position: relative;
   box-sizing: border-box;
   width: max-content;
   max-width: calc(100vw - 32px);
-  padding: 12px;
-  border: 1px solid #ffffff1c;
-  border-radius: 22px;
-  background: #191a1b;
-  box-shadow: 0 16px 48px #0005, 0 4px 12px #0003;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--menu);
+  box-shadow: 0 24px 60px oklch(0.2 0.05 var(--space-hue) / 0.3), 0 0 0 0.5px var(--rule);
 }
 
 .recent-tabs-list {
   display: flex;
-  gap: 0;
+  gap: 2px;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
 .recent-tab-card { position: relative; flex: 0 0 156px; min-width: 0; }
 
+/* Rounded like the panel's rows: hovered like a row, selected with the Volet's tint, like selected rows. */
 .recent-tab {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 10px;
+  padding: 8px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background-color 100ms;
 }
 
-.recent-tab[data-selected='true'] { background: #595a5b; color: #fff; }
-.recent-tab:focus-visible { outline: 2px solid #ffffffa6; outline-offset: -2px; }
+.recent-tab[data-selected='true'] { background: var(--selected); }
+.recent-tab:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
+/* The panel's row buttons, on a chip so they read over a screenshot. */
 .recent-tab-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 12px;
+  right: 12px;
   display: grid;
   place-items: center;
   width: 24px;
   height: 24px;
   padding: 0;
-  border: 1px solid #ffffff24;
-  border-radius: 50%;
-  background: #202124e6;
-  color: #eee;
+  border: 0;
+  border-radius: 7px;
+  background: var(--menu);
+  box-shadow: var(--pill-shadow);
+  color: var(--ink-muted);
   opacity: 0;
   pointer-events: none;
   cursor: pointer;
+  transition: opacity 100ms, color 100ms;
 }
 .recent-tab-card[data-selected='true'] .recent-tab-close,
 .recent-tab-card:focus-within .recent-tab-close { opacity: 1; pointer-events: auto; }
-.recent-tab-close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.recent-tab-close:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.recent-tab-close > * { pointer-events: none; }
 
 .recent-tab-preview {
   height: 90px;
   overflow: hidden;
-  border-radius: 6px;
-  background: #25272a;
-  box-shadow: 0 0 0 1px #0000001a;
+  border-radius: 8px;
+  background: var(--hover);
+  box-shadow: 0 0 0 0.5px var(--rule);
 }
 
 .recent-tab-screenshot { display: block; width: 100%; height: 100%; object-fit: cover; }
 
+/* No screenshot yet: the favicon on a pill, like the panel's active row. */
 .recent-tab-placeholder {
   display: grid;
   place-items: center;
   width: 100%;
   height: 100%;
-  background: radial-gradient(ellipse at 35% 20%, #41464c, #282c31 75%);
 }
 
 .recent-tab-placeholder-icon {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border: 1px solid #ffffff12;
-  border-radius: 13px;
-  background: #ffffff0a;
-  color: #c9cdd3;
-  box-shadow: 0 2px 8px #00000014;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--pill);
+  box-shadow: var(--pill-shadow);
 }
 
 .recent-tab-caption {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
-  height: 16px;
+  height: 18px;
   margin-top: 8px;
-  font-weight: 600;
 }
+
+/* Like the panel's active row. */
+.recent-tab[data-selected='true'] .recent-tab-caption { font-weight: 500; }
 
 .recent-tab-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
@@ -142,7 +153,12 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .recent-tab:not([data-selected='true']):hover { background: #ffffff0a; }
+  .recent-tab:not([data-selected='true']):hover { background: var(--hover); }
   .recent-tab-card:hover .recent-tab-close { opacity: 1; pointer-events: auto; }
-  .recent-tab-close:hover { background: #454649; }
+  .recent-tab-close:hover { color: var(--ink); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recent-tab,
+  .recent-tab-close { transition: none; }
 }

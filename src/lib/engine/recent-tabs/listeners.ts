@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { activeSpaceOf, hueOf, loadContext } from '../context';
 import type { Engine } from '../engine';
 import { loadFaviconImage } from '../favicon';
 import { forgetRecentWindow, loadRecentTabs, rememberCreatedTab, rememberRecentTab } from './history';
@@ -57,9 +58,14 @@ export function listenForRecentTabs(engine: Engine): void {
       const tab = sender.tab;
       if (tab?.id === undefined || sender.frameId !== 0) return;
       if (message.type === 'recent-tabs:query') {
-        work = engine.enqueue(() => loadRecentTabs(tab.windowId)).then(async (tabs) => {
+        // With the window's active Volet's hue, which tints the switcher like Search (`searchPalette`).
+        work = engine.enqueue(async () => {
+          const ctx = await loadContext(tab.windowId);
+          return { tabs: await loadRecentTabs(tab.windowId), hue: hueOf(ctx, activeSpaceOf(ctx)) };
+        }).then(async ({ tabs, hue }) => {
           const shots = await previews.find(tabs);
           return {
+            hue,
             tabs: await Promise.all(tabs.map(async (recent) => ({
               ...recent,
               icon: await loadFaviconImage(recent.url),

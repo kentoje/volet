@@ -1,7 +1,7 @@
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { chromium, type BrowserContext, type Page, type Worker } from '@playwright/test';
+import { chromium, type BrowserContext, type Locator, type Page, type Worker } from '@playwright/test';
 import { command, extensionPath, expect, stripState, test as base } from './fixtures';
 
 // An isolated copy of the production extension, so a test can model other shortcut bindings. All switcher code still
@@ -678,4 +678,26 @@ test('screenshots are kept in Chrome session storage, so they outlive the backgr
   expect(keys).toContain(`recentTabPreview:${ids[5]}`);
   await worker.evaluate((stored) => chrome.storage.session.remove(stored), keys);
   expect(await previewed()).toEqual([]);
+});
+
+test('the switcher follows the system color scheme and takes the active Volet\'s color, like the panel', async ({ context, worker, windowId, panel }) => {
+  // Give the window's Volet a color other than the switcher's default (268, the first Volet's).
+  const spaceId = await worker.evaluate(async () => (await chrome.bookmarks.search({ title: 'Volet 1 (click to rename)' }))[0]!.id);
+  expect((await command(panel, { type: 'setSpaceHue', spaceId, hue: 150 })).ok).toBe(true);
+  const hueOf = (target: Locator) => target.evaluate((element) => (element as HTMLElement).style.getPropertyValue('--space-hue'));
+  await expect.poll(() => hueOf(panel.locator('.sidebar'))).toBe('150');
+  await (await context.newPage()).goto('https://recent-tabs.test/Previous');
+  const page = await context.newPage();
+  await page.goto('https://recent-tabs.test/Current');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  const current = (await stripState(worker, windowId)).find((tab) => tab.active)!.id;
+  await page.keyboard.down('Meta');
+  await step(worker, current);
+  const root = page.locator('.recent-tabs-root');
+  await expect(root).toHaveAttribute('data-scheme', 'dark');
+  await expect.poll(() => hueOf(root)).toBe('150');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(root).toHaveAttribute('data-scheme', 'light');
+  await page.keyboard.press('Escape');
+  await page.keyboard.up('Meta');
 });

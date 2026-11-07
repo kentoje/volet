@@ -1,16 +1,20 @@
 <script lang="ts">
+  import { colorScheme } from '../primitives/color-scheme';
   import RecentTabCard from './RecentTabCard.svelte';
   import type { RecentTabsState } from './recent-tabs-state.svelte';
 
-  let { state, onchoose, oncancel }: {
+  let { state, onchoose, oncancel, scheme }: {
     state: RecentTabsState;
     onchoose: (index: number) => void;
     oncancel: () => void;
+    /** Forces a color scheme; otherwise the system's. */
+    scheme?: 'light' | 'dark';
   } = $props();
 </script>
 
 {#if state.view}
-  <div class="recent-tabs-root">
+  <!-- Tinted like the side panel and Search: the window's active Volet's hue, in the system's color scheme. -->
+  <div class="recent-tabs-root" data-scheme={colorScheme(scheme)} style:--space-hue={state.hue}>
     <button class="recent-tabs-backdrop" aria-label="Cancel tab switching" onclick={oncancel}></button>
     <div class="recent-tabs-dialog" role="dialog" aria-modal="true" aria-label="Recent tabs" tabindex="-1">
       <div class="recent-tabs-list">

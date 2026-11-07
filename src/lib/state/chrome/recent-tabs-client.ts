@@ -2,8 +2,11 @@ import { browser } from 'wxt/browser';
 import { isRecentTab, type RecentTabsClient } from '@/lib/model/recent-tabs';
 import type { CycleModifier } from '@/lib/model/recent-tab-shortcut';
 
-/** Request recent tabs from the sender's window; Chrome writes stay in the engine. */
-export function chromeRecentTabsClient(): RecentTabsClient {
+/**
+ * Request recent tabs from the sender's window; Chrome writes stay in the engine. Each answer also carries the window's
+ * active Volet's hue (`onhue`), like Search's.
+ */
+export function chromeRecentTabsClient({ onhue }: { onhue?: (hue: number) => void } = {}): RecentTabsClient {
   return {
     async load() {
       const response: unknown = await browser.runtime.sendMessage({ type: 'recent-tabs:query' });
@@ -11,6 +14,7 @@ export function chromeRecentTabsClient(): RecentTabsClient {
         !Array.isArray(response.tabs) || !response.tabs.every(isRecentTab)) {
         throw new Error('Recent tabs query failed');
       }
+      if ('hue' in response && typeof response.hue === 'number' && Number.isFinite(response.hue)) onhue?.(response.hue);
       return response.tabs;
     },
     async activate(tabId) {

@@ -1,12 +1,10 @@
-import { mount, unmount } from 'svelte';
 import { browser } from 'wxt/browser';
 import { previewCloseShortcutItem } from '@/lib/engine/recent-tabs/preview-close-shortcut-storage';
 import { isPanelKey } from '@/lib/model/recent-tab-keys';
 import { chromeRecentTabsClient, panelHoldsModifier } from '@/lib/state/chrome/recent-tabs-client';
-import RecentTabsOverlay from '@/lib/ui/recent-tabs/RecentTabsOverlay.svelte';
+import { mountRecentTabsOverlay } from '@/lib/ui/recent-tabs/mount-overlay';
 import { RecentTabsState } from '@/lib/ui/recent-tabs/recent-tabs-state.svelte';
 import { listenRecentTabKeys } from '@/lib/ui/recent-tabs/recent-tabs-keys';
-import css from '@/lib/ui/recent-tabs/recent-tabs.css?inline';
 
 declare global {
   interface Window { __voletRecentTabsDispose?: () => void }
@@ -15,7 +13,7 @@ declare global {
 /** Preloaded after opt-in so a fast modifier release cannot race script injection. */
 export default defineUnlistedScript(() => {
   if (window.__voletRecentTabsDispose) return;
-  const state = new RecentTabsState(chromeRecentTabsClient());
+  const state = new RecentTabsState(chromeRecentTabsClient({ onhue: (hue) => { state.hue = hue; } }));
   const keys = listenRecentTabKeys(state.cycle, panelHoldsModifier);
   let removeOverlay: (() => void) | undefined;
 
@@ -24,19 +22,7 @@ export default defineUnlistedScript(() => {
   const unwatchClose = previewCloseShortcutItem.watch(configureClose);
 
   const ensureOverlay = () => {
-    if (removeOverlay) return;
-    const host = document.createElement('volet-recent-tabs');
-    const shadow = host.attachShadow({ mode: 'open' });
-    const style = document.createElement('style');
-    style.textContent = css;
-    const target = document.createElement('div');
-    shadow.append(style, target);
-    document.documentElement.append(host);
-    const app = mount(RecentTabsOverlay, {
-      target,
-      props: { state, onchoose: (index) => state.cycle.commit(index), oncancel: () => state.cycle.cancel() },
-    });
-    removeOverlay = () => { void unmount(app); host.remove(); };
+    removeOverlay ??= mountRecentTabsOverlay(state);
   };
 
   const message = (value: unknown, _sender: unknown, respond: (response: unknown) => void) => {

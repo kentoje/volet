@@ -5,7 +5,7 @@ Volet: Arc-like vertical tab Spaces for Chrome, a side panel extension built wit
 ## Commands
 
 ```bash
-pnpm proto          # sidebar UI as a plain web page on fake data (fast visual iteration)
+pnpm proto          # sidebar UI as a plain web page on fake data (fast visual iteration); /recent-tabs.html: the tab switcher
 pnpm dev            # extension dev mode: launches a fresh Chrome profile, live reload
 pnpm dev:own        # same, without launching Chrome (load output/chrome-mv3-dev in your own profile)
 pnpm build          # production build in output/chrome-mv3
@@ -173,8 +173,10 @@ Three layers, each with a single job. Dependencies point downward only.
   mean the same everywhere. Attaching to pages already open stays out of the engine queue: a page still loading would
   hold every command. Screenshots live in `chrome.storage.session` (`preview-store.ts`, one key each plus a small index),
   so they outlive the worker, which Chrome stops after about 30 seconds idle.
-- **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
-  (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
+- **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`, `.recent-tabs-root`),
+  `styles/theme.css` (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`,
+  `ui/recent-tabs/recent-tabs.css`, `styles/page.css`). Surfaces over web pages (palette, tab switcher) take the
+  active Volet's hue from the worker's answers and the system's color scheme, like the panel.
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
   `rem` there is the page's root font size, not ours (YouTube's is 10px), so `palette.css` sets Tailwind's spacing,
   radius and text scales in px: size anything else in px too (an e2e test renders it over a 10px root).
