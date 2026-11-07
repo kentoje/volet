@@ -19,7 +19,7 @@
 <button
   type="button"
   class={[
-    'flex min-h-9 min-w-24 shrink-0 items-center justify-end gap-2 rounded-lg px-3 text-[13px] focus-visible:outline-2 focus-visible:outline-(--focus) disabled:opacity-40',
+    'flex min-h-9 shrink-0 items-center justify-end gap-2 rounded-lg px-3 text-[13px] focus-visible:outline-2 focus-visible:outline-(--focus) disabled:opacity-40',
     kind === 'custom' && !recording
       ? 'bg-[color-mix(in_oklch,var(--shortcut-custom)_12%,transparent)] text-(--shortcut-custom) hover:bg-[color-mix(in_oklch,var(--shortcut-custom)_20%,transparent)]'
       : 'bg-hover text-ink-muted hover:bg-rule',
