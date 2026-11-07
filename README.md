@@ -37,7 +37,7 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
   opened background tabs take priority, so opening a link with Cmd/Ctrl+click makes it the next selection. A centered
   preview highlights the selection, the arrow keys move it and Escape cancels. Record a close shortcut in Settings →
   Keyboard shortcuts to close the highlighted tab without switching to it, or hover a preview and use its close button
-  (Chrome reserves Cmd+W). Use the settings toggle to turn it off without clearing shortcuts, or remove both bindings.
+  (Chrome reserves Cmd+W). Remove both shortcuts to turn the switcher off.
   Screenshots appear after you visit tabs
   and stay in memory on your device.
 

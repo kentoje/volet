@@ -162,7 +162,7 @@ Three layers, each with a single job. Dependencies point downward only.
   until they have landed. Page order and placement rules are pure
   (`model/selection.ts`). `SelectionDismiss` clears it on a click outside the selected rows, on panel blur, and on
   an Escape nothing else handled. Mark new menus or dialogs' containers so they stay inside `[data-overlay-root]`.
-- **Recent tab switcher** (`engine/recent-tabs/`, `ui/recent-tabs/`): on while its local toggle is enabled, either shortcut is assigned and
+- **Recent tab switcher** (`engine/recent-tabs/`, `ui/recent-tabs/`): on while either of its shortcuts is assigned and
   Chrome grants site access (`<all_urls>`, required, but users can withhold it): `recentTabsEnabled` gates the
   previews and the shortcut. The page script follows site access only: Chrome reports no change to shortcuts, and
   without one the script stays idle. Chrome's commands only report the shortcut, never letting go of the modifier, so

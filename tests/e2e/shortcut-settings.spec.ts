@@ -12,7 +12,7 @@ test('native defaults, custom shortcuts and unassigned actions use the same bind
   const options = await context.newPage();
   await options.goto(`chrome-extension://${extensionId}/options.html`);
   const sidebar = options.getByRole('button', { name: 'Change show or hide the sidebar shortcut', exact: true });
-  await expect(options.getByRole('switch', { name: 'Enable tab switcher' })).toBeChecked();
+  await expect(options.getByRole('switch', { name: 'Enable tab switcher' })).toHaveCount(0);
   await expect(sidebar).toHaveAttribute('data-binding', 'default');
   await expect(sidebar).toContainText('Alt+S');
   await expect(sidebar).toContainText('Default');
@@ -50,26 +50,22 @@ test('native defaults, custom shortcuts and unassigned actions use the same bind
   await expect(sidebar).toHaveText('Not set');
 });
 
-test('the switcher toggle persists without clearing shortcuts or changing website access', async ({ context, worker }) => {
+test('shortcut removal is the only switcher control and an old disabled preference is ignored', async ({ context, worker }) => {
+  await worker.evaluate(() => chrome.storage.local.set({ recentTabsOn: false }));
+  const extensionId = new URL(worker.url()).host;
   const page = await context.newPage();
-  await page.goto(`chrome-extension://${new URL(worker.url()).host}/options.html`);
-  const before = await worker.evaluate(async () => ({
-    commands: await chrome.commands.getAll(),
-    access: await chrome.permissions.contains({ origins: ['<all_urls>'] }),
-  }));
-  const toggle = page.getByRole('switch', { name: 'Enable tab switcher' });
-  await expect(toggle).toBeChecked();
-  await toggle.focus();
-  await toggle.press('Space');
-  await expect(toggle).not.toBeChecked();
-  await expect.poll(() => worker.evaluate(async () => (await chrome.storage.local.get('recentTabsOn')).recentTabsOn)).toBe(false);
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+  await expect(page.getByRole('switch')).toHaveCount(0);
+  await expect(page.getByText('forward shortcuts under Keyboard shortcuts, or remove both to turn the switcher off.', { exact: false })).toBeVisible();
+  const manager = await context.newPage();
+  await manager.goto('chrome://extensions/');
+  await manager.evaluate(async (id) => {
+    for (const commandName of ['cycle-recent-tabs', 'cycle-recent-tabs-previous']) {
+      await chrome.developerPrivate.updateExtensionCommand({ extensionId: id, commandName, keybinding: '' });
+    }
+  }, extensionId);
   await page.reload();
-  await expect(toggle).not.toBeChecked();
-  expect(await worker.evaluate(async () => ({
-    commands: await chrome.commands.getAll(),
-    access: await chrome.permissions.contains({ origins: ['<all_urls>'] }),
-  }))).toEqual(before);
-  await toggle.click();
-  await expect(toggle).toBeChecked();
-  await expect.poll(() => worker.evaluate(async () => (await chrome.storage.local.get('recentTabsOn')).recentTabsOn)).toBe(true);
+  const preview = page.getByRole('region', { name: 'Cycle through preview', exact: true });
+  await expect(preview.locator('dd')).toHaveText(['Not set', 'Not set']);
+  expect(await worker.evaluate(() => chrome.permissions.contains({ origins: ['<all_urls>'] }))).toBe(true);
 });
