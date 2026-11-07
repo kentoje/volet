@@ -92,6 +92,20 @@ test('the settings page changes how long unpinned tabs stay open', async ({ cont
   await expect(page.getByText('Change shortcuts')).toBeVisible();
 });
 
+test('both tab cycling directions are listed in settings and independently configurable in Chrome', async ({ context, worker }) => {
+  const page = await context.newPage();
+  await page.goto(extensionPage(worker, 'options.html'));
+  await expect(page.getByText('Cycle through recent tabs forward', { exact: true })).toBeVisible();
+  await expect(page.getByText('Cycle through recent tabs backward', { exact: true })).toBeVisible();
+  const opened = context.waitForEvent('page');
+  await page.getByRole('button', { name: 'Change shortcuts' }).click();
+  const shortcuts = await opened;
+  await shortcuts.waitForLoadState();
+  await expect(shortcuts).toHaveURL('chrome://extensions/shortcuts');
+  await expect(shortcuts.getByText('Cycle through recent tabs forward', { exact: true })).toBeVisible();
+  await expect(shortcuts.getByText('Cycle through recent tabs backward', { exact: true })).toBeVisible();
+});
+
 test('idle tabs are archived, and the palette reopens them', async ({ worker, windowId, panel }) => {
   test.setTimeout(90_000);
   const tabId = await worker.evaluate(

@@ -3,6 +3,7 @@
   import Button from '../primitives/page/Button.svelte';
   import Card from '../primitives/page/Card.svelte';
   import PageShell from '../primitives/page/PageShell.svelte';
+  import RecentTabsSettings from './RecentTabsSettings.svelte';
 
   const settings = new SettingsStore();
   void settings.load();
@@ -16,6 +17,8 @@
     { hours: 0, label: 'Never close them' },
   ];
 </script>
+
+<svelte:window onfocus={() => void settings.refreshShortcuts()} />
 
 <PageShell title="Settings">
   <Card title="Archiving">
@@ -43,6 +46,8 @@
       <Button disabled={settings.archivedCount === 0} onclick={() => void settings.clearArchive()}>Clear archive</Button>
     </div>
   </Card>
+
+  <RecentTabsSettings />
 
   <Card title="Keyboard shortcuts">
     <dl class="flex flex-col">

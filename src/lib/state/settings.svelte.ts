@@ -12,7 +12,10 @@ interface Shortcut {
  * The shortcuts the manifest declares, listed in this order (Chrome returns them in no particular one). Chrome also
  * lists `_execute_action` (clicking the toolbar icon), which the sidebar shortcut already covers.
  */
-const SHORTCUT_ORDER = ['toggle-sidebar', 'open-palette', 'next-space', 'previous-space', 'toggle-pin'];
+const SHORTCUT_ORDER = [
+  'toggle-sidebar', 'open-palette', 'cycle-recent-tabs', 'cycle-recent-tabs-previous',
+  'next-space', 'previous-space', 'toggle-pin',
+];
 
 /** The settings page's data: preferences, shortcuts, the archive. Preferences are written directly. */
 export class SettingsStore {
@@ -23,13 +26,20 @@ export class SettingsStore {
   readonly searchKeys = $derived(this.shortcuts.find((shortcut) => shortcut.name === 'open-palette')?.keys ?? '');
 
   async load(): Promise<void> {
-    const [settings, commands, archive] = await Promise.all([
+    const [settings, , archive] = await Promise.all([
       settingsItem.getValue(),
-      browser.commands.getAll(),
+      this.refreshShortcuts(),
       archiveItem.getValue(),
     ]);
     this.archiveAfterHours = settings.archiveAfterHours;
     this.archivedCount = archive.length;
+    settingsItem.watch((next) => (this.archiveAfterHours = next.archiveAfterHours));
+    archiveItem.watch((next) => (this.archivedCount = next.length));
+  }
+
+  /** Refresh bindings after returning from Chrome's shortcut editor. */
+  async refreshShortcuts(): Promise<void> {
+    const commands = await browser.commands.getAll();
     this.shortcuts = commands
       .filter((command) => SHORTCUT_ORDER.includes(command.name ?? ''))
       .map((command) => ({
@@ -38,8 +48,6 @@ export class SettingsStore {
         keys: command.shortcut ?? '',
       }))
       .sort((a, b) => SHORTCUT_ORDER.indexOf(a.name) - SHORTCUT_ORDER.indexOf(b.name));
-    settingsItem.watch((next) => (this.archiveAfterHours = next.archiveAfterHours));
-    archiveItem.watch((next) => (this.archivedCount = next.length));
   }
 
   async setArchiveAfter(hours: number): Promise<void> {
