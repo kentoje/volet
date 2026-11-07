@@ -147,20 +147,23 @@ When the user presses the search shortcut, the search palette opens over the pag
 `scripting`
 
 ```
-Injects the search palette into the current page when the user presses its shortcut. With optional website access, also preloads the recent tab switcher's keyboard release listener and overlay on websites. All scripts are part of the extension package; no remote code.
+Injects the search palette into the current page when the user presses its shortcut, and preloads the recent tab switcher on websites: a listener for its shortcut's modifier being released, and its overlay. All scripts are part of the extension package; no remote code.
 ```
 
-**Required host permissions**: none. (The manifest makes `_favicon/*` web accessible so the in-page search palette
-can show site icons from Chrome's favicon cache; it grants no access to pages.)
+**Host permissions**: `<all_urls>`, for the recent tab switcher (on by default; removing both of its shortcuts turns it off). Chrome shows
+it at install ("Read and change all your data on all websites") and puts the item through a closer review.
 
-**Optional host permissions**: `<all_urls>`, requested only when enabling the recent tab switcher in settings.
-Website access preloads a shortcut modifier release listener, renders the centered switcher, and captures visible
-page previews as tabs are visited. At most ten screenshots stay in worker memory, never synced or uploaded.
+```
+The recent tab switcher (on by default; removing both of its shortcuts turns it off) needs website access for three things. Chrome's keyboard commands only report the shortcut being pressed, so a packaged content script listens on websites for its modifier being released, which picks the tab. The same script draws the centered switcher over the page. And Volet captures a preview of the visible page as tabs are visited. Previews stay in memory on the device (ten at most), are never synced or uploaded, and incognito pages are not captured.
+```
+
+(The manifest also makes `_favicon/*` web accessible so the in-page search palette can show site icons from Chrome's
+favicon cache.)
 
 **Are you using remote code?** No, I am not using remote code.
 
 **Data usage**, what user data is collected: check **Web history** and **Website content**. (Volet reads tab titles,
-addresses and last-use times, keeps archived tabs, and optionally captures page previews, all on the device. Chrome's policy counts local handling, so it's
+addresses and last-use times, keeps archived tabs, and captures page previews for the tab switcher, all on the device. Chrome's policy counts local handling, so it's
 disclosed even though nothing is transmitted.)
 
 Certify all three:

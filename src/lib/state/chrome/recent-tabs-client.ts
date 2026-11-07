@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { isRecentTab, type RecentTabsClient } from '@/lib/model/recent-tabs';
+import type { CycleModifier } from '@/lib/model/recent-tab-shortcut';
 
 /** Request recent tabs from the sender's window; Chrome writes stay in the engine. */
 export function chromeRecentTabsClient(): RecentTabsClient {
@@ -19,6 +20,12 @@ export function chromeRecentTabsClient(): RecentTabsClient {
       await runRecentTabAction('recent-tabs:close', tabId);
     },
   };
+}
+
+/** Ask the Volet panel of this page's window whether it holds the modifier (it has focus, so this page saw no keys). */
+export async function panelHoldsModifier(modifier: CycleModifier): Promise<boolean> {
+  const response: unknown = await browser.runtime.sendMessage({ type: 'recent-tabs:panel-holds', modifier });
+  return typeof response === 'object' && response !== null && 'holds' in response && response.holds === true;
 }
 
 async function runRecentTabAction(type: 'recent-tabs:activate' | 'recent-tabs:close', tabId: number): Promise<void> {

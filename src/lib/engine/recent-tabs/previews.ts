@@ -1,24 +1,27 @@
 import { browser } from 'wxt/browser';
-import { RECENT_TABS_PERMISSION } from '@/lib/model/recent-tabs';
+import { recentTabsEnabled } from './enabled';
+import { PreviewStore } from './preview-store';
 
-/** A bounded memory-only cache. Screenshots disappear when the worker stops. */
+/** Captures the visible page a moment after a tab comes to the front, and keeps it in a `PreviewStore`. */
 export class RecentTabPreviews {
-  #images = new Map<number, { url: string; image: string }>();
+  #store = new PreviewStore();
   #timers = new Map<number, ReturnType<typeof setTimeout>>();
   #lastCapture = 0;
   #capturing = false;
 
-  get(tabId: number, url: string): string | undefined {
-    const preview = this.#images.get(tabId);
-    return preview?.url === url ? preview.image : undefined;
+  /** The screenshot of each tab still on the page it was taken of. */
+  find(tabs: readonly { id: number; url: string }[]): Promise<Map<number, string>> {
+    return this.#store.find(tabs);
   }
 
-  forget(tabId: number): void { this.#images.delete(tabId); }
+  forget(tabId: number): void {
+    void this.#store.forget(tabId).catch(() => undefined);
+  }
 
   clear(): void {
     for (const timer of this.#timers.values()) clearTimeout(timer);
     this.#timers.clear();
-    this.#images.clear();
+    void this.#store.clear().catch(() => undefined);
   }
 
   schedule(tabId: number, windowId: number): void {
@@ -33,7 +36,11 @@ export class RecentTabPreviews {
     if (this.#capturing || Date.now() - this.#lastCapture < 600) return;
     this.#capturing = true;
     try {
-      if (!(await browser.permissions.contains(RECENT_TABS_PERMISSION))) return;
+      // Off (no shortcut, or no site access): take none, and drop the ones kept.
+      if (!(await recentTabsEnabled())) {
+        await this.#store.clear();
+        return;
+      }
       const tab = await browser.tabs.get(tabId);
       if (!tab.active || tab.incognito || !tab.url || !/^https?:/.test(tab.url)) return;
       const window = await browser.windows.get(windowId);
@@ -43,13 +50,8 @@ export class RecentTabPreviews {
       this.#lastCapture = Date.now();
       const image = await browser.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 25 });
       const current = await browser.tabs.get(tabId);
-      if (!current.active || current.url !== tab.url || !(await browser.permissions.contains(RECENT_TABS_PERMISSION))) return;
-      this.#images.delete(tabId);
-      this.#images.set(tabId, { url: tab.url, image });
-      while (this.#images.size > 10) {
-        const oldest = this.#images.keys().next().value;
-        if (oldest !== undefined) this.#images.delete(oldest);
-      }
+      if (!current.active || current.url !== tab.url || !(await recentTabsEnabled())) return;
+      await this.#store.keep(tabId, tab.url, image);
     } finally { this.#capturing = false; }
   }
 }

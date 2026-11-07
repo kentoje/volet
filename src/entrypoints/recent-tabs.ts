@@ -1,7 +1,8 @@
 import { mount, unmount } from 'svelte';
 import { browser } from 'wxt/browser';
 import { previewCloseShortcutItem } from '@/lib/engine/recent-tabs/preview-close-shortcut-storage';
-import { chromeRecentTabsClient } from '@/lib/state/chrome/recent-tabs-client';
+import { isPanelKey } from '@/lib/model/recent-tab-keys';
+import { chromeRecentTabsClient, panelHoldsModifier } from '@/lib/state/chrome/recent-tabs-client';
 import RecentTabsOverlay from '@/lib/ui/recent-tabs/RecentTabsOverlay.svelte';
 import { RecentTabsState } from '@/lib/ui/recent-tabs/recent-tabs-state.svelte';
 import { listenRecentTabKeys } from '@/lib/ui/recent-tabs/recent-tabs-keys';
@@ -15,7 +16,7 @@ declare global {
 export default defineUnlistedScript(() => {
   if (window.__voletRecentTabsDispose) return;
   const state = new RecentTabsState(chromeRecentTabsClient());
-  const keys = listenRecentTabKeys(state.cycle);
+  const keys = listenRecentTabKeys(state.cycle, panelHoldsModifier);
   let removeOverlay: (() => void) | undefined;
 
   const configureClose = (value: unknown) => keys.configure(typeof value === 'string' ? value : '');
@@ -45,6 +46,9 @@ export default defineUnlistedScript(() => {
       if (offset !== 1 && offset !== -1) return;
       ensureOverlay();
       keys.step(value.shortcut, offset);
+      respond({ ok: true });
+    } else if (value.type === 'recent-tabs:panel-key' && 'key' in value && isPanelKey(value.key)) {
+      keys.fromPanel(value.key);
       respond({ ok: true });
     } else if (value.type === 'recent-tabs:visible') {
       respond({ visible: state.cycle.active });

@@ -23,7 +23,7 @@ export function listenForShortcuts(engine: Engine): void {
         break;
       case 'cycle-recent-tabs':
       case 'cycle-recent-tabs-previous':
-        void cycleRecentTabs(engine, tab, command === 'cycle-recent-tabs' ? 1 : -1)
+        void cycleRecentTabs(engine, tab, command)
           .catch((error) => console.warn('Recent tab shortcut failed', error));
         break;
       case 'next-space':

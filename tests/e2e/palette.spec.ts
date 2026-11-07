@@ -42,3 +42,19 @@ test('the shortcut on a page that cannot host it opens the palette in the panel'
     .poll(() => worker.evaluate(async () => (await chrome.storage.session.get('pendingPalette')).pendingPalette))
     .toEqual({});
 });
+
+test('the in-page palette shows on a page that hides undefined custom elements, like reddit.com', async ({ context, worker }) => {
+  // Sites built from web components hide elements not defined yet; content scripts can't define the palette's host.
+  await context.route('https://components.test/**', (route) => route.fulfill({
+    contentType: 'text/html',
+    body: '<title>Components</title><style>:not(:defined) { display: none !important; visibility: hidden !important; }</style><body>Components</body>',
+  }));
+  const page = await context.newPage();
+  await page.goto('https://components.test/');
+  // What the palette shortcut runs on the current page.
+  await worker.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ url: 'https://components.test/*' });
+    await chrome.scripting.executeScript({ target: { tabId: tab!.id! }, files: ['/palette.js'] });
+  });
+  await expect(page.getByRole('dialog', { name: 'Search' })).toBeVisible();
+});

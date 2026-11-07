@@ -3,7 +3,11 @@
 @import '../../../styles/theme.css';
 @source '../primitives/Favicon.svelte';
 
-:host { all: initial; }
+/*
+ * The page's own rules for the host win over a normal :host rule, and pages built from web components hide elements
+ * that aren't defined yet (reddit's :not(:defined)), which content scripts can't define. An important :host rule wins.
+ */
+:host { all: initial !important; }
 
 .recent-tabs-root {
   --ink-muted: #a1a1a6;

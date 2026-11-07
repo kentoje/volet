@@ -1,36 +1,34 @@
 import { browser } from 'wxt/browser';
 import { RECENT_TABS_PERMISSION } from '@/lib/model/recent-tabs';
 
-/** Website access is a device-local opt-in, managed by Chrome rather than synced settings. */
+/**
+ * The switcher is on while one of its shortcuts is assigned. Chrome grants it site access at install, but users can
+ * withhold it in Chrome's details for Volet: the card then offers to allow it again.
+ */
 export class RecentTabsSettings {
-  enabled = $state(false);
+  access = $state(true);
   busy = $state(false);
   error = $state('');
 
   async load(): Promise<void> {
-    this.enabled = await browser.permissions.contains(RECENT_TABS_PERMISSION);
+    this.access = await browser.permissions.contains(RECENT_TABS_PERMISSION);
   }
 
-  async toggle(): Promise<void> {
+  async allow(): Promise<void> {
     this.busy = true;
     this.error = '';
     try {
-      if (this.enabled) {
-        await browser.permissions.remove(RECENT_TABS_PERMISSION);
-      } else {
-        // Request directly in the click handler's gesture, before any other async work.
-        const granted = await browser.permissions.request(RECENT_TABS_PERMISSION);
-        if (granted) {
-          const result: unknown = await browser.runtime.sendMessage({ type: 'recent-tabs:setup' });
-          if (typeof result !== 'object' || result === null || !('enabled' in result) || result.enabled !== true) {
-            throw new Error('Recent tab switcher setup failed');
-          }
-        }
+      // Ask Chrome directly in the click handler's gesture, before any other async work.
+      if (!(await browser.permissions.request(RECENT_TABS_PERMISSION))) return;
+      const result: unknown = await browser.runtime.sendMessage({ type: 'recent-tabs:setup' });
+      if (typeof result !== 'object' || result === null || !('ready' in result) || result.ready !== true) {
+        throw new Error('Recent tab switcher setup failed');
       }
-      await this.load();
     } catch {
-      this.error = 'Could not change tab switching. Try again.';
-      await this.load();
-    } finally { this.busy = false; }
+      this.error = 'Could not allow website access. Try again.';
+    } finally {
+      await this.load().catch(() => undefined);
+      this.busy = false;
+    }
   }
 }

@@ -161,15 +161,29 @@ Three layers, each with a single job. Dependencies point downward only.
   until they have landed. Page order and placement rules are pure
   (`model/selection.ts`). `SelectionDismiss` clears it on a click outside the selected rows, on panel blur, and on
   an Escape nothing else handled. Mark new menus or dialogs' containers so they stay inside `[data-overlay-root]`.
+- **Recent tab switcher** (`engine/recent-tabs/`, `ui/recent-tabs/`): on while either of its shortcuts is assigned and
+  Chrome grants site access (`<all_urls>`, required, but users can withhold it): `recentTabsEnabled` gates the
+  previews and the shortcut. The page script follows site access only: Chrome reports no change to shortcuts, and
+  without one the script stays idle. Chrome's commands only report the shortcut, never letting go of the modifier, so
+  a script on every website (`entrypoints/recent-tabs.ts`, registered at `document_start`) watches it and shows the
+  overlay; the worker forwards each press to the active page (`recent-tabs:step`). A page that didn't see the modifier
+  go down asks its window's Volet panel, which may have focus (`recent-tabs:panel-holds`); if the panel holds it, it
+  sends the page its keys (`ui/recent-tabs/panel-keys.ts`). Both read keys through `model/recent-tab-keys.ts`, so they
+  mean the same everywhere. Attaching to pages already open stays out of the engine queue: a page still loading would
+  hold every command. Screenshots live in `chrome.storage.session` (`preview-store.ts`, one key each plus a small index),
+  so they outlive the worker, which Chrome stops after about 30 seconds idle.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`), `styles/theme.css`
   (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`, `styles/page.css`).
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
+  Shadow roots Volet adds to web pages (palette, recent tab switcher) start with `:host { all: initial !important; }`:
+  the page's own rules for the host win over a normal `:host` rule, and sites built from web components hide undefined
+  elements (`:not(:defined)`, reddit), which a content script's host always is.
 
 ## Coding guidelines
 
 Prioritize **modularity, reusability, and separation of concerns**.
 
-- **Opposite actions get separate bindings.** Expose both directions (such as next/previous) as independently configurable shortcuts in Settings. An unassigned action has no implicit modifier binding.
+- **Opposite actions get separate bindings.** Expose both directions (such as next/previous) as independently configurable shortcuts in Settings. An unassigned action has no implicit modifier binding. Chrome refuses to load an extension that suggests more than four shortcuts (`suggested_key`), so the rest start unassigned.
 
 - **One responsibility per component, kept small and focused.** When a component or module grows, extract helpers, sub-components, or state modules instead of expanding it. Never add "just one more thing" to a file when it deserves its own abstraction.
 - **Generic and data-driven.** Components take clear inputs (props) and outputs (callback props or snippets). No hardcoded business rules or tight coupling: presentational components (`TabRow`, `IconButton`, `Favicon`, ...) know nothing about the store; thin container components connect them to `SidebarStore`.

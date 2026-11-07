@@ -8,6 +8,6 @@ it('groups opposite actions together and keeps unassigned actions visible', () =
     { name: 'cycle-recent-tabs', description: 'Forward', keys: '' },
   ]);
   expect(groups.map((group) => group.title)).toEqual(['General', 'Cycle through preview', 'Volets', 'Tabs']);
-  expect(groups[1]?.shortcuts.map((shortcut) => shortcut.name)).toEqual(['cycle-recent-tabs', 'cycle-recent-tabs-previous']);
+  expect(groups[1]?.shortcuts.map((shortcut) => shortcut.name)).toEqual(['cycle-recent-tabs-previous', 'cycle-recent-tabs']);
   expect(groups[1]?.shortcuts.every((shortcut) => shortcut.keys === '')).toBe(true);
 });
