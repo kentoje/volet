@@ -1,6 +1,14 @@
 import { browser } from 'wxt/browser';
+import { downscaleJpeg } from '../image';
 import { recentTabsEnabled } from './enabled';
 import { PreviewStore } from './preview-store';
+
+/**
+ * Previews are stored this wide: a card shows them about 140 CSS pixels across, so this stays sharp at 2x and 3x while
+ * keeping each one around 20 KB (a full-resolution capture can pass 500 KB, and `storage.session` is 10 MB in all,
+ * shared with the engine's own session state).
+ */
+const PREVIEW_WIDTH = 400;
 
 /** Captures the visible page a moment after a tab comes to the front, and keeps it in a `PreviewStore`. */
 export class RecentTabPreviews {
@@ -45,13 +53,13 @@ export class RecentTabPreviews {
       if (!tab.active || tab.incognito || !tab.url || !/^https?:/.test(tab.url)) return;
       const window = await browser.windows.get(windowId);
       if (!window.focused) return;
-      const overlay: unknown = await browser.tabs.sendMessage(tabId, { type: 'recent-tabs:visible' });
+      const overlay: unknown = await browser.tabs.sendMessage(tabId, { type: 'recent-tabs:visible' }, { frameId: 0 });
       if (typeof overlay !== 'object' || overlay === null || !('visible' in overlay) || overlay.visible !== false) return;
       this.#lastCapture = Date.now();
-      const image = await browser.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 25 });
+      const capture = await browser.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 80 });
       const current = await browser.tabs.get(tabId);
       if (!current.active || current.url !== tab.url || !(await recentTabsEnabled())) return;
-      await this.#store.keep(tabId, tab.url, image);
+      await this.#store.keep(tabId, tab.url, await downscaleJpeg(capture, PREVIEW_WIDTH));
     } finally { this.#capturing = false; }
   }
 }

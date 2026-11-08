@@ -26,7 +26,7 @@ export async function smokeRecentTabs(context, worker, currentPage, baseUrl) {
   await currentPage.keyboard.down('Meta');
   try {
     await worker.evaluate(async (id) => {
-      await chrome.tabs.sendMessage(id, { type: 'recent-tabs:step', shortcut: 'Cmd+E', offset: 1 });
+      await chrome.tabs.sendMessage(id, { type: 'recent-tabs:step', shortcut: 'Cmd+E', offset: 1 }, { frameId: 0 });
     }, tabId);
     const dialog = currentPage.getByRole('dialog', { name: 'Recent tabs' });
     await expect(dialog).toBeVisible();

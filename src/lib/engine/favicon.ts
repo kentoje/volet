@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { bytesToBase64 } from './image';
 
 /** Read Chrome's local favicon cache from the extension origin, returning an inline PNG for page overlays. */
 export async function loadFaviconImage(pageUrl: string): Promise<string | undefined> {
@@ -15,9 +16,7 @@ export async function loadFaviconImage(pageUrl: string): Promise<string | undefi
     const signature = [137, 80, 78, 71, 13, 10, 26, 10];
     if (bytes.length < signature.length || bytes.length > 64 * 1024 ||
       signature.some((byte, index) => bytes[index] !== byte)) return undefined;
-    let binary = '';
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return `data:image/png;base64,${btoa(binary)}`;
+    return `data:image/png;base64,${bytesToBase64(bytes)}`;
   } catch {
     return undefined;
   }

@@ -1,18 +1,19 @@
 import type { RecentTabCycle } from '@/lib/model/recent-tab-cycle';
-import { recentTabKey, type PanelKey, type RecentTabKey } from '@/lib/model/recent-tab-keys';
+import { recentTabKey, type RecentTabKey, type RelayKey } from '@/lib/model/recent-tab-keys';
 import { recentTabModifier, type CycleModifier } from '@/lib/model/recent-tab-shortcut';
 
-/** Who sees the modifier during a gesture: this page, the Volet panel (focused instead), or not known yet. */
-interface Watcher { by: 'page' | 'panel' | 'asking' }
+/** Who sees the modifier during a gesture: this page, a relay (the Volet panel or a frame, focused instead), or not known yet. */
+interface Watcher { by: 'page' | 'relay' | 'asking' }
 
 /**
  * Track modifier releases before Chrome sends a command, including during async loading. When the page didn't see
- * the modifier go down, the Volet panel may have focus and hold it (`panelHolds`): it then reports its keys here.
+ * the modifier go down, a relay may have focus and hold it (`relayHolds`: the Volet panel, or a frame of this page),
+ * and then reports its keys here.
  */
-export function listenRecentTabKeys(cycle: RecentTabCycle, panelHolds: (modifier: CycleModifier) => Promise<boolean>): {
+export function listenRecentTabKeys(cycle: RecentTabCycle, relayHolds: (modifier: CycleModifier) => Promise<boolean>): {
   configure: (closeShortcut: string) => void;
   step: (shortcut: string, offset?: 1 | -1) => void;
-  fromPanel: (key: PanelKey) => void;
+  fromRelay: (key: RelayKey) => void;
   dispose: () => void;
 } {
   let held = { metaKey: false, ctrlKey: false, altKey: false };
@@ -60,7 +61,7 @@ export function listenRecentTabKeys(cycle: RecentTabCycle, panelHolds: (modifier
       modifier = recentTabModifier(nextShortcut);
       if (!cycle.active) watcher = undefined;
       cycle.step(offset);
-      if (!modifier || watcher?.by === 'panel' || watcher?.by === 'asking') return;
+      if (!modifier || watcher?.by === 'relay' || watcher?.by === 'asking') return;
       if (held[modifier]) {
         watcher = { by: 'page' };
         return;
@@ -70,21 +71,21 @@ export function listenRecentTabKeys(cycle: RecentTabCycle, panelHolds: (modifier
         cycle.commit();
         return;
       }
-      // This page never saw the modifier: the focused Volet panel may hold it, otherwise it was a quick tap.
+      // This page never saw the modifier: the focused Volet panel or a frame may hold it, otherwise it was a quick tap.
       const asking: Watcher = { by: 'asking' };
       watcher = asking;
-      void panelHolds(modifier).catch(() => false).then((holds) => {
+      void relayHolds(modifier).catch(() => false).then((holds) => {
         if (watcher !== asking || asking.by !== 'asking') return;
-        if (holds) asking.by = 'panel';
+        if (holds) asking.by = 'relay';
         else cycle.commit();
       });
     },
-    fromPanel(key) {
+    fromRelay(key) {
       if (!cycle.active || !watcher || watcher.by === 'page') return;
-      // The panel only reports keys once it has answered that it holds the modifier; the answer may still be on its way.
-      watcher.by = 'panel';
+      // A relay only reports keys once it has answered that it holds the modifier; the answer may still be on its way.
+      watcher.by = 'relay';
       if (key === 'release') cycle.commit();
-      // Focus left the panel: keep going only if it came here (a click on the switcher), where this page's keys take over.
+      // Focus left the relay: keep going only if it came here (a click on the switcher), where this page's keys take over.
       else if (key === 'leave') { if (!document.hasFocus()) cycle.cancel(); }
       else press(key);
     },

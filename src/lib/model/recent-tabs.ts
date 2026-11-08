@@ -21,7 +21,7 @@ export interface RecentTabsView {
   selected: number;
 }
 
-/** Optional website access enables early release listeners and local preview capture. */
+/** Site access, which the page script and the previews need: required in the manifest, but users can withhold it. */
 export const RECENT_TABS_PERMISSION = { origins: ['<all_urls>'] };
 
 /** Put the active tab first, then remembered visits, then Chrome's recency fallback. */

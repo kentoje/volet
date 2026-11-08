@@ -137,6 +137,11 @@ test('the preview close shortcut can be recorded, persisted, cancelled and clear
   // Dispatch locally: a real Cmd+W would close this browser tab before the recorder could see it.
   await recorder.dispatchEvent('keydown', { key: 'w', code: 'KeyW', metaKey: true });
   await expect(page.getByRole('alert')).toHaveText('Chrome reserves this shortcut. Choose another combination.');
+  // The switcher's own keys stay its own, and a shortcut without the cycling modifier could never match.
+  await recorder.press('Alt+Enter');
+  await expect(page.getByRole('alert')).toHaveText("Volet's switcher uses this key. Choose another combination.");
+  await recorder.press('Shift+K');
+  await expect(page.getByRole('alert')).toHaveText('Include the modifier you hold while cycling (Alt, Cmd or Ctrl).');
   await recorder.press('Escape');
   await page.getByRole('button', { name: 'Clear close highlighted tab shortcut' }).click();
   await expect(recorder).toHaveText('Not set');

@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -9,7 +9,8 @@ import { smokeExtensionPages, smokeRecentTabs } from './extension-smoke.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pathFlag = process.argv.indexOf('--extension');
-const source = pathFlag < 0 ? path.join(root, 'output/chrome-mv3') : process.argv[pathFlag + 1];
+// The end-to-end build by default (`wxt build --mode e2e`): its shadow roots are open, so the smoke check can reach the switcher.
+const source = pathFlag < 0 ? path.join(root, 'output/chrome-mv3-e2e') : process.argv[pathFlag + 1];
 if (!source) throw new Error('Extension check needs a path after --extension');
 const directory = await mkdtemp(path.join(tmpdir(), 'volet-extension-check-'));
 const extension = path.join(directory, 'extension');
@@ -22,13 +23,8 @@ let context;
 let diagnostics;
 
 try {
+  // A disposable copy, reloaded in a disposable profile: the user's browser and build stay unchanged.
   await cp(source, extension, { recursive: true });
-  const manifestPath = path.join(extension, 'manifest.json');
-  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  // Pregrant only in this disposable copy, matching the E2E fixture. Never modify the user's browser or build.
-  manifest.host_permissions = [...new Set([...(manifest.host_permissions ?? []), '<all_urls>'])];
-  delete manifest.optional_host_permissions;
-  await writeFile(manifestPath, JSON.stringify(manifest));
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Extension check server did not start');

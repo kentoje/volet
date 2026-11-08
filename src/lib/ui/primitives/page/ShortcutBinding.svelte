@@ -1,10 +1,12 @@
 <script lang="ts">
   import { normalizeShortcutKeys, shortcutBindingKind } from '@/lib/model/shortcut-display';
 
-  let { value, defaultKeys = '', label, recording = false, disabled = false, onclick, onkeydown, onblur }: {
+  let { value, defaultKeys = '', label, toggle = false, recording = false, disabled = false, onclick, onkeydown, onblur }: {
     value: string;
     defaultKeys?: string;
     label: string;
+    /** A recorder, pressed while recording; otherwise a plain button (a native binding opens Chrome's editor). */
+    toggle?: boolean;
     recording?: boolean;
     disabled?: boolean;
     onclick: () => void;
@@ -25,7 +27,7 @@
       : 'bg-hover text-ink-muted hover:bg-rule',
   ]}
   aria-label={label}
-  aria-pressed={recording}
+  aria-pressed={toggle ? recording : undefined}
   data-binding={kind}
   {disabled}
   {onclick}

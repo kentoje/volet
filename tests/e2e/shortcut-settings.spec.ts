@@ -50,8 +50,7 @@ test('native defaults, custom shortcuts and unassigned actions use the same bind
   await expect(sidebar).toHaveText('Not set');
 });
 
-test('shortcut removal is the only switcher control and an old disabled preference is ignored', async ({ context, worker }) => {
-  await worker.evaluate(() => chrome.storage.local.set({ recentTabsOn: false }));
+test('shortcut removal is the only switcher control', async ({ context, worker }) => {
   const extensionId = new URL(worker.url()).host;
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/options.html`);

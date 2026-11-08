@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { holdsModifier, type RelayKey } from '@/lib/model/recent-tab-keys';
 import { isRecentTab, type RecentTabsClient } from '@/lib/model/recent-tabs';
 import type { CycleModifier } from '@/lib/model/recent-tab-shortcut';
 
@@ -18,23 +19,38 @@ export function chromeRecentTabsClient({ onhue }: { onhue?: (hue: number) => voi
       return response.tabs;
     },
     async activate(tabId) {
-      await runRecentTabAction('recent-tabs:activate', tabId);
+      await runRecentTabAction({ type: 'recent-tabs:activate', tabId });
     },
     async close(tabId) {
-      await runRecentTabAction('recent-tabs:close', tabId);
+      await runRecentTabAction({ type: 'recent-tabs:close', tabId });
     },
   };
 }
 
-/** Ask the Volet panel of this page's window whether it holds the modifier (it has focus, so this page saw no keys). */
-export async function panelHoldsModifier(modifier: CycleModifier): Promise<boolean> {
-  const response: unknown = await browser.runtime.sendMessage({ type: 'recent-tabs:panel-holds', modifier });
-  return typeof response === 'object' && response !== null && 'holds' in response && response.holds === true;
+/** Have the worker add the switcher's overlay to this page (its own script, kept off pages until it's needed). */
+export async function loadRecentTabsOverlay(): Promise<void> {
+  await runRecentTabAction({ type: 'recent-tabs:overlay' });
 }
 
-async function runRecentTabAction(type: 'recent-tabs:activate' | 'recent-tabs:close', tabId: number): Promise<void> {
-  const response: unknown = await browser.runtime.sendMessage({ type, tabId });
+/**
+ * Ask whoever has focus instead of this page whether it holds the modifier: the Volet panel of this page's window
+ * (asked directly), or one of this page's frames (asked through the worker). Either one then sends its keys here.
+ */
+export async function relayHoldsModifier(modifier: CycleModifier): Promise<boolean> {
+  const ask = async (type: string) => holdsModifier(await browser.runtime.sendMessage({ type, modifier }));
+  const answers = await Promise.all(['recent-tabs:panel-holds', 'recent-tabs:frames-hold']
+    .map((type) => ask(type).catch(() => false)));
+  return answers.some(Boolean);
+}
+
+/** From a frame of the page: a key for the page's switcher, which the worker forwards to the page's top frame. */
+export function sendRelayKey(key: RelayKey): void {
+  browser.runtime.sendMessage({ type: 'recent-tabs:relay-key', key }).catch(() => undefined);
+}
+
+async function runRecentTabAction(message: { type: string; tabId?: number }): Promise<void> {
+  const response: unknown = await browser.runtime.sendMessage(message);
   if (typeof response !== 'object' || response === null || !('ok' in response) || response.ok !== true) {
-    throw new Error(`Recent tab action failed: ${type}`);
+    throw new Error(`Recent tab action failed: ${message.type}`);
   }
 }

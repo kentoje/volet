@@ -36,3 +36,19 @@ export async function forgetRecentWindow(windowId: number): Promise<void> {
   const { [windowId]: _removed, ...rest } = await recentTabsItem.getValue();
   await recentTabsItem.setValue(rest);
 }
+
+/** Drop a closed tab, so it stops taking one of the window's few slots. Caller uses the engine queue. */
+export async function forgetRecentTab(tabId: number, windowId: number): Promise<void> {
+  const history = await recentTabsItem.getValue();
+  const recent = history[windowId];
+  if (!recent?.includes(tabId)) return;
+  await recentTabsItem.setValue({ ...history, [windowId]: recent.filter((id) => id !== tabId) });
+}
+
+/** Chrome swapped a tab for another (a prerendered page): it keeps its place. Caller uses the engine queue. */
+export async function replaceRecentTab(addedTabId: number, removedTabId: number): Promise<void> {
+  const history = await recentTabsItem.getValue();
+  if (!Object.values(history).some((recent) => recent.includes(removedTabId))) return;
+  await recentTabsItem.setValue(Object.fromEntries(Object.entries(history).map(([windowId, recent]) =>
+    [windowId, [...new Set(recent.map((id) => (id === removedTabId ? addedTabId : id)))]])));
+}

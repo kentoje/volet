@@ -16,7 +16,8 @@
   <!-- Tinted like the side panel and Search: the window's active Volet's hue, in the system's color scheme. -->
   <div class="recent-tabs-root" data-scheme={colorScheme(scheme)} style:--space-hue={state.hue}>
     <button class="recent-tabs-backdrop" aria-label="Cancel tab switching" onclick={oncancel}></button>
-    <div class="recent-tabs-dialog" role="dialog" aria-modal="true" aria-label="Recent tabs" tabindex="-1">
+    <!-- Not modal: a glance while the shortcut is held, the page keeps its focus. -->
+    <div class="recent-tabs-dialog" role="dialog" aria-label="Recent tabs" tabindex="-1">
       <div class="recent-tabs-list">
         {#each state.view.tabs as tab, index (tab.id)}
           <RecentTabCard

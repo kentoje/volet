@@ -31,4 +31,15 @@ describe('preview close shortcut', () => {
     expect(matchesPreviewCloseShortcut({ ...backspace, key: 'w', code: 'KeyW' }, 'Cmd+W')).toBe(false);
     expect(previewShortcutError('Cmd+Backspace')).toBe('');
   });
+
+  it("rejects the switcher's own keys and chords that can't match while the cycling modifier is held", () => {
+    for (const shortcut of ['Alt+Enter', 'Alt+ArrowLeft', 'Cmd+Shift+ArrowRight']) {
+      expect(previewShortcutError(shortcut)).toBe("Volet's switcher uses this key. Choose another combination.");
+    }
+    for (const shortcut of ['Backspace', 'Shift+K']) {
+      expect(previewShortcutError(shortcut)).toBe('Include the modifier you hold while cycling (Alt, Cmd or Ctrl).');
+    }
+    for (const shortcut of ['Alt+Backspace', 'Ctrl+Shift+K', 'Cmd+ArrowUp']) expect(previewShortcutError(shortcut)).toBe('');
+    expect(matchesPreviewCloseShortcut({ ...backspace, key: 'Enter', code: 'Enter' }, 'Cmd+Enter')).toBe(false);
+  });
 });

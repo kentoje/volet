@@ -10,9 +10,9 @@ pnpm dev            # extension dev mode: launches a fresh Chrome profile, live 
 pnpm dev:own        # same, without launching Chrome (load output/chrome-mv3-dev in your own profile)
 pnpm build          # production build in output/chrome-mv3
 pnpm check          # svelte-check + TypeScript
-pnpm check:extension # production runtime diagnostics and extension reload smoke check
+pnpm check:extension # runtime diagnostics and extension reload smoke check (on the e2e build)
 pnpm test           # unit tests (Vitest)
-pnpm test:e2e       # builds, then drives real Chromium with the extension loaded (Playwright)
+pnpm test:e2e       # builds with --mode e2e (output/chrome-mv3-e2e), then drives real Chromium with it (Playwright)
 pnpm zip            # production build zipped for the Chrome Web Store
 pnpm store:images   # store screenshots and promo tiles (proto/store.html, rendered by store/capture.mjs)
 ```
@@ -166,13 +166,19 @@ Three layers, each with a single job. Dependencies point downward only.
   Chrome grants site access (`<all_urls>`, required, but users can withhold it): `recentTabsEnabled` gates the
   previews and the shortcut. The page script follows site access only: Chrome reports no change to shortcuts, and
   without one the script stays idle. Chrome's commands only report the shortcut, never letting go of the modifier, so
-  a script on every website (`entrypoints/recent-tabs.ts`, registered at `document_start`) watches it and shows the
-  overlay; the worker forwards each press to the active page (`recent-tabs:step`). A page that didn't see the modifier
-  go down asks its window's Volet panel, which may have focus (`recent-tabs:panel-holds`); if the panel holds it, it
-  sends the page its keys (`ui/recent-tabs/panel-keys.ts`). Both read keys through `model/recent-tab-keys.ts`, so they
-  mean the same everywhere. Attaching to pages already open stays out of the engine queue: a page still loading would
-  hold every command. Screenshots live in `chrome.storage.session` (`preview-store.ts`, one key each plus a small index),
-  so they outlive the worker, which Chrome stops after about 30 seconds idle.
+  a script on every website, in every frame (`entrypoints/recent-tabs.ts`, registered at `document_start`), watches
+  it; the worker forwards each press to the active page's top frame (`recent-tabs:step`). That script stays small (no
+  Svelte): the overlay is its own script (`entrypoints/recent-tabs-overlay.ts`), which the worker adds to a page on its
+  first press (`recent-tabs:overlay`), reading the switcher the page script left on its window
+  (`ui/recent-tabs/host.ts`, Volet's isolated world) through a plain `RecentTabsFeed`. A page that didn't see the
+  modifier go down asks whoever has focus instead (`relayHoldsModifier`): its window's Volet panel
+  (`recent-tabs:panel-holds`) and its own frames, through the worker (`recent-tabs:frames-hold`); the one holding it
+  sends the page its keys (`ui/recent-tabs/relay-keys.ts`, `recent-tabs:relay-key`, the only message a frame may
+  send). All read keys through `model/recent-tab-keys.ts`, so they mean the same everywhere. Open pages get the script
+  once per session (`attachToOpenPagesOnce`), not each time the worker wakes, and out of the engine queue: a page
+  still loading would hold every command. Screenshots are shrunk to 400 pixels across (`engine/image.ts`) and live in
+  `chrome.storage.session` (`preview-store.ts`, one key each plus a small index), so they outlive the worker, which
+  Chrome stops after about 30 seconds idle; that storage also holds the engine's session state, so keep them small.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`, `.recent-tabs-root`),
   `styles/theme.css` (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`,
   `ui/recent-tabs/recent-tabs.css`, `styles/page.css`). Surfaces over web pages (palette, tab switcher) take the
@@ -180,16 +186,21 @@ Three layers, each with a single job. Dependencies point downward only.
   Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
   `rem` there is the page's root font size, not ours (YouTube's is 10px), so `palette.css` sets Tailwind's spacing,
   radius and text scales in px: size anything else in px too (an e2e test renders it over a 10px root).
-  Shadow roots Volet adds to web pages (palette, recent tab switcher) start with `:host { all: initial !important; }`:
-  the page's own rules for the host win over a normal `:host` rule, and sites built from web components hide undefined
-  elements (`:not(:defined)`, reddit), which a content script's host always is.
+  Shadow roots Volet adds to web pages (palette, recent tab switcher) are closed (`shadowMode`), so the page's own
+  scripts can't read the tabs shown in them; only the e2e build (`--mode e2e`) opens them, for Playwright. They start
+  with `:host { all: initial !important; }`: the page's own rules for the host win over a normal `:host` rule, and
+  sites built from web components hide undefined elements (`:not(:defined)`, reddit), which a content script's host
+  always is.
 
 ## Coding guidelines
 
 Prioritize **modularity, reusability, and separation of concerns**.
 
-- **Opposite actions get separate bindings.** Expose both directions (such as next/previous) as independently configurable shortcuts in Settings. An unassigned action has no implicit modifier binding. Chrome refuses to load an extension that suggests more than four shortcuts (`suggested_key`), so the rest start unassigned. Chrome's shortcuts page lists commands by id, so name opposite ones to sort the way Settings lists them (`cycle-recent-tabs`, then `cycle-recent-tabs-reverse`).
-
+- **Opposite actions get separate bindings.** Expose both directions (such as next/previous) as independently
+  configurable shortcuts in Settings. An unassigned action has no implicit modifier binding. Chrome refuses to load an
+  extension that suggests more than four shortcuts (`suggested_key`), so the rest start unassigned. Chrome's shortcuts
+  page lists commands by id, so name opposite ones to sort the way Settings lists them (`cycle-recent-tabs`, then
+  `cycle-recent-tabs-reverse`).
 - **One responsibility per component, kept small and focused.** When a component or module grows, extract helpers, sub-components, or state modules instead of expanding it. Never add "just one more thing" to a file when it deserves its own abstraction.
 - **Generic and data-driven.** Components take clear inputs (props) and outputs (callback props or snippets). No hardcoded business rules or tight coupling: presentational components (`TabRow`, `IconButton`, `Favicon`, ...) know nothing about the store; thin container components connect them to `SidebarStore`.
 - **UI, state, and business logic stay separate.** UI components never call `browser.*`. State modules never render. Engine code never imports Svelte.
@@ -217,7 +228,8 @@ Engine specifics:
 ## Tests
 
 - Unit tests (`*.test.ts`, Vitest) next to pure modules.
-- End-to-end tests (`tests/e2e/*.spec.ts`, Playwright) load `output/chrome-mv3` into Chromium, open the panel page in its own window (`sidepanel.html?windowId=<id>`), and assert on Chrome's real state from the service worker.
+- End-to-end tests (`tests/e2e/*.spec.ts`, Playwright) load `output/chrome-mv3-e2e` (the production build with open
+  shadow roots, `wxt build --mode e2e`) into Chromium, open the panel page in its own window (`sidepanel.html?windowId=<id>`), and assert on Chrome's real state from the service worker.
 - New behavior in the engine gets an e2e test; new pure logic gets a unit test.
 - `tests/e2e/resilience.spec.ts` covers multiple windows and a real browser restart (same profile, session restored).
 - The palette's in-page overlay can't be triggered from Playwright (shortcuts are browser-level gestures); the panel

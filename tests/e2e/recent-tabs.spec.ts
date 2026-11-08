@@ -72,7 +72,7 @@ async function step(worker: Worker, tabId: number, shortcut = '⌘E', offset: 1 
   // require a real keyboard and are not dispatched by Playwright's page keyboard API. Cycling sends
   // offset 1 (older tabs), cycling in reverse -1 (`recentTabOffset`).
   await worker.evaluate(async ({ tabId, shortcut, offset }) => {
-    await chrome.tabs.sendMessage(tabId, { type: 'recent-tabs:step', shortcut, offset });
+    await chrome.tabs.sendMessage(tabId, { type: 'recent-tabs:step', shortcut, offset }, { frameId: 0 });
   }, { tabId, shortcut, offset });
 }
 
@@ -376,6 +376,11 @@ test('several new background tabs are newest first and preserve the original pag
   await expect.poll(() => activeId(worker, windowId)).toBe(ids[5]);
   // Closing the newest tab exposes the next newest background tab, rather than stale history.
   await worker.evaluate((id) => chrome.tabs.remove(id), created[5]!);
+  // And it leaves the window's history, where it would take one of the five slots.
+  await expect.poll(() => worker.evaluate(async ({ windowId, id }) => {
+    const { recentTabs } = await chrome.storage.session.get('recentTabs');
+    return ((recentTabs as Record<string, number[]> | undefined)?.[windowId] ?? []).includes(id);
+  }, { windowId, id: created[5]! })).toBe(false);
   await step(worker, ids[5]!);
   await expect.poll(() => activeId(worker, windowId)).toBe(created[4]);
 });
@@ -700,4 +705,91 @@ test('the switcher follows the system color scheme and takes the active Volet\'s
   await expect(root).toHaveAttribute('data-scheme', 'light');
   await page.keyboard.press('Escape');
   await page.keyboard.up('Meta');
+});
+
+/** What the switcher on `tabId`'s page gets from the worker: its recent tabs, each with its screenshot if one is kept. */
+async function queryFrom(worker: Worker, tabId: number) {
+  const [result] = await worker.evaluate((id) => chrome.scripting.executeScript({
+    target: { tabId: id },
+    func: async () => chrome.runtime.sendMessage({ type: 'recent-tabs:query' }),
+  }), tabId);
+  return (result?.result as { tabs?: { id: number; url: string; preview?: string }[] } | undefined)?.tabs ?? [];
+}
+
+test('screenshots are kept small, and open pages get the page script once per session', async ({ context, worker, windowId }) => {
+  await (await context.newPage()).goto('https://recent-tabs.test/Previous');
+  await (await context.newPage()).goto('https://recent-tabs.test/Current');
+  const current = (await stripState(worker, windowId)).find((tab) => tab.active)!.id;
+  let preview: string | undefined;
+  await expect.poll(async () => (preview = (await queryFrom(worker, current)).find((tab) => tab.id === current)?.preview),
+    { timeout: 10_000 }).toMatch(/^data:image\/jpeg;base64,/);
+  // Captured at the window's full size (1280 pixels here), kept 400 across: enough for a card, a few kilobytes each.
+  const width = await worker.evaluate(async (image) => (await createImageBitmap(await (await fetch(image)).blob())).width, preview!);
+  expect(width).toBe(400);
+  expect(preview!.length).toBeLessThan(60_000);
+  // A worker Chrome merely woke up again finds this set, and leaves the open pages alone.
+  expect(await worker.evaluate(async () => (await chrome.storage.session.get('recentTabsAttached')).recentTabsAttached)).toBe(true);
+});
+
+test('a single-page app moving on gets a fresh screenshot of its new address', async ({ context, worker, windowId }) => {
+  await (await context.newPage()).goto('https://recent-tabs.test/Previous');
+  const page = await context.newPage();
+  await page.goto('https://recent-tabs.test/App');
+  const tabId = (await stripState(worker, windowId)).find((tab) => tab.active)!.id;
+  const shown = async () => (await queryFrom(worker, tabId)).find((tab) => tab.id === tabId);
+  await expect.poll(async () => Boolean((await shown())?.preview), { timeout: 10_000 }).toBe(true);
+  // No full load: only the address changes, which drops the screenshot of the page it was.
+  await page.evaluate(() => history.pushState(null, '', '/App/next'));
+  await expect.poll(async () => {
+    const tab = await shown();
+    return Boolean(tab?.url.endsWith('/App/next') && tab.preview);
+  }, { timeout: 10_000 }).toBe(true);
+});
+
+test.describe('with focus in a frame', () => {
+  const frames = [
+    { name: 'same-origin frame', html: '<iframe id="editor" src="https://recent-tabs.test/Inner"></iframe>' },
+    { name: 'cross-origin frame', html: '<iframe id="editor" src="https://other-frame.test/Inner"></iframe>' },
+    // Rich editors often type into a frame with no address of its own.
+    {
+      name: 'frame with no address',
+      html: '<iframe id="editor"></iframe><script>document.getElementById("editor").contentDocument.body.innerHTML = "<textarea></textarea>"</script>',
+    },
+  ];
+  for (const frame of frames) {
+    test(`a ${frame.name} relays the held modifier and the switcher's keys to the page`, async ({ context, worker, windowId }) => {
+      const inner = (route: { fulfill: (options: { contentType: string; body: string }) => Promise<void> }) =>
+        route.fulfill({ contentType: 'text/html', body: '<title>Inner</title><textarea></textarea>' });
+      await context.route('https://recent-tabs.test/Inner', inner);
+      await context.route('https://other-frame.test/Inner', inner);
+      await context.route('https://recent-tabs.test/Frames', (route) => route.fulfill({
+        contentType: 'text/html', body: `<title>Recent Frames</title><body>${frame.html}</body>`,
+      }));
+      await (await context.newPage()).goto('https://recent-tabs.test/Older');
+      await (await context.newPage()).goto('https://recent-tabs.test/Previous');
+      const page = await context.newPage();
+      await page.goto('https://recent-tabs.test/Frames');
+      const current = (await stripState(worker, windowId)).find((tab) => tab.active)!.id;
+      const older = (await stripState(worker, windowId)).find((tab) => tab.url.endsWith('/Older'))!.id;
+      // Wait for the frame's own script before typing into it.
+      await expect.poll(() => worker.evaluate(async (tabId) => (await chrome.scripting.executeScript({
+        target: { tabId, allFrames: true },
+        func: () => window !== window.top && Boolean((window as { __voletRecentTabs?: unknown }).__voletRecentTabs),
+      })).some((result) => result.result === true), current)).toBe(true);
+      await page.frameLocator('#editor').locator('textarea').focus();
+      await page.keyboard.down('Meta');
+      await step(worker, current);
+      const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
+      const selected = dialog.locator('[aria-current="true"]');
+      await expect(selected).toHaveAttribute('aria-label', 'Recent Previous');
+      // The frame has the keys: they move the selection instead of reaching its text field.
+      await page.keyboard.press('ArrowRight');
+      await expect(selected).toHaveAttribute('aria-label', 'Recent Older');
+      expect(await page.frameLocator('#editor').locator('textarea').inputValue()).toBe('');
+      expect(await activeId(worker, windowId)).toBe(current);
+      await page.keyboard.up('Meta');
+      await expect.poll(() => activeId(worker, windowId)).toBe(older);
+      await expect(dialog).toHaveCount(0);
+    });
+  }
 });

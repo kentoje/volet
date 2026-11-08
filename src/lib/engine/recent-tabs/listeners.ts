@@ -1,10 +1,11 @@
 import { browser } from 'wxt/browser';
-import { activeSpaceOf, hueOf, loadContext } from '../context';
 import type { Engine } from '../engine';
-import { loadFaviconImage } from '../favicon';
-import { forgetRecentWindow, loadRecentTabs, rememberCreatedTab, rememberRecentTab } from './history';
+import {
+  forgetRecentTab, forgetRecentWindow, rememberCreatedTab, rememberRecentTab, replaceRecentTab,
+} from './history';
+import { listenForRecentTabMessages } from './messages';
 import { RecentTabPreviews } from './previews';
-import { attachToOpenPages, detachFromOpenPages, syncRecentTabsRegistration } from './registration';
+import { attachToOpenPagesOnce, detachFromOpenPages, forgetAttachedPages, syncRecentTabsRegistration } from './registration';
 
 /** Wire recent-tab history, preview capture and page requests without expanding the main engine. */
 export function listenForRecentTabs(engine: Engine): void {
@@ -13,23 +14,26 @@ export function listenForRecentTabs(engine: Engine): void {
   /**
    * Follow Chrome's site access: register the page script, and attach to or detach from the pages already open. It
    * doesn't follow the shortcuts, which Chrome reports no change for: without one, the script just stays idle.
+   * A fresh grant (`granted`) attaches again; otherwise open pages get the script once per session.
    */
-  const refresh = async ({ detach = true } = {}) => {
+  const refresh = async ({ detach = true, granted = true } = {}) => {
     const ready = await engine.enqueue(syncRecentTabsRegistration);
     if (ready) {
-      void attachToOpenPages().catch(log);
+      void attachToOpenPagesOnce({ always: granted }).catch(log);
       for (const tab of await browser.tabs.query({ active: true })) {
         if (tab.id !== undefined) previews.schedule(tab.id, tab.windowId);
       }
     } else {
       previews.clear();
+      void forgetAttachedPages().catch(log);
       if (detach) void detachFromOpenPages().catch(log);
     }
     return ready;
   };
-  // At startup, unregistering is enough: the shortcut and the previews check site access, so a script left on a
-  // page from before does nothing.
-  void refresh({ detach: false }).catch(log);
+  // This runs each time Chrome starts the worker (it stops it after about 30 seconds idle), not only when Volet
+  // starts: the pages already have the script then. Unregistering is enough without access: the shortcut and the
+  // previews check site access, so a script left on a page from before does nothing.
+  void refresh({ detach: false, granted: false }).catch(log);
   browser.permissions.onAdded.addListener(() => { void refresh().catch(log); });
   browser.permissions.onRemoved.addListener(() => { void refresh().catch(log); });
   browser.tabs.onActivated.addListener(({ tabId, windowId }) => {
@@ -41,51 +45,20 @@ export function listenForRecentTabs(engine: Engine): void {
   });
   browser.tabs.onUpdated.addListener((tabId, info, tab) => {
     if (info.url) previews.forget(tabId);
-    if (tab.active && info.status === 'complete') previews.schedule(tabId, tab.windowId);
+    // A page loading, or a single-page app moving on without a full load (its URL alone changes): take it again.
+    if (tab.active && (info.status === 'complete' || info.url)) previews.schedule(tabId, tab.windowId);
   });
-  browser.tabs.onRemoved.addListener((tabId) => previews.forget(tabId));
+  browser.tabs.onRemoved.addListener((tabId, { windowId, isWindowClosing }) => {
+    previews.forget(tabId);
+    // A closing window's history goes with it (`windows.onRemoved`).
+    if (!isWindowClosing) void engine.enqueue(() => forgetRecentTab(tabId, windowId)).catch(log);
+  });
+  browser.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
+    previews.forget(removedTabId);
+    void engine.enqueue(() => replaceRecentTab(addedTabId, removedTabId)).catch(log);
+  });
   browser.windows.onRemoved.addListener((windowId) => {
     void engine.enqueue(() => forgetRecentWindow(windowId)).catch(log);
   });
-  browser.runtime.onMessage.addListener((message: unknown, sender, respond) => {
-    if (typeof message !== 'object' || message === null || !('type' in message)) return;
-    let work: Promise<unknown>;
-    if (message.type === 'recent-tabs:setup') {
-      // Settings open in a tab, so their sender has one too: accept Volet's own pages, never a website.
-      if (!sender.url?.startsWith(`${location.origin}/`)) return;
-      work = refresh().then((ready) => ({ ready }));
-    } else {
-      const tab = sender.tab;
-      if (tab?.id === undefined || sender.frameId !== 0) return;
-      if (message.type === 'recent-tabs:query') {
-        // With the window's active Volet's hue, which tints the switcher like Search (`searchPalette`).
-        work = engine.enqueue(async () => {
-          const ctx = await loadContext(tab.windowId);
-          return { tabs: await loadRecentTabs(tab.windowId), hue: hueOf(ctx, activeSpaceOf(ctx)) };
-        }).then(async ({ tabs, hue }) => {
-          const shots = await previews.find(tabs);
-          return {
-            hue,
-            tabs: await Promise.all(tabs.map(async (recent) => ({
-              ...recent,
-              icon: await loadFaviconImage(recent.url),
-              preview: shots.get(recent.id),
-            }))),
-          };
-        });
-      } else if ((message.type === 'recent-tabs:activate' || message.type === 'recent-tabs:close') && 'tabId' in message &&
-        typeof message.tabId === 'number' && Number.isInteger(message.tabId)) {
-        const tabId = message.tabId;
-        const action = message.type;
-        work = engine.enqueue(async () => {
-          const target = await browser.tabs.get(tabId);
-          if (target.windowId !== tab.windowId) throw new Error('Recent tab belongs to another window');
-        }).then(() => engine.run(action === 'recent-tabs:close'
-          ? { type: 'closeTab', windowId: tab.windowId, tabId }
-          : { type: 'activateTab', tabId })).then(() => ({ ok: true }));
-      } else return;
-    }
-    work.then(respond, (error: unknown) => { log(error); respond({ ok: false }); });
-    return true;
-  });
+  listenForRecentTabMessages(engine, previews, () => refresh(), log);
 }

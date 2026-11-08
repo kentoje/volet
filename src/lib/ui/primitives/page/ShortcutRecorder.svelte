@@ -30,16 +30,15 @@
 </script>
 
 <div class="flex flex-col items-end gap-1">
-  <div class="flex items-center gap-2">
-    <ShortcutBinding
-      {value}
-      label={`Set ${label} shortcut`}
-      {recording}
-      {disabled}
-      onclick={() => { recording = true; error = ''; }}
-      onkeydown={record}
-      onblur={() => { recording = false; error = ''; }}
-    />
-  </div>
+  <ShortcutBinding
+    {value}
+    label={`Set ${label} shortcut`}
+    toggle
+    {recording}
+    {disabled}
+    onclick={() => { recording = true; error = ''; }}
+    onkeydown={record}
+    onblur={() => { recording = false; error = ''; }}
+  />
   {#if error}<p role="alert" class="max-w-64 text-right text-[12px] text-ink-muted">{error}</p>{/if}
 </div>

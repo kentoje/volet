@@ -22,8 +22,9 @@ export default defineConfig({
       "Vertical tabs in Chrome's side panel: switch between workspaces (Volets), each with its own pinned tabs, folders and colors.",
     // The source code (GPL-3.0), linked from the store listing and chrome://extensions.
     homepage_url: 'https://github.com/pierregoutheraud/volet',
-    // sidePanel.open and setPanelBehavior. Newer side panel events are feature-detected (engine/side-panel.ts).
-    minimum_chrome_version: '116',
+    // sidePanel.open and setPanelBehavior (116); the switcher's page script in frames with no address of their own
+    // (`matchOriginAsFallback`, 119). Newer side panel events are feature-detected (engine/side-panel.ts).
+    minimum_chrome_version: '119',
     // activeTab + scripting: the palette shortcut may show the palette on the current page only.
     permissions: [
       'sidePanel',

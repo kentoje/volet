@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPanelKey, recentTabKey } from './recent-tab-keys';
+import { holdsModifier, isRelayKey, recentTabKey } from './recent-tab-keys';
 import { isCycleModifier } from './recent-tab-shortcut';
 
 const key = (value: string, modifiers: Partial<Record<'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey', boolean>> = {}) => ({
@@ -23,9 +23,11 @@ describe('recentTabKey', () => {
   });
 });
 
-it('validates panel keys and modifiers at the message boundary', () => {
-  for (const value of ['cancel', 'choose', 'next', 'previous', 'close', 'release', 'leave']) expect(isPanelKey(value)).toBe(true);
-  for (const value of ['commit', '', undefined, 1, null]) expect(isPanelKey(value)).toBe(false);
+it('validates relayed keys, modifiers and answers at the message boundary', () => {
+  for (const value of ['cancel', 'choose', 'next', 'previous', 'close', 'release', 'leave']) expect(isRelayKey(value)).toBe(true);
+  for (const value of ['commit', '', undefined, 1, null]) expect(isRelayKey(value)).toBe(false);
+  expect(holdsModifier({ holds: true })).toBe(true);
+  for (const value of [{ holds: false }, { holds: 'true' }, undefined, null, true]) expect(holdsModifier(value)).toBe(false);
   for (const value of ['metaKey', 'ctrlKey', 'altKey']) expect(isCycleModifier(value)).toBe(true);
   for (const value of ['shiftKey', 'Meta', undefined]) expect(isCycleModifier(value)).toBe(false);
 });

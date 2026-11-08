@@ -15,8 +15,9 @@ To do its job, Volet reads, on your device only:
 - **Your bookmarks**: Volet keeps your Volets, pinned tabs, folders and favorites as bookmarks in a folder named
   "Volet", and reads that folder to show them.
 - **Page previews, unless you remove both of the recent tab switcher's shortcuts**: Volet captures the visible page
-  after you visit a tab. Previews are used only in the centered tab switcher. To notice the switcher shortcut's modifier
-  being let go, Volet also listens for keys on websites; it only notes whether that modifier is held.
+  after you visit a tab, as a small image. Previews are used only in the centered tab switcher, which websites can't
+  read. To notice the switcher shortcut's modifier being let go, Volet also listens for keys on websites, including in
+  their frames; it only notes whether that modifier is held, and the switcher's own keys while it is open.
 - **An Arc sidebar file, only if you pick one** on the "Import from Arc" page. Volet reads it in the browser to
   import your Arc Spaces, and the file never leaves your computer.
 

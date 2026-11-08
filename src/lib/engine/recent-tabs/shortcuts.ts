@@ -4,7 +4,7 @@ import type { Engine } from '../engine';
 import { recentTabsEnabled } from './enabled';
 import { loadRecentTabs } from './history';
 
-/** Native commands supply every cycle step; the preloaded page listener supplies release. */
+/** Native commands supply every cycle step; the page script, on every website, supplies release. */
 export async function cycleRecentTabs(engine: Engine, tab: Browser.tabs.Tab | undefined, command: RecentTabCommand): Promise<void> {
   if (tab?.id === undefined) return;
   if (!(await recentTabsEnabled())) {
@@ -16,7 +16,8 @@ export async function cycleRecentTabs(engine: Engine, tab: Browser.tabs.Tab | un
   const shortcut = commands.find((candidate) => candidate.name === command)?.shortcut;
   if (!shortcut) return;
   try {
-    await browser.tabs.sendMessage(tab.id, { type: 'recent-tabs:step', shortcut, offset });
+    // The page's top frame shows the switcher; its other frames only relay keys.
+    await browser.tabs.sendMessage(tab.id, { type: 'recent-tabs:step', shortcut, offset }, { frameId: 0 });
   } catch {
     // Chrome pages and the Web Store cannot host an overlay: switch where a quick tap would, the last used tab when
     // cycling, the oldest in reverse (wrapping around from the current tab).

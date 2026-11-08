@@ -69,8 +69,8 @@ the preview is open.
 - The side panel's width and side are set by Chrome.
 - The palette can't appear on Chrome's own pages (`chrome://`, the Web Store); there it opens in the sidebar instead.
 - The recent tab switcher cannot overlay Chrome pages or the Web Store: its shortcut switches directly to the previous
-  tab there. Holding the modifier to choose needs focus in a website or the Volet panel: with focus in the
-  address bar or elsewhere in Chrome's own interface, a press switches straight to the previous tab.
+  tab there. Holding the modifier to choose needs focus in a website (any of its frames) or the Volet panel: with focus
+  in the address bar or elsewhere in Chrome's own interface, a press switches straight to the previous tab.
 - Arc's Split View, Peek and Little Arc aren't possible.
 
 ## Install
@@ -114,19 +114,19 @@ Architecture, coding guidelines and the Svelte MCP setup are in [AGENTS.md](AGEN
 
 ### Checking extension errors
 
-Run `pnpm check:extension` before sharing an extension build. It builds production output, opens it in a disposable
-Chromium profile, exercises the settings, import, sidebar and tab preview, and reloads the extension twice with website
-tabs left open. It checks console warnings/errors, uncaught page errors, and Chrome's own extension runtime and
-manifest error records. Findings fail the command and are saved to `test-results/extension-check/report.json`.
-The check uses local test pages and pregrants website access in a temporary copy only. Your profile and build stay unchanged.
-It checks the exercised flows, rather than guaranteeing that every possible browser interaction is error-free.
+Run `pnpm check:extension` before sharing an extension build. It builds the end-to-end variant (the production build
+with open shadow roots, in `output/chrome-mv3-e2e`), opens it in a disposable Chromium profile, exercises the
+settings, import, sidebar and tab preview, and reloads the extension twice with website tabs left open. It checks
+console warnings/errors, uncaught page errors, and Chrome's own extension runtime and manifest error records. Findings
+fail the command and are saved to `test-results/extension-check/report.json`. The check uses local test pages and a
+temporary copy of the build: your profile and build stay unchanged. It checks the exercised flows, rather than
+guaranteeing that every possible browser interaction is error-free.
 
 To inspect a different built extension without rebuilding, use `node scripts/check-extension.mjs --extension /path/to/build`.
 
-Keyboard shortcut values share the same presentation: manifest defaults are muted and labeled Default; bindings that
-differ from the defaults are green and labeled Custom. Unassigned shortcuts stay Not set. Native actions are edited
-in the browser shortcut editor; Close highlighted tab is recorded in Volet because it is scoped to the preview.
-Reserved browser and OS shortcuts still take precedence over webpage handlers.
+Shadow roots Volet adds to web pages (Search, the tab switcher) are closed, so pages can't read your tabs in them. The
+end-to-end tests and `pnpm check:extension` build with `--mode e2e`, which opens them for Playwright: never ship that
+build (`pnpm zip` builds its own).
 
 ## License
 
