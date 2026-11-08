@@ -242,7 +242,8 @@ Engine specifics:
 
 - Unit tests (`*.test.ts`, Vitest) next to pure modules.
 - End-to-end tests (`tests/e2e/*.spec.ts`, Playwright) load `output/chrome-mv3-e2e` (the production build with open
-  shadow roots, `wxt build --mode e2e`) into Chromium, open the panel page in its own window (`sidepanel.html?windowId=<id>`), and assert on Chrome's real state from the service worker.
+  shadow roots, `NODE_ENV=production wxt build --mode e2e`: any other mode would otherwise compile Svelte for
+  development) into Chromium, open the panel page in its own window (`sidepanel.html?windowId=<id>`), and assert on Chrome's real state from the service worker.
 - New behavior in the engine gets an e2e test; new pure logic gets a unit test.
 - `tests/e2e/resilience.spec.ts` covers multiple windows and a real browser restart (same profile, session restored).
 - Playwright can't press Volet's shortcuts (browser-level gestures), but the worker can run its own handling of one:
