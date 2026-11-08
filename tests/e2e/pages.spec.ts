@@ -92,6 +92,18 @@ test('the settings page changes how long unpinned tabs stay open', async ({ cont
   await expect(page.getByText('Change shortcuts')).toBeVisible();
 });
 
+test("the panel's Settings button, next to Search, opens Volet's settings", async ({ context, panel }) => {
+  const bar = panel.getByRole('navigation', { name: 'Volets' });
+  const search = await bar.getByRole('button', { name: 'Search tabs and pins (⌘K)' }).boundingBox();
+  const settings = bar.getByRole('button', { name: 'Settings', exact: true });
+  expect((await settings.boundingBox())!.x).toBeGreaterThan(search!.x);
+  await settings.click();
+  // Chrome opens them in a new tab, or in the window's empty one (as here).
+  const settingsPage = () => context.pages().find((page) => page.url().endsWith('/options.html'));
+  await expect.poll(settingsPage).toBeTruthy();
+  await expect(settingsPage()!.getByRole('region', { name: 'Tab switcher', exact: true })).toBeVisible();
+});
+
 test('both tab cycling directions are listed in settings with their defaults, and configurable in Chrome', async ({ context, worker }) => {
   const page = await context.newPage();
   await page.goto(extensionPage(worker, 'options.html'));
