@@ -47,12 +47,16 @@ export default defineConfig({
     action: { default_title: 'Open Volet' },
     // Chrome refuses to load an extension suggesting more than four shortcuts: the others start unassigned.
     commands: {
-      'toggle-sidebar': { suggested_key: { default: 'Alt+S' }, description: 'Show or hide the sidebar' },
-      'open-palette': { suggested_key: { default: 'Alt+T' }, description: 'Search tabs, pins and archived tabs' },
+      // Control on every platform. A manifest's Ctrl means Command on a Mac (Cmd+Q quits, Cmd+M minimizes), hence
+      // MacCtrl there. Chrome never assigns a suggested key that is one of its own shortcuts (Ctrl+F, Ctrl+S...).
+      'toggle-sidebar': { suggested_key: { default: 'Ctrl+B', mac: 'MacCtrl+B' }, description: 'Show or hide the sidebar' },
+      'open-palette': { suggested_key: { default: 'Ctrl+M', mac: 'MacCtrl+M' }, description: 'Search tabs, pins and archived tabs' },
       // Like Cmd+Tab and Cmd+Shift+Tab. Chrome's shortcuts page lists commands by id, so cycling comes first, as in settings.
-      // Keys are named in manifests: Alt+Comma, not Alt+, (Chrome refuses to load the extension otherwise).
-      'cycle-recent-tabs': { suggested_key: { default: 'Alt+Comma' }, description: 'Cycle through recent tabs' },
-      'cycle-recent-tabs-reverse': { suggested_key: { default: 'Alt+Period' }, description: 'Cycle through recent tabs in reverse' },
+      // Punctuation keys are named in manifests (Comma, not ,): Chrome refuses to load the extension otherwise.
+      'cycle-recent-tabs': { suggested_key: { default: 'Ctrl+Q', mac: 'MacCtrl+Q' }, description: 'Cycle through recent tabs' },
+      'cycle-recent-tabs-reverse': {
+        suggested_key: { default: 'Ctrl+Shift+Q', mac: 'MacCtrl+Shift+Q' }, description: 'Cycle through recent tabs in reverse',
+      },
       'next-space': { description: 'Switch to the next Volet' },
       'previous-space': { description: 'Switch to the previous Volet' },
       'toggle-pin': { description: 'Pin or unpin the current tab' },

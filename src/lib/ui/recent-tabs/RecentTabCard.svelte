@@ -12,6 +12,13 @@
   } = $props();
 
   const sources = $derived(tab.icon ? [tab.icon] : []);
+
+  /** On a Mac, a click with Control held (the switcher's default modifier) is a right-click, and no click follows. */
+  const controlClick = (action: () => void) => (event: MouseEvent) => {
+    if (!event.ctrlKey || event.button !== 0) return;
+    event.preventDefault();
+    action();
+  };
 </script>
 
 <div class="recent-tab-card" data-selected={selected}>
@@ -21,6 +28,7 @@
     aria-current={selected ? 'true' : undefined}
     data-selected={selected}
     onclick={onchoose}
+    oncontextmenu={controlClick(onchoose)}
     onpointermove={onhighlight}
     onfocus={onhighlight}
   >
@@ -43,6 +51,7 @@
     aria-label={`Close ${tab.title}`}
     tabindex={selected ? 0 : -1}
     onclick={onclose}
+    oncontextmenu={controlClick(onclose)}
     onpointermove={onhighlight}
     onfocus={onhighlight}
   ><X size={13} strokeWidth={2} /></button>

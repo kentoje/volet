@@ -18,11 +18,11 @@ const test = base.extend<{ customCycle: boolean; customReverse: boolean; cleared
     const manifestPath = path.join(extension, 'manifest.json');
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
     if (customCycle) {
-      // Model a user-assigned cycling binding (⌘E on a Mac, which most tests hold); production suggests Alt+Comma.
+      // Model a user-assigned cycling binding (⌘E on a Mac, which most tests hold); production suggests Ctrl+Q.
       manifest.commands['cycle-recent-tabs'].suggested_key = { default: 'Alt+Q', mac: 'Command+E' };
     }
     if (customReverse) {
-      // Model a user-assigned reverse binding; production suggests Alt+Period.
+      // Model a user-assigned reverse binding; production suggests Ctrl+Shift+Q.
       manifest.commands['cycle-recent-tabs-reverse'].suggested_key = { default: 'Ctrl+Shift+Y', mac: 'Command+Shift+Y' };
     }
     if (clearedCycle) {
@@ -541,12 +541,15 @@ test.describe('custom reverse shortcut', () => {
 test.describe('default preview shortcuts', () => {
   test.use({ customCycle: false });
 
-  test('fresh installs cycle with Alt+, and in reverse with Alt+. while Alt is held, and have no close key until one is recorded', async ({ context, worker, windowId }) => {
+  test('fresh installs cycle with Ctrl+Q and in reverse with Ctrl+Shift+Q while Control is held, and have no close key until one is recorded', async ({ context, worker, windowId }) => {
     const commands = await worker.evaluate(() => chrome.commands.getAll());
     const shortcut = (name: string) => commands.find((command) => command.name === name)?.shortcut ?? '';
     const cycle = shortcut('cycle-recent-tabs');
-    expect(cycle).toMatch(/^(⌥,|Alt\+(Comma|,))$/);
-    expect(shortcut('cycle-recent-tabs-reverse')).toMatch(/^(⌥\.|Alt\+(Period|\.))$/);
+    // Control on a Mac too (MacCtrl): a manifest's Ctrl is Command there.
+    expect(cycle).toMatch(/^(⌃Q|Ctrl\+Q)$/);
+    expect(shortcut('cycle-recent-tabs-reverse')).toMatch(/^(⌃⇧Q|Ctrl\+Shift\+Q)$/);
+    expect(shortcut('open-palette')).toMatch(/^(⌃M|Ctrl\+M)$/);
+    expect(shortcut('toggle-sidebar')).toMatch(/^(⌃B|Ctrl\+B)$/);
     // Chrome won't load an extension suggesting more than four shortcuts: pinning gave up its default.
     expect(shortcut('toggle-pin')).toBe('');
     const previous = await context.newPage();
@@ -556,7 +559,7 @@ test.describe('default preview shortcuts', () => {
     const before = await stripState(worker, windowId);
     const current = before.find((tab) => tab.active)!.id;
     const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
-    await page.keyboard.down('Alt');
+    await page.keyboard.down('Control');
     await step(worker, current, cycle, 1);
     await expect(dialog.locator('.recent-tab')).toHaveCount(before.length);
     // No close shortcut until one is recorded in settings.
@@ -565,8 +568,23 @@ test.describe('default preview shortcuts', () => {
     await expect(dialog.locator('.recent-tab')).toHaveCount(before.length);
     expect((await stripState(worker, windowId)).map((tab) => tab.id)).toEqual(before.map((tab) => tab.id));
     expect(await activeId(worker, windowId)).toBe(current);
-    await page.keyboard.up('Alt');
+    await page.keyboard.up('Control');
     await expect.poll(() => activeId(worker, windowId)).toBe(before.find((tab) => tab.url.endsWith('/Previous'))!.id);
+  });
+
+  test('a click on a preview while Control is held switches to it, though a Mac makes that a right-click', async ({ context, worker, windowId }) => {
+    const ids = await createRecentPages(context, worker, windowId);
+    const page = await recentPage(context, 'F');
+    await page.bringToFront();
+    const commands = await worker.evaluate(() => chrome.commands.getAll());
+    const cycle = commands.find((command) => command.name === 'cycle-recent-tabs')!.shortcut!;
+    await page.keyboard.down('Control');
+    await step(worker, ids[5]!, cycle);
+    const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
+    await dialog.getByRole('button', { name: 'Recent C', exact: true }).click({ modifiers: ['Control'] });
+    await expect.poll(() => activeId(worker, windowId)).toBe(ids[2]);
+    await expect(dialog).toHaveCount(0);
+    await page.keyboard.up('Control');
   });
 });
 

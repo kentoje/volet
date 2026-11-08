@@ -14,7 +14,7 @@ test('native defaults, custom shortcuts and unassigned actions use the same bind
   const sidebar = options.getByRole('button', { name: 'Change show or hide the sidebar shortcut', exact: true });
   await expect(options.getByRole('switch', { name: 'Enable tab switcher' })).toHaveCount(0);
   await expect(sidebar).toHaveAttribute('data-binding', 'default');
-  await expect(sidebar).toContainText('Alt+S');
+  await expect(sidebar).toContainText('Ctrl+B');
   await expect(sidebar).toContainText('Default');
   const unassigned = options.getByRole('button', { name: 'Change pin or unpin the current tab shortcut', exact: true });
   await expect(unassigned).toHaveAttribute('data-binding', 'unset');

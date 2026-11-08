@@ -43,7 +43,7 @@ DRAG AND DROP
 • Select several rows with Shift-click or Cmd/Ctrl-click and drag them together.
 
 SEARCH PALETTE
-• Press Alt+T (Option+T on a Mac) on any page to search your open tabs in every window, your pins, favorites, archived tabs and Volets, open a web address, or search the web.
+• Press Ctrl+M (Control+M on a Mac too) on any page to search your open tabs in every window, your pins, favorites, archived tabs and Volets, open a web address, or search the web.
 
 RIGHT-CLICK MENUS
 • Rename, move to another Volet, put in a new folder, change a Volet's color, and more, on every tab, pin, folder, favorite and Volet.
@@ -56,10 +56,11 @@ YOUR DATA STAYS YOURS
 • Volet has no server, no account and no analytics. Nothing you do is sent anywhere.
 
 KEYBOARD SHORTCUTS
-• Alt+S: show or hide the sidebar
-• Alt+T: search
-• Alt+P: pin or unpin the current tab
-• Next and previous Volet: set your own in chrome://extensions/shortcuts
+• Ctrl+B: show or hide the sidebar
+• Ctrl+M: search
+• Ctrl+Q: cycle through your recent tabs, hold Ctrl to pick one (Ctrl+Shift+Q in reverse)
+• On a Mac, these use the Control key too
+• Next and previous Volet, pin or unpin the current tab: set your own in chrome://extensions/shortcuts
 
 GOOD TO KNOW
 • Chrome's own tab strip stays at the top; Volet keeps it tidy by collapsing the other Volets' groups.

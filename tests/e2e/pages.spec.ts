@@ -104,7 +104,7 @@ test('both tab cycling directions are listed in settings with their defaults, an
   const preview = page.getByRole('region', { name: 'Tab switcher', exact: true });
   await expect(preview.getByText('Cycle through recent tabs', { exact: true })).toBeVisible();
   await expect(preview.getByText('Cycle through recent tabs in reverse', { exact: true })).toBeVisible();
-  await expect(preview.locator('dd')).toHaveText([/Alt\+Comma\s*Default/, /Alt\+Period\s*Default/]);
+  await expect(preview.locator('dd')).toHaveText([/Ctrl\+Q\s*Default/, /Ctrl\+Shift\+Q\s*Default/]);
   expect(await cycleFirst(page)).toBe(true);
   await expect(preview.getByRole('button', { name: 'Set close highlighted tab shortcut' })).toHaveText('Not set');
   for (const name of ['General', 'Volets', 'Tabs']) await expect(page.getByRole('region', { name, exact: true })).toBeVisible();

@@ -26,20 +26,19 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
 - **Right-click menus** on every tab, pin, folder, favorite and Space: rename (or double-click a pin or folder, click a
   Space's name), move to another Space, put a tab in a new folder, add a new folder at the top of the Space (from a
   pin, folder or the Space) or inside a folder, Space colors, reorder and delete Spaces, and more.
-- **Search palette.** Press <kbd>Alt</kbd>+<kbd>T</kbd> on any page for an Arc-style palette over it: open tabs (all windows),
+- **Search palette.** Press <kbd>Ctrl</kbd>+<kbd>M</kbd> on any page for an Arc-style palette over it: open tabs (all windows),
   pins, favorites, archived tabs, Spaces, actions, a web address, or a web search. In the sidebar: the search button,
   <kbd>⌘K</kbd>/<kbd>Ctrl+K</kbd>, or <kbd>/</kbd>.
 - **Import from Arc.** Settings → Import from Arc reads Arc's `StorableSidebar.json` and brings over your Spaces, their
   colors, pinned tabs, folders and favorites. The file never leaves your computer.
-- **Recent tab switcher.** Hold <kbd>Alt</kbd> (<kbd>⌥</kbd> on a Mac) and press <kbd>,</kbd> to cycle through your
-  five most recent tabs across Spaces in this window, like Cmd+Tab: a quick tap goes back to the tab you last used,
-  and each further press goes one tab further back; let go to switch. Press <kbd>.</kbd> instead to cycle in reverse,
-  like Cmd+Shift+Tab: it starts from the far right (the oldest of the five) and moves left. Newly opened background
-  tabs take priority, so opening a link with Cmd/Ctrl+click makes it the next selection. A centered preview highlights
-  the selection, the arrow keys move it and Escape cancels. Record a close shortcut in Settings → Keyboard shortcuts
-  to close the highlighted tab without switching to it, or hover a preview and use its close button (Chrome reserves
-  Cmd+W). Remove both shortcuts to turn the switcher off. Screenshots appear after you visit tabs and stay in memory
-  on your device.
+- **Recent tab switcher.** Hold <kbd>Ctrl</kbd> and press <kbd>Q</kbd> to cycle through your five most recent tabs
+  across Spaces in this window, like Cmd+Tab: a quick tap goes back to the tab you last used, and each further press
+  goes one tab further back; let go to switch. Add <kbd>Shift</kbd> to cycle in reverse, like Cmd+Shift+Tab: it starts
+  from the far right (the oldest of the five) and moves left. Newly opened background tabs take priority, so opening a
+  link with Cmd/Ctrl+click makes it the next selection. A centered preview highlights the selection, the arrow keys
+  move it and Escape cancels. Record a close shortcut in Settings → Keyboard shortcuts to close the highlighted tab
+  without switching to it, or hover a preview and use its close button (Chrome reserves Cmd+W). Remove both shortcuts
+  to turn the switcher off. Screenshots appear after you visit tabs and stay in memory on your device.
 
 Spaces, pins, folders and favorites live in your bookmarks (an "Other bookmarks → Volet" folder), so they sync across
 your computers with Chrome sync and survive reinstalling. Space colors and settings sync through Chrome too. Nothing is
@@ -49,16 +48,16 @@ sent anywhere else: see the [privacy policy](PRIVACY.md).
 
 | Action | Default |
 | --- | --- |
-| Show or hide the sidebar | <kbd>Alt</kbd>+<kbd>S</kbd> |
-| Search tabs, pins and archived tabs | <kbd>Alt</kbd>+<kbd>T</kbd> |
-| Cycle through recent tabs | <kbd>Alt</kbd>+<kbd>,</kbd> |
-| Cycle through recent tabs in reverse | <kbd>Alt</kbd>+<kbd>.</kbd> |
+| Show or hide the sidebar | <kbd>Ctrl</kbd>+<kbd>B</kbd> |
+| Search tabs, pins and archived tabs | <kbd>Ctrl</kbd>+<kbd>M</kbd> |
+| Cycle through recent tabs | <kbd>Ctrl</kbd>+<kbd>Q</kbd> |
+| Cycle through recent tabs in reverse | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd> |
 | Close highlighted preview tab | not set, record in Volet settings |
 | Next / previous Space | not set |
 | Pin or unpin the current tab | not set |
 
-Change native shortcuts in `chrome://extensions/shortcuts` (Settings has a link). Chrome lets an extension suggest at
-most four, so the others start unassigned. Record and clear the preview-only close
+Ctrl is the Control key on a Mac too, not Cmd. Change native shortcuts in `chrome://extensions/shortcuts` (Settings
+has a link). Chrome lets an extension suggest at most four, so the others start unassigned. Record and clear the preview-only close
 shortcut in Volet settings, including the modifier you hold while cycling. This device-local shortcut works only while
 the preview is open.
 
