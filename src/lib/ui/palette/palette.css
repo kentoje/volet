@@ -16,34 +16,6 @@
   all: initial !important;
 }
 
-.palette-root {
-  position: fixed;
-  inset: 0;
-  z-index: 2147483647;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-.palette-backdrop {
-  position: absolute;
-  inset: 0;
-  background: oklch(0.2 0.03 var(--space-hue) / 0.28);
-}
-
-/* Plain CSS here (not Tailwind transforms/shadows): @property doesn't register inside shadow roots. */
-.palette-box {
-  position: absolute;
-  top: 14vh;
-  left: 50%;
-  width: min(640px, calc(100vw - 32px));
-  margin-left: calc(min(640px, calc(100vw - 32px)) / -2);
-  border-radius: 14px;
-  overflow: hidden;
-  background: var(--menu);
-  color: var(--ink);
-  box-shadow: var(--overlay-shadow);
-}
-
 /* In the base layer so utilities like outline-none can override it. */
 @layer base {
   :focus-visible {

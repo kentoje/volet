@@ -221,7 +221,9 @@ Svelte specifics:
 - Prefer `$derived` over `$effect` for computed values.
 - Tailwind utilities for all styling, on every surface (the panel, Volet's pages, Search and the tab switcher over web
   pages); design tokens are CSS variables (`styles/tokens.css`, all tinted by `--space-hue`). Keep stylesheets to what
-  utilities can't express (`:host` rules, base styles, `@theme`), and avoid component `<style>` blocks.
+  utilities can't express, in Tailwind's own terms where it has them: `@theme`, base styles, `:host`, `@property` and
+  `@keyframes`, custom utilities (`@utility scroll-strip`), and surfaces shared by several components that utilities
+  adjust where they're used (`@layer components`: `.menu-surface`, `.tooltip-surface`). No component `<style>` blocks.
   Hooks for tests and code are data attributes (`data-row`, `data-recent-tab`), not class names.
 - Accessibility floor: real buttons, labels on icon-only buttons, visible focus, respect `prefers-reduced-motion`.
 

@@ -17,41 +17,30 @@
   initial-value: 268;
 }
 
-/* The panel's wash; the hue transition makes Space switches glide. */
-.sidebar {
-  background: linear-gradient(170deg, var(--wash-top), var(--wash-bottom));
-  transition: --space-hue 460ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-/* While a swipe is in progress, or a Space's color is being picked, the hue follows directly. */
-.sidebar[data-swiping='true'],
-.sidebar[data-tint-live] {
-  transition: none;
-}
-
 /*
  * A row that scrolls sideways (`primitives/scroll-strip.ts`): no scrollbar, and each edge
  * that hides more items fades out (14px, `FADE_PX`).
  */
-.scroll-strip {
+@utility scroll-strip {
   scrollbar-width: none;
   --fade-start: 0px;
   --fade-end: 0px;
-}
-.scroll-strip:is([data-hidden-start], [data-hidden-end]) {
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 var(--fade-start),
-    #000 calc(100% - var(--fade-end)),
-    transparent
-  );
-}
-.scroll-strip[data-hidden-start] {
-  --fade-start: 14px;
-}
-.scroll-strip[data-hidden-end] {
-  --fade-end: 14px;
+
+  &:is([data-hidden-start], [data-hidden-end]) {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--fade-start),
+      #000 calc(100% - var(--fade-end)),
+      transparent
+    );
+  }
+  &[data-hidden-start] {
+    --fade-start: 14px;
+  }
+  &[data-hidden-end] {
+    --fade-end: 14px;
+  }
 }
 
 /* Menus and dialogs: portaled inside .sidebar (see OVERLAY_ROOT) so they wear the tint. */
@@ -122,10 +111,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar {
-    transition: none;
-  }
-
   .tooltip-surface {
     animation: none !important;
   }
