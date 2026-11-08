@@ -37,8 +37,7 @@ export default defineBackground(() => {
   browser.runtime.onStartup.addListener(() => startup().catch(log('startup')));
 
   listenForMessages(engine);
-  listenForRecentTabs(engine);
-  listenForShortcuts(engine);
+  listenForShortcuts(engine, listenForRecentTabs(engine));
   trackSidePanels();
 
   browser.tabs.onCreated.addListener((tab) => {

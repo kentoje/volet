@@ -13,6 +13,8 @@ export class RecentTabCycle {
   #onchange: (view: RecentTabsView | null) => void;
   #onerror: (error: unknown) => void;
   #gesture: CycleGesture | undefined;
+  /** A gesture let go of, until the presses Chrome reported before that have arrived (`amend`). */
+  #settling: CycleGesture | undefined;
   #committed: Promise<void> = Promise.resolve();
 
   constructor(options: {
@@ -88,17 +90,40 @@ export class RecentTabCycle {
     });
   }
 
-  /** Resolve the selection even if the modifier was released before the list arrived. */
+  /**
+   * Resolve the selection even if the modifier was released before the list arrived. Letting go waits for the presses
+   * Chrome reported before that (`amend`); a click (`index`) picks its tab.
+   */
   commit(index?: number): void {
     const gesture = this.#gesture;
     if (!gesture) return;
-    if (index !== undefined) gesture.steps = index;
     this.#gesture = undefined;
     this.#onchange(null);
-    this.#committed = gesture.tabs.then(async (tabs) => {
+    let settled = Promise.resolve();
+    if (index !== undefined) gesture.steps = index;
+    else {
+      this.#settling = gesture;
+      settled = this.#client.settle().catch(() => undefined);
+    }
+    this.#committed = settled.then(() => {
+      if (this.#settling === gesture) this.#settling = undefined;
+      return gesture.tabs;
+    }).then(async (tabs) => {
       const tab = tabs[this.#index(gesture, tabs.length)];
       if (tab && !gesture.canceled) await this.#client.activate(tab.id);
     }).catch(this.#onerror);
+  }
+
+  /**
+   * A press made before the modifier was let go can reach the page after it (Chrome reports the press to the worker,
+   * which forwards it): until the commit has heard of every such press, one still moves its selection. Returns whether
+   * the press went there.
+   */
+  amend(offset = 1): boolean {
+    const gesture = this.#settling;
+    if (!gesture || this.#gesture) return false;
+    gesture.steps += offset;
+    return true;
   }
 
   cancel(): void {

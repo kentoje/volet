@@ -138,9 +138,6 @@
   margin-top: 8px;
 }
 
-/* Like the panel's active row. */
-.recent-tab[data-selected='true'] .recent-tab-caption { font-weight: 500; }
-
 .recent-tab-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 .recent-tabs-announcement {

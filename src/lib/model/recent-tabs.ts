@@ -13,6 +13,8 @@ export interface RecentTabsClient {
   load(): Promise<RecentTab[]>;
   activate(tabId: number): Promise<void>;
   close(tabId: number): Promise<void>;
+  /** Resolves once the presses Chrome reported so far have reached this page (`RecentTabCycle.amend`). */
+  settle(): Promise<void>;
 }
 
 /** The selected index refers to the gesture's recent tab order, with closed tabs removed. */

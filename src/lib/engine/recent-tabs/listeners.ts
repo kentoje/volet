@@ -1,15 +1,25 @@
-import { browser } from 'wxt/browser';
+import { browser, type Browser } from 'wxt/browser';
+import type { RecentTabCommand } from '@/lib/model/recent-tab-shortcut';
 import type { Engine } from '../engine';
 import {
   forgetRecentTab, forgetRecentWindow, rememberCreatedTab, rememberRecentTab, replaceRecentTab,
 } from './history';
 import { listenForRecentTabMessages } from './messages';
+import { PressesInFlight } from './presses';
 import { RecentTabPreviews } from './previews';
 import { attachToOpenPagesOnce, detachFromOpenPages, forgetAttachedPages, syncRecentTabsRegistration } from './registration';
+import { cycleRecentTabs } from './shortcuts';
 
-/** Wire recent-tab history, preview capture and page requests without expanding the main engine. */
-export function listenForRecentTabs(engine: Engine): void {
+/** What the switcher's shortcuts do, for `listenForShortcuts`. */
+export type CycleRecentTabs = (tab: Browser.tabs.Tab | undefined, command: RecentTabCommand) => void;
+
+/**
+ * Wire recent-tab history, preview capture and page requests without expanding the main engine. History has its own
+ * queue (`history.ts`): only Chrome writes (switching, closing) wait for the engine.
+ */
+export function listenForRecentTabs(engine: Engine): CycleRecentTabs {
   const previews = new RecentTabPreviews();
+  const presses = new PressesInFlight();
   const log = (error: unknown) => console.warn('Recent tabs failed', error);
   /**
    * Follow Chrome's site access: register the page script, and attach to or detach from the pages already open. It
@@ -37,11 +47,11 @@ export function listenForRecentTabs(engine: Engine): void {
   browser.permissions.onAdded.addListener(() => { void refresh().catch(log); });
   browser.permissions.onRemoved.addListener(() => { void refresh().catch(log); });
   browser.tabs.onActivated.addListener(({ tabId, windowId }) => {
-    void engine.enqueue(() => rememberRecentTab(tabId, windowId)).catch(log);
+    rememberRecentTab(tabId, windowId).catch(log);
     previews.schedule(tabId, windowId);
   });
   browser.tabs.onCreated.addListener((tab) => {
-    void engine.enqueue(() => rememberCreatedTab(tab)).catch(log);
+    rememberCreatedTab(tab).catch(log);
   });
   browser.tabs.onUpdated.addListener((tabId, info, tab) => {
     if (info.url) previews.forget(tabId);
@@ -51,14 +61,20 @@ export function listenForRecentTabs(engine: Engine): void {
   browser.tabs.onRemoved.addListener((tabId, { windowId, isWindowClosing }) => {
     previews.forget(tabId);
     // A closing window's history goes with it (`windows.onRemoved`).
-    if (!isWindowClosing) void engine.enqueue(() => forgetRecentTab(tabId, windowId)).catch(log);
+    if (!isWindowClosing) forgetRecentTab(tabId, windowId).catch(log);
   });
   browser.tabs.onReplaced.addListener((addedTabId, removedTabId) => {
     previews.forget(removedTabId);
-    void engine.enqueue(() => replaceRecentTab(addedTabId, removedTabId)).catch(log);
+    replaceRecentTab(addedTabId, removedTabId).catch(log);
   });
   browser.windows.onRemoved.addListener((windowId) => {
-    void engine.enqueue(() => forgetRecentWindow(windowId)).catch(log);
+    forgetRecentWindow(windowId).catch(log);
   });
-  listenForRecentTabMessages(engine, previews, () => refresh(), log);
+  listenForRecentTabMessages({ engine, previews, presses, setup: () => refresh(), log });
+  return (tab, command) => {
+    const press = cycleRecentTabs(engine, tab, command);
+    // Right away, before the press reads anything: the page's question about it (`recent-tabs:settle`) may follow soon.
+    if (tab?.id !== undefined) presses.track(tab.id, press);
+    void press.catch((error: unknown) => console.warn('Recent tab shortcut failed', error));
+  };
 }

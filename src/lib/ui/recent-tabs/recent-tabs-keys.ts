@@ -58,6 +58,8 @@ export function listenRecentTabKeys(cycle: RecentTabCycle, relayHolds: (modifier
   return {
     configure(value) { closeShortcut = value; },
     step(nextShortcut, offset = 1) {
+      // A press made before the modifier went, arriving after it: it still counts for the tab being switched to.
+      if (cycle.amend(offset)) return;
       modifier = recentTabModifier(nextShortcut);
       if (!cycle.active) watcher = undefined;
       cycle.step(offset);

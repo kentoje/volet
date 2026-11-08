@@ -3,7 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ access: vi.fn(), commands: vi.fn() }));
 vi.mock('wxt/browser', () => ({ browser: { permissions: { contains: mocks.access }, commands: { getAll: mocks.commands } } }));
 
-import { recentTabsEnabled } from './enabled';
+import { loadRecentTabsState, recentTabsEnabled } from './enabled';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -19,4 +19,12 @@ it('requires an assigned shortcut and site access, with no separate enable prefe
   expect(await recentTabsEnabled()).toBe(true);
   mocks.access.mockResolvedValue(false);
   expect(await recentTabsEnabled()).toBe(false);
+});
+
+it("hands back the commands it read, so a press reads Chrome's shortcuts once", async () => {
+  expect(await loadRecentTabsState()).toEqual({
+    enabled: true,
+    commands: [{ name: 'cycle-recent-tabs-reverse', shortcut: 'Alt+Period' }],
+  });
+  expect(mocks.commands).toHaveBeenCalledTimes(1);
 });

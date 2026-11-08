@@ -4,12 +4,12 @@ import type { RecentTab, RecentTabsView } from './recent-tabs';
 
 const tabs: RecentTab[] = Array.from({ length: 5 }, (_, id) => ({ id, title: `Tab ${id}`, url: '' }));
 
-function fixture(load = async () => tabs) {
+function fixture(load = async () => tabs, settle = async () => {}) {
   const activate = vi.fn(async (_tabId: number) => {});
   const close = vi.fn(async (_tabId: number) => {});
   const onchange = vi.fn<(view: RecentTabsView | null) => void>();
   const onerror = vi.fn();
-  const cycle = new RecentTabCycle({ client: { load, activate, close }, onchange, onerror });
+  const cycle = new RecentTabCycle({ client: { load, activate, close, settle }, onchange, onerror });
   return { cycle, activate, close, onchange, onerror };
 }
 
@@ -67,7 +67,7 @@ describe('recent tab cycle', () => {
       current = [...current.filter((tab) => tab.id === tabId), ...current.filter((tab) => tab.id !== tabId)];
     });
     const cycle = new RecentTabCycle({
-      client: { load: async () => [...current], activate, close: async () => {} }, onchange: () => {}, onerror: () => {},
+      client: { load: async () => [...current], activate, close: async () => {}, settle: async () => {} }, onchange: () => {}, onerror: () => {},
     });
     cycle.step(); cycle.commit();
     cycle.step(); cycle.commit();
@@ -160,5 +160,35 @@ describe('recent tab cycle', () => {
     await vi.waitFor(() => expect(close).toHaveBeenCalledWith(0));
     await vi.waitFor(() => expect(cycle.active).toBe(false));
     expect(onchange).toHaveBeenLastCalledWith(null);
+  });
+
+  it('counts a press that arrives after letting go but was reported before, then switches', async () => {
+    let settle: () => void = () => {};
+    const settled = new Promise<void>((resolve) => { settle = resolve; });
+    const { cycle, activate, onchange } = fixture(async () => tabs, () => settled);
+    cycle.step();
+    await vi.waitFor(() => expect(onchange).toHaveBeenLastCalledWith({ tabs, selected: 1 }));
+    cycle.commit();
+    expect(onchange).toHaveBeenLastCalledWith(null);
+    expect(cycle.amend(1)).toBe(true);
+    await Promise.resolve();
+    expect(activate).not.toHaveBeenCalled();
+    settle();
+    await vi.waitFor(() => expect(activate).toHaveBeenCalledWith(2));
+    expect(activate).toHaveBeenCalledTimes(1);
+    // Once settled, a press starts a new gesture.
+    expect(cycle.amend(1)).toBe(false);
+  });
+
+  it('switches when the worker cannot say, and a click keeps the tab it picked', async () => {
+    const failing = fixture(async () => tabs, async () => { throw new Error('No worker'); });
+    failing.cycle.step();
+    failing.cycle.commit();
+    await vi.waitFor(() => expect(failing.activate).toHaveBeenCalledWith(1));
+    const clicked = fixture();
+    clicked.cycle.step();
+    clicked.cycle.commit(3);
+    expect(clicked.cycle.amend(1)).toBe(false);
+    await vi.waitFor(() => expect(clicked.activate).toHaveBeenCalledWith(3));
   });
 });

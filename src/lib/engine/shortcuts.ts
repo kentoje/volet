@@ -1,6 +1,6 @@
 import { browser, type Browser } from 'wxt/browser';
 import type { Engine } from './engine';
-import { cycleRecentTabs } from './recent-tabs/shortcuts';
+import type { CycleRecentTabs } from './recent-tabs/listeners';
 import { toggleSidePanel } from './side-panel';
 import { pendingPaletteItem } from './storage';
 
@@ -10,8 +10,8 @@ const WEB_STORE = /^https:\/\/(chromewebstore\.google\.com|chrome\.google\.com\/
 
 const PALETTE_SCRIPT = '/palette.js';
 
-/** Keyboard shortcuts declared in the manifest's `commands`. */
-export function listenForShortcuts(engine: Engine): void {
+/** Keyboard shortcuts declared in the manifest's `commands`; the switcher's are `listenForRecentTabs`'. */
+export function listenForShortcuts(engine: Engine, cycleRecentTabs: CycleRecentTabs): void {
   browser.commands.onCommand.addListener((command, tab) => {
     const windowId = tab?.windowId;
     switch (command) {
@@ -23,8 +23,7 @@ export function listenForShortcuts(engine: Engine): void {
         break;
       case 'cycle-recent-tabs-reverse':
       case 'cycle-recent-tabs':
-        void cycleRecentTabs(engine, tab, command)
-          .catch((error) => console.warn('Recent tab shortcut failed', error));
+        cycleRecentTabs(tab, command);
         break;
       case 'next-space':
       case 'previous-space':

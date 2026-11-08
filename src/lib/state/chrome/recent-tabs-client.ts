@@ -24,6 +24,9 @@ export function chromeRecentTabsClient({ onhue }: { onhue?: (hue: number) => voi
     async close(tabId) {
       await runRecentTabAction({ type: 'recent-tabs:close', tabId });
     },
+    async settle() {
+      await runRecentTabAction({ type: 'recent-tabs:settle' });
+    },
   };
 }
 

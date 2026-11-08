@@ -67,5 +67,6 @@ export function fakeRecentTabsClient(): RecentTabsClient {
     load: async () => tabs.filter((tab) => !closed.has(tab.id)),
     activate: async () => {},
     close: async (tabId) => { closed.add(tabId); },
+    settle: async () => {},
   };
 }

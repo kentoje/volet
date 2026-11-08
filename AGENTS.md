@@ -174,11 +174,16 @@ Three layers, each with a single job. Dependencies point downward only.
   modifier go down asks whoever has focus instead (`relayHoldsModifier`): its window's Volet panel
   (`recent-tabs:panel-holds`) and its own frames, through the worker (`recent-tabs:frames-hold`); the one holding it
   sends the page its keys (`ui/recent-tabs/relay-keys.ts`, `recent-tabs:relay-key`, the only message a frame may
-  send). All read keys through `model/recent-tab-keys.ts`, so they mean the same everywhere. Open pages get the script
-  once per session (`attachToOpenPagesOnce`), not each time the worker wakes, and out of the engine queue: a page
-  still loading would hold every command. Screenshots are shrunk to 400 pixels across (`engine/image.ts`) and live in
-  `chrome.storage.session` (`preview-store.ts`, one key each plus a small index), so they outlive the worker, which
-  Chrome stops after about 30 seconds idle; that storage also holds the engine's session state, so keep them small.
+  send). All read keys through `model/recent-tab-keys.ts`, so they mean the same everywhere. The worker reads Chrome's
+  shortcuts once per press before forwarding it, so letting go right after a press can reach the page first: the
+  worker follows each press until the page has it (`engine/recent-tabs/presses.ts`), the page waits for those before
+  switching (`recent-tabs:settle`), and one arriving meanwhile still counts (`RecentTabCycle.amend`). Only switching
+  and closing tabs wait for the engine queue: history has its own (`history.ts`), and the tabs and hue a page asks for
+  are read outside it, like Search's. Open pages get the script once per session (`attachToOpenPagesOnce`), not each
+  time the worker wakes, and out of the engine queue too: a page still loading would hold every command. Screenshots
+  are shrunk to 400 pixels across (`engine/image.ts`) and live in `chrome.storage.session` (`preview-store.ts`, one
+  key each plus a small index), so they outlive the worker, which Chrome stops after about 30 seconds idle; that
+  storage also holds the engine's session state, so keep them small.
 - **Styles**: `styles/tokens.css` (design tokens on `.sidebar`, `.palette-root`, `.page-root`, `.recent-tabs-root`),
   `styles/theme.css` (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`,
   `ui/recent-tabs/recent-tabs.css`, `styles/page.css`). Surfaces over web pages (palette, tab switcher) take the
@@ -232,8 +237,9 @@ Engine specifics:
   shadow roots, `wxt build --mode e2e`) into Chromium, open the panel page in its own window (`sidepanel.html?windowId=<id>`), and assert on Chrome's real state from the service worker.
 - New behavior in the engine gets an e2e test; new pure logic gets a unit test.
 - `tests/e2e/resilience.spec.ts` covers multiple windows and a real browser restart (same profile, session restored).
-- The palette's in-page overlay can't be triggered from Playwright (shortcuts are browser-level gestures); the panel
-  palette exercises the same components and worker messages.
+- Playwright can't press Volet's shortcuts (browser-level gestures), but the worker can run its own handling of one:
+  `chrome.commands.onCommand.dispatch(name, tab)` (`press` in `recent-tabs.spec.ts`). The palette's in-page overlay
+  is tested on its own; the panel palette exercises the same components and worker messages.
 
 ## Writing style
 

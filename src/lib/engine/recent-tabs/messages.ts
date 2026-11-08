@@ -5,6 +5,7 @@ import { activeSpaceOf, hueOf, loadContext } from '../context';
 import type { Engine } from '../engine';
 import { loadFaviconImage } from '../favicon';
 import { loadRecentTabs } from './history';
+import type { PressesInFlight } from './presses';
 import type { RecentTabPreviews } from './previews';
 import { OVERLAY_FILE } from './registration';
 
@@ -14,11 +15,16 @@ const isMessage = (value: unknown): value is Message => typeof value === 'object
 
 /**
  * The switcher's requests: from Volet's settings (`recent-tabs:setup`), from a page's top frame (its tabs, an action,
- * its overlay, asking its frames about the modifier), and from a page's frames (keys for the top frame, the only
- * message a frame may send).
+ * its overlay, asking its frames about the modifier, waiting for its presses), and from a page's frames (keys for the
+ * top frame, the only message a frame may send). Only actions wait for the engine.
  */
-export function listenForRecentTabMessages(engine: Engine, previews: RecentTabPreviews, setup: () => Promise<boolean>,
-  log: (error: unknown) => void): void {
+export function listenForRecentTabMessages({ engine, previews, presses, setup, log }: {
+  engine: Engine;
+  previews: RecentTabPreviews;
+  presses: PressesInFlight;
+  setup: () => Promise<boolean>;
+  log: (error: unknown) => void;
+}): void {
   browser.runtime.onMessage.addListener((message: unknown, sender, respond) => {
     if (!isMessage(message)) return;
     const work = message.type === 'recent-tabs:setup'
@@ -53,31 +59,35 @@ export function listenForRecentTabMessages(engine: Engine, previews: RecentTabPr
         return browser.tabs.sendMessage(tabId, { type: 'recent-tabs:frame-holds', modifier: message.modifier })
           .then((answer: unknown) => ({ holds: holdsModifier(answer) }), () => ({ holds: false }));
       }
+      case 'recent-tabs:settle':
+        // The modifier went: answer once the presses Chrome reported before it have reached the page.
+        return presses.settled(tabId).then(() => ({ ok: true }));
       case 'recent-tabs:activate':
       case 'recent-tabs:close': {
         const target = message.tabId;
         if (typeof target !== 'number' || !Number.isInteger(target)) return undefined;
         const close = message.type === 'recent-tabs:close';
-        return engine.enqueue(async () => {
-          if ((await browser.tabs.get(target)).windowId !== tab.windowId) throw new Error('Recent tab belongs to another window');
-        }).then(() => engine.run(close
-          ? { type: 'closeTab', windowId: tab.windowId, tabId: target }
-          : { type: 'activateTab', tabId: target })).then(() => ({ ok: true }));
+        return browser.tabs.get(target).then((found) => {
+          if (found.windowId !== tab.windowId) throw new Error('Recent tab belongs to another window');
+          return engine.run(close
+            ? { type: 'closeTab', windowId: tab.windowId, tabId: target }
+            : { type: 'activateTab', tabId: target });
+        }).then(() => ({ ok: true }));
       }
       default:
         return undefined;
     }
   }
 
-  /** The window's recent tabs, each with its icon and screenshot, and the active Volet's hue to tint the switcher (`searchPalette`). */
+  /**
+   * The window's recent tabs, each with its icon and screenshot, and the active Volet's hue to tint the switcher. Out
+   * of the engine queue, like Search's (`searchPalette`): the switcher shows whatever the engine is busy with.
+   */
   async function query(windowId: number) {
-    const { tabs, hue } = await engine.enqueue(async () => {
-      const ctx = await loadContext(windowId);
-      return { tabs: await loadRecentTabs(windowId), hue: hueOf(ctx, activeSpaceOf(ctx)) };
-    });
+    const [tabs, ctx] = await Promise.all([loadRecentTabs(windowId), loadContext(windowId)]);
     const shots = await previews.find(tabs);
     return {
-      hue,
+      hue: hueOf(ctx, activeSpaceOf(ctx)),
       tabs: await Promise.all(tabs.map(async (recent) => ({
         ...recent,
         icon: await loadFaviconImage(recent.url),

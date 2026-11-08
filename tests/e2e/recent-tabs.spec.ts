@@ -76,6 +76,27 @@ async function step(worker: Worker, tabId: number, shortcut = '⌘E', offset: 1 
   }, { tabId, shortcut, offset });
 }
 
+/** Chrome reporting the shortcut: the worker's own listener runs, reads the shortcut, and forwards the press. */
+async function press(worker: Worker, tabId: number, command = 'cycle-recent-tabs') {
+  await worker.evaluate(async ({ tabId, command }) => {
+    const onCommand = chrome.commands.onCommand as unknown as { dispatch: (command: string, tab: chrome.tabs.Tab) => void };
+    onCommand.dispatch(command, await chrome.tabs.get(tabId));
+  }, { tabId, command });
+}
+
+/** Make the worker's `call` to Chrome answer `delay` milliseconds late. */
+async function slowDown(worker: Worker, api: 'commands.getAll' | 'bookmarks.create', delay: number) {
+  await worker.evaluate(({ api, delay }) => {
+    const [namespace, method] = api.split('.') as [string, string];
+    const target = (chrome as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>)[namespace]!;
+    const original = target[method]!.bind(target);
+    target[method] = async (...args) => {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return original(...args);
+    };
+  }, { api, delay });
+}
+
 async function activeId(worker: Worker, windowId: number) {
   return (await stripState(worker, windowId)).find((tab) => tab.active)?.id;
 }
@@ -128,6 +149,37 @@ test('quick taps toggle the two most recent tabs even if the command arrives aft
   await step(worker, ids[4]!);
   await expect.poll(() => activeId(worker, windowId)).toBe(ids[5]);
   await expect(page.getByRole('dialog', { name: 'Recent tabs' })).toHaveCount(0);
+});
+
+test('a press made just before letting go still counts when the release reaches the page first', async ({ context, worker, windowId }) => {
+  const ids = await createRecentPages(context, worker, windowId);
+  const page = await recentPage(context, 'F');
+  await page.bringToFront();
+  await page.keyboard.down('Meta');
+  await press(worker, ids[5]!);
+  const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
+  await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent E');
+  // The worker reads Chrome's shortcuts before forwarding a press: slowed down, the release wins the race.
+  await slowDown(worker, 'commands.getAll', 500);
+  await press(worker, ids[5]!);
+  await page.keyboard.up('Meta');
+  await expect(dialog).toHaveCount(0);
+  // Two presses: D, not E (one press), nor F again (the late press as a quick tap from E).
+  await expect.poll(() => activeId(worker, windowId)).toBe(ids[3]);
+  await expect(dialog).toHaveCount(0);
+});
+
+test('the switcher gets its tabs while the engine is busy with a slow command', async ({ context, worker, windowId }) => {
+  await (await context.newPage()).goto('https://recent-tabs.test/Previous');
+  await (await context.newPage()).goto('https://recent-tabs.test/Current');
+  const current = (await stripState(worker, windowId)).find((tab) => tab.active)!.id;
+  await expect.poll(async () => (await queryFrom(worker, current)).length).toBeGreaterThan(1);
+  // Pinning the tab holds the engine's queue for 3 seconds (Chrome slow to make the bookmark).
+  await slowDown(worker, 'bookmarks.create', 3000);
+  await press(worker, current, 'toggle-pin');
+  const started = Date.now();
+  expect((await queryFrom(worker, current)).length).toBeGreaterThan(1);
+  expect(Date.now() - started).toBeLessThan(1500);
 });
 
 test.describe('cleared reverse shortcut', () => {
