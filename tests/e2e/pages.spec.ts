@@ -80,7 +80,13 @@ test('importing an Arc sidebar creates its Spaces, pins, folders and favorites',
 test('the settings page changes how long unpinned tabs stay open', async ({ context, worker }) => {
   const page = await context.newPage();
   await page.goto(extensionPage(worker, 'options.html'));
-  await page.getByRole('combobox').selectOption({ label: '1 day' });
+  const archive = page.getByRole('combobox', { name: "Close unpinned tabs I haven't used for" });
+  await expect(archive).toHaveText('12 hours');
+  // A list like Volet's menus, not the system's.
+  await archive.click();
+  await page.getByRole('option', { name: '1 day' }).click();
+  await expect(archive).toHaveText('1 day');
+  await expect(page.getByRole('option')).toHaveCount(0);
   await expect
     .poll(() =>
       worker.evaluate(async () => {

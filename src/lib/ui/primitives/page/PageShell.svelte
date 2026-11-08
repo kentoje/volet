@@ -24,4 +24,6 @@
     </header>
     {@render children()}
   </main>
+  <!-- Lists and menus render here, inside the page's tokens (see OVERLAY_ROOT). -->
+  <div data-overlay-root></div>
 </div>

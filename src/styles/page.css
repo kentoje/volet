@@ -3,6 +3,7 @@
 @import '@fontsource-variable/gabarito';
 @import './tokens.css';
 @import './theme.css';
+@import './menu-surface.css';
 
 @source '../lib';
 

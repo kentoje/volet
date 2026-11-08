@@ -3,37 +3,37 @@
   import Button from '../primitives/page/Button.svelte';
   import Card from '../primitives/page/Card.svelte';
   import PageShell from '../primitives/page/PageShell.svelte';
+  import Select from '../primitives/page/Select.svelte';
   import KeyboardShortcutsSettings from './KeyboardShortcutsSettings.svelte';
 
   const settings = new SettingsStore();
   void settings.load();
 
+  /** In hours; 0 never closes them. */
   const ARCHIVE_CHOICES = [
-    { hours: 1, label: '1 hour' },
-    { hours: 6, label: '6 hours' },
-    { hours: 12, label: '12 hours' },
-    { hours: 24, label: '1 day' },
-    { hours: 168, label: '1 week' },
-    { hours: 0, label: 'Never close them' },
+    { value: '1', label: '1 hour' },
+    { value: '6', label: '6 hours' },
+    { value: '12', label: '12 hours' },
+    { value: '24', label: '1 day' },
+    { value: '168', label: '1 week' },
+    { value: '0', label: 'Never close them' },
   ];
+  const ARCHIVE_LABEL = "Close unpinned tabs I haven't used for";
 </script>
 
 <svelte:window onfocus={() => void settings.refreshShortcuts()} />
 
 <PageShell title="Settings">
   <Card title="Archiving">
-    <label class="flex flex-wrap items-center gap-3 text-[14px]">
-      Close unpinned tabs I haven't used for
-      <select
-        class="h-9 rounded-lg bg-hover px-2 text-[14px]"
-        value={settings.archiveAfterHours}
-        onchange={(event) => void settings.setArchiveAfter(Number(event.currentTarget.value))}
-      >
-        {#each ARCHIVE_CHOICES as choice (choice.hours)}
-          <option value={choice.hours}>{choice.label}</option>
-        {/each}
-      </select>
-    </label>
+    <div class="flex flex-wrap items-center gap-3 text-[14px]">
+      {ARCHIVE_LABEL}
+      <Select
+        label={ARCHIVE_LABEL}
+        value={String(settings.archiveAfterHours)}
+        options={ARCHIVE_CHOICES}
+        onchange={(value) => void settings.setArchiveAfter(Number(value))}
+      />
+    </div>
     <p class="mt-3 text-[13px] leading-relaxed text-ink-muted">
       Closed tabs go to the archive. Find them again with search{settings.searchKeys
         ? ` (${settings.searchKeys})`

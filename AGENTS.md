@@ -128,7 +128,9 @@ Three layers, each with a single job. Dependencies point downward only.
   `group` item puts items under a small heading in the menu itself. A `swatches` item with `onPreview` adds a slider
   for any hue (`HueSlider`, a Volet's color): the panel and the Volet's shutter follow it through `HuePreview`
   (`ui/sidebar/hue-preview.svelte.ts`, purely visual), and it's saved with one command once it settles (let go, a
-  pause after a key, or left). Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint.
+  pause after a key, or left). Overlays portal into `[data-overlay-root]` inside `.sidebar` to keep the tint (the
+  pages' `PageShell` has one too). The pages' choices use `primitives/page/Select.svelte` (Bits UI's Select), listed on
+  the menus' surface and rows (`styles/menu-surface.css`, `MENU_ITEM_CLASS`), never a native `<select>`.
   Every menu is placed by `primitives/menu/placement.ts` (`MENU_PLACEMENT`): menus open below the pointer so they can
   slide sideways and flip up to stay inside the panel, and scroll when taller than it. Submenus expand in place under
   their item (`SubMenu.svelte`) instead of flying out: there's no room beside a menu in a side panel, and one laid
@@ -223,8 +225,9 @@ Svelte specifics:
   pages); design tokens are CSS variables (`styles/tokens.css`, all tinted by `--space-hue`). Keep stylesheets to what
   utilities can't express, in Tailwind's own terms where it has them: `@theme`, base styles, `:host`, `@property` and
   `@keyframes`, custom utilities (`@utility scroll-strip`), and surfaces shared by several components that utilities
-  adjust where they're used (`@layer components`: `.menu-surface`, `.tooltip-surface`). No component `<style>` blocks.
-  Hooks for tests and code are data attributes (`data-row`, `data-recent-tab`), not class names.
+  adjust where they're used (`@layer components`: `.menu-surface` in `styles/menu-surface.css`, `.tooltip-surface`).
+  No component `<style>` blocks. Hooks for tests and code are data attributes (`data-row`, `data-recent-tab`), not
+  class names.
 - Accessibility floor: real buttons, labels on icon-only buttons, visible focus, respect `prefers-reduced-motion`.
 
 Engine specifics:
