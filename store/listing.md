@@ -45,6 +45,10 @@ DRAG AND DROP
 SEARCH PALETTE
 • Press Ctrl+M (Control+M on a Mac too) on any page to search your open tabs in every window, your pins, favorites, archived tabs and Volets, open a web address, or search the web.
 
+RECENT TAB SWITCHER
+• Hold Ctrl (Control on a Mac too) and press Q to see your five most recent tabs in this window, with a preview of each, across Volets. Let go to switch: a quick tap goes back to the tab you last used, like Cmd+Tab.
+• Add Shift to go the other way. The arrow keys move the selection, Escape cancels, and you can close a tab right from the switcher.
+
 RIGHT-CLICK MENUS
 • Rename, move to another Volet, put in a new folder, change a Volet's color, and more, on every tab, pin, folder, favorite and Volet.
 
