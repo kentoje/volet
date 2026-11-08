@@ -39,7 +39,7 @@ export function listenRecentTabKeys(cycle: RecentTabCycle, relayHolds: (modifier
     event.stopImmediatePropagation();
     const target = event.composedPath()[0];
     // Cmd is still held, so handle Enter on the close button here instead of relying on a native button click.
-    const onClose = key === 'choose' && target instanceof HTMLElement && target.classList.contains('recent-tab-close');
+    const onClose = key === 'choose' && target instanceof HTMLElement && target.hasAttribute('data-recent-tab-close');
     press(onClose ? 'close' : key, event.repeat);
   };
   const keyup = (event: KeyboardEvent) => {

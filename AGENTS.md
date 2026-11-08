@@ -188,9 +188,11 @@ Three layers, each with a single job. Dependencies point downward only.
   `styles/theme.css` (Tailwind theme), then one entry stylesheet per surface (`app.css`, `ui/palette/palette.css`,
   `ui/recent-tabs/recent-tabs.css`, `styles/page.css`). Surfaces over web pages (palette, tab switcher) take the
   active Volet's hue from the worker's answers and the system's color scheme, like the panel.
-  Inside the palette's shadow root, avoid Tailwind utilities that rely on `@property` (transforms, shadows, rings).
-  `rem` there is the page's root font size, not ours (YouTube's is 10px), so `palette.css` sets Tailwind's spacing,
-  radius and text scales in px: size anything else in px too (an e2e test renders it over a 10px root).
+  They use Tailwind too, with two limits inside their shadow roots. `rem` there is the page's root font size, not ours
+  (YouTube's is 10px), so `styles/page-scales.css` sets Tailwind's spacing, radius and text scales in px: size
+  anything else in px too (e2e tests render both over a 10px root). And Chrome doesn't register `@property` there, so
+  utilities built on it (`shadow-*`, `ring-*`, transforms, border widths) do nothing: write those as arbitrary
+  properties (`[box-shadow:var(--overlay-shadow)]`).
   Shadow roots Volet adds to web pages (palette, recent tab switcher) are closed (`shadowMode`), so the page's own
   scripts can't read the tabs shown in them; only the e2e build (`--mode e2e`) opens them, for Playwright. They start
   with `:host { all: initial !important; }`: the page's own rules for the host win over a normal `:host` rule, and
@@ -217,7 +219,10 @@ Svelte specifics:
 
 - Svelte 5 runes only (`$state`, `$derived`, `$props`, `$effect` as a last resort), snippets instead of slots, callback props instead of events.
 - Prefer `$derived` over `$effect` for computed values.
-- Tailwind utilities for styling; design tokens are CSS variables on `.sidebar` in `src/app.css` (all tinted by `--space-hue`). Avoid component `<style>` blocks unless Tailwind can't express it.
+- Tailwind utilities for all styling, on every surface (the panel, Volet's pages, Search and the tab switcher over web
+  pages); design tokens are CSS variables (`styles/tokens.css`, all tinted by `--space-hue`). Keep stylesheets to what
+  utilities can't express (`:host` rules, base styles, `@theme`), and avoid component `<style>` blocks.
+  Hooks for tests and code are data attributes (`data-row`, `data-recent-tab`), not class names.
 - Accessibility floor: real buttons, labels on icon-only buttons, visible focus, respect `prefers-reduced-motion`.
 
 Engine specifics:

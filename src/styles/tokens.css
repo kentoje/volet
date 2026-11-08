@@ -21,6 +21,8 @@
   --dot-ink: oklch(1 0 0);
   --dot-ring: var(--pill);
   --menu: oklch(0.985 0.012 var(--space-hue));
+  /* Search and the tab switcher, over a page. */
+  --overlay-shadow: 0 24px 60px oklch(0.2 0.05 var(--space-hue) / 0.3), 0 0 0 0.5px var(--rule);
   --danger: oklch(0.55 0.2 25);
   --shortcut-custom: oklch(0.44 0.12 155);
 

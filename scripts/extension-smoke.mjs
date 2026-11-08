@@ -30,7 +30,7 @@ export async function smokeRecentTabs(context, worker, currentPage, baseUrl) {
     }, tabId);
     const dialog = currentPage.getByRole('dialog', { name: 'Recent tabs' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.locator('.recent-tab').first()).toBeVisible();
+    await expect(dialog.locator('[data-recent-tab]').first()).toBeVisible();
     await currentPage.keyboard.press('ArrowLeft');
     await currentPage.keyboard.press('ArrowRight');
     const selected = await dialog.locator('[aria-current="true"]').getAttribute('aria-label');

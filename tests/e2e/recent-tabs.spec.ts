@@ -118,7 +118,7 @@ test('held Cmd cycles a frozen five-tab preview and commits across Volets on rel
   await step(worker, ids[5]!);
   const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator('.recent-tab')).toHaveCount(5);
+  await expect(dialog.locator('[data-recent-tab]')).toHaveCount(5);
   await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent E');
   expect(await activeId(worker, windowId)).toBe(ids[5]);
   await step(worker, ids[5]!);
@@ -133,6 +133,33 @@ test('held Cmd cycles a frozen five-tab preview and commits across Volets on rel
   await expect(dialog).toHaveCount(0);
   await expect.poll(async () => (await stripState(worker, windowId)).find((tab) => tab.id === ids[3])?.collapsed).toBe(false);
   await expect(panel.getByText('Another Volet', { exact: true }).first()).toBeVisible();
+});
+
+test('previews show at 170 pixels across, whatever root font size the page sets, and shrink so all five fit on a narrower page', async ({ context, worker, windowId }) => {
+  const ids = await createRecentPages(context, worker, windowId);
+  const page = await recentPage(context, 'F');
+  await page.bringToFront();
+  // YouTube's root font size: sizes in rem would shrink by a third.
+  await page.evaluate(() => { document.documentElement.style.fontSize = '10px'; });
+  const previews = page.getByRole('dialog', { name: 'Recent tabs' }).locator('[data-recent-tab-preview]');
+  // The Volet panel takes room from the page: 700 pixels is a small window with the panel open.
+  for (const width of [1280, 700]) {
+    await page.setViewportSize({ width, height: 720 });
+    await page.keyboard.down('Meta');
+    await step(worker, ids[5]!);
+    await expect(previews).toHaveCount(5);
+    const boxes = await previews.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().toJSON() as DOMRect));
+    for (const box of boxes) {
+      if (width === 1280) expect([box.width, box.height]).toEqual([170, 106.25]);
+      expect(box.width / box.height).toBeCloseTo(1.6, 1);
+      expect(box.left).toBeGreaterThanOrEqual(0);
+      expect(box.right).toBeLessThanOrEqual(width);
+    }
+    await page.keyboard.press('Escape');
+    await page.keyboard.up('Meta');
+    await expect(previews).toHaveCount(0);
+  }
+  expect(await activeId(worker, windowId)).toBe(ids[5]);
 });
 
 test('quick taps toggle the two most recent tabs even if the command arrives after release', async ({ context, worker, windowId }) => {
@@ -251,7 +278,7 @@ test('visited tabs gain local screenshots in the centered preview', async ({ con
   await page.keyboard.down('Meta');
   await step(worker, ids[5]!);
   const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
-  await expect(dialog.locator('.recent-tab-screenshot').first()).toBeVisible();
+  await expect(dialog.locator('[data-recent-tab-screenshot]').first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('recent-tabs.png') });
   await page.keyboard.press('Escape');
   await page.keyboard.up('Meta');
@@ -314,8 +341,8 @@ test('tabs without screenshots use favicon placeholders with no visible footer',
   await step(worker, foregroundId);
   const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
   const card = dialog.getByRole('button', { name: 'Recent Background', exact: true });
-  await expect(card.locator('.recent-tab-placeholder')).toBeVisible();
-  await expect(card.locator('.recent-tab-screenshot')).toHaveCount(0);
+  await expect(card.locator('[data-recent-tab-placeholder]')).toBeVisible();
+  await expect(card.locator('[data-recent-tab-screenshot]')).toHaveCount(0);
   await expect(dialog.locator('p')).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('recent-tabs-placeholder.png') });
   await page.keyboard.press('Escape');
@@ -334,11 +361,11 @@ test('only the configured close shortcut removes highlighted tabs and live rebin
   await page.keyboard.press('Backspace');
   await expect.poll(async () => (await stripState(worker, windowId)).some((tab) => tab.id === ids[4])).toBe(false);
   expect(await activeId(worker, windowId)).toBe(ids[5]);
-  await expect(dialog.locator('.recent-tab')).toHaveCount(4);
+  await expect(dialog.locator('[data-recent-tab]')).toHaveCount(4);
   await expect(dialog.locator('[aria-current="true"]')).toHaveAttribute('aria-label', 'Recent D');
   // Delete is a different key and has no implicit close binding.
   await page.keyboard.press('Delete');
-  await expect(dialog.locator('.recent-tab')).toHaveCount(4);
+  await expect(dialog.locator('[data-recent-tab]')).toHaveCount(4);
   await worker.evaluate(() => chrome.storage.local.set({ previewCloseShortcut: 'Cmd+Delete' }));
   await page.keyboard.press('Delete');
   await expect.poll(async () => (await stripState(worker, windowId)).some((tab) => tab.id === ids[3])).toBe(false);
@@ -457,7 +484,7 @@ test('switcher favicons load inline on a page that restricts cross-origin images
   const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('img[src^="chrome-extension:"]')).toHaveCount(0);
-  const icons = dialog.locator('.recent-tab-caption img');
+  const icons = dialog.locator('[data-recent-tab-caption] img');
   await expect(icons).toHaveCount(2);
   await expect.poll(() => icons.evaluateAll((images) => images.every((image) =>
     image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
@@ -561,11 +588,11 @@ test.describe('default preview shortcuts', () => {
     const dialog = page.getByRole('dialog', { name: 'Recent tabs' });
     await page.keyboard.down('Control');
     await step(worker, current, cycle, 1);
-    await expect(dialog.locator('.recent-tab')).toHaveCount(before.length);
+    await expect(dialog.locator('[data-recent-tab]')).toHaveCount(before.length);
     // No close shortcut until one is recorded in settings.
     await page.keyboard.press('Backspace');
     await page.keyboard.press('Delete');
-    await expect(dialog.locator('.recent-tab')).toHaveCount(before.length);
+    await expect(dialog.locator('[data-recent-tab]')).toHaveCount(before.length);
     expect((await stripState(worker, windowId)).map((tab) => tab.id)).toEqual(before.map((tab) => tab.id));
     expect(await activeId(worker, windowId)).toBe(current);
     await page.keyboard.up('Control');
@@ -647,9 +674,9 @@ test('a custom close chord recorded in settings only acts inside the preview, an
   await page.keyboard.down('Meta');
   await step(worker, current);
   await expect(dialog).toBeVisible();
-  const count = await dialog.locator('.recent-tab').count();
+  const count = await dialog.locator('[data-recent-tab]').count();
   await page.keyboard.press('Shift+K');
-  await expect(dialog.locator('.recent-tab')).toHaveCount(count);
+  await expect(dialog.locator('[data-recent-tab]')).toHaveCount(count);
   expect(await activeId(worker, windowId)).toBe(current);
   await page.keyboard.press('Escape');
   await page.keyboard.up('Meta');
@@ -684,7 +711,7 @@ test('with the Volet panel focused, the held modifier shows the previews, panel 
   await panel.bringToFront();
   await panel.keyboard.down('Meta');
   await step(worker, ids[5]!);
-  await expect(dialog.locator('.recent-tab')).toHaveCount(5);
+  await expect(dialog.locator('[data-recent-tab]')).toHaveCount(5);
   await expect(selected).toHaveAttribute('aria-label', 'Recent E');
   await step(worker, ids[5]!);
   await expect(selected).toHaveAttribute('aria-label', 'Recent D');

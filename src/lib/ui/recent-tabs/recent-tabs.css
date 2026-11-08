@@ -2,8 +2,16 @@
 @import 'tailwindcss' source(none);
 @import '../../../styles/tokens.css';
 @import '../../../styles/theme.css';
-/* Only generate the utilities needed by the shared favicon. */
+@import '../../../styles/page-scales.css';
+
+/* Classes used by the switcher's components and the shared favicon. */
+@source './';
 @source '../primitives/Favicon.svelte';
+
+/*
+ * Utilities do the rest. Inside a shadow root, avoid the ones built on @property (shadow-*, ring-*, transforms,
+ * border widths), which Chrome doesn't register there: write those as properties ([box-shadow:var(--pill-shadow)]).
+ */
 
 /*
  * The page's own rules for the host win over a normal :host rule, and pages built from web components hide elements
@@ -11,151 +19,10 @@
  */
 :host { all: initial !important; }
 
-/*
- * Plain CSS in px: rem is the page's root font size, not ours, and Tailwind utilities that rely on @property
- * (shadows, rings, transforms) don't work inside a shadow root.
- */
-.recent-tabs-root {
-  position: fixed;
-  inset: 0;
-  z-index: 2147483647;
-  display: grid;
-  place-items: center;
-  font: 13px/1.35 system-ui, -apple-system, 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* No dimming: the switcher is a glance while the shortcut is held, like the macOS switcher. */
-.recent-tabs-backdrop {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-/* Search's surface. */
-.recent-tabs-dialog {
-  position: relative;
-  box-sizing: border-box;
-  width: max-content;
-  max-width: calc(100vw - 32px);
-  padding: 8px;
-  border-radius: 14px;
-  background: var(--menu);
-  box-shadow: 0 24px 60px oklch(0.2 0.05 var(--space-hue) / 0.3), 0 0 0 0.5px var(--rule);
-}
-
-.recent-tabs-list {
-  display: flex;
-  gap: 2px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.recent-tab-card { position: relative; flex: 0 0 156px; min-width: 0; }
-
-/* Rounded like the panel's rows: hovered like a row, selected with the Volet's tint, like selected rows. */
-.recent-tab {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  padding: 8px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 100ms;
-}
-
-.recent-tab[data-selected='true'] { background: var(--selected); }
-.recent-tab:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-
-/* The panel's row buttons, on a chip so they read over a screenshot. */
-.recent-tab-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  background: var(--menu);
-  box-shadow: var(--pill-shadow);
-  color: var(--ink-muted);
-  opacity: 0;
-  pointer-events: none;
-  cursor: pointer;
-  transition: opacity 100ms, color 100ms;
-}
-.recent-tab-card[data-selected='true'] .recent-tab-close,
-.recent-tab-card:focus-within .recent-tab-close { opacity: 1; pointer-events: auto; }
-.recent-tab-close:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
-.recent-tab-close > * { pointer-events: none; }
-
-.recent-tab-preview {
-  height: 90px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: var(--hover);
-  box-shadow: 0 0 0 0.5px var(--rule);
-}
-
-.recent-tab-screenshot { display: block; width: 100%; height: 100%; object-fit: cover; }
-
-/* No screenshot yet: the favicon on a pill, like the panel's active row. */
-.recent-tab-placeholder {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-}
-
-.recent-tab-placeholder-icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--pill);
-  box-shadow: var(--pill-shadow);
-}
-
-.recent-tab-caption {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  height: 18px;
-  margin-top: 8px;
-}
-
-.recent-tab-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-
-.recent-tabs-announcement {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .recent-tab:not([data-selected='true']):hover { background: var(--hover); }
-  .recent-tab-card:hover .recent-tab-close { opacity: 1; pointer-events: auto; }
-  .recent-tab-close:hover { color: var(--ink); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .recent-tab,
-  .recent-tab-close { transition: none; }
+/* In the base layer so utilities can adjust it (outline-offset-1). */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+  }
 }

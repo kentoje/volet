@@ -14,11 +14,21 @@
 
 {#if state.view}
   <!-- Tinted like the side panel and Search: the window's active Volet's hue, in the system's color scheme. -->
-  <div class="recent-tabs-root" data-scheme={colorScheme(scheme)} style:--space-hue={state.hue}>
-    <button class="recent-tabs-backdrop" aria-label="Cancel tab switching" onclick={oncancel}></button>
-    <!-- Not modal: a glance while the shortcut is held, the page keeps its focus. -->
-    <div class="recent-tabs-dialog" role="dialog" aria-label="Recent tabs" tabindex="-1">
-      <div class="recent-tabs-list">
+  <div
+    class="recent-tabs-root fixed inset-0 z-2147483647 grid place-items-center font-sans text-[13px]/[1.35] antialiased"
+    data-scheme={colorScheme(scheme)}
+    style:--space-hue={state.hue}
+  >
+    <!-- No dimming: the switcher is a glance while the shortcut is held, like the macOS switcher. -->
+    <button class="absolute inset-0 size-full" aria-label="Cancel tab switching" onclick={oncancel}></button>
+    <!-- Search's surface. Not modal: a glance while the shortcut is held, the page keeps its focus. -->
+    <div
+      class="relative w-max max-w-[calc(100vw-32px)] rounded-[14px] bg-(--menu) p-2 [box-shadow:var(--overlay-shadow)]"
+      role="dialog"
+      aria-label="Recent tabs"
+      tabindex="-1"
+    >
+      <div class="flex gap-0.5 overflow-x-auto [scrollbar-width:none]">
         {#each state.view.tabs as tab, index (tab.id)}
           <RecentTabCard
             {tab}
@@ -29,7 +39,7 @@
           />
         {/each}
       </div>
-      <span class="recent-tabs-announcement" aria-live="polite">{state.view.tabs[state.view.selected]?.title}</span>
+      <span class="sr-only" aria-live="polite">{state.view.tabs[state.view.selected]?.title}</span>
     </div>
   </div>
 {/if}
