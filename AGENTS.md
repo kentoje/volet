@@ -84,8 +84,9 @@ Three layers, each with a single job. Dependencies point downward only.
   "Coming from Arc?" card (`ArcInvite`, `arcInviteItem`) opens the import until it's dismissed or used.
 - **Pure logic is kept pure** (`derive.ts`, `snapshot.ts`, `colors.ts`, importers, search ranking) so it can be unit tested without Chrome.
 - **Entry points** (`src/entrypoints/`): `background.ts` (the engine), `sidepanel/` (the sidebar), `palette.ts`
-  (unlisted script injected into the current page by the palette shortcut, rendered in a shadow root),
-  `options/` (settings) and `import/` (Arc import).
+  (unlisted script injected into the current page by the palette shortcut, rendered in a shadow root; with the panel
+  focused, the shortcut opens the panel's own palette instead, as the page would get none of its keys:
+  `panelHasFocus`, answered by `state/chrome/panel-focus.ts`), `options/` (settings) and `import/` (Arc import).
 - **Drag and drop** (`ui/sidebar/drag/`): nothing moves while dragging. `DragState.drop` is where the rows would
   land, shown as a line in the gap next to a row (`DropLine`, drawn by `SortableEntry`), a lit-up folder row (its
   middle drops into it) or a lit-up empty list (`DropZone`; the unpinned tabs have no empty hint to light up, so

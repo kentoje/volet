@@ -99,3 +99,35 @@ test('the in-page palette shows on a page that hides undefined custom elements, 
   });
   await expect(page.getByRole('dialog', { name: 'Search' })).toBeVisible();
 });
+
+test('the search shortcut opens Search where the keyboard is: in a focused panel, else over the page', async ({ context, worker, windowId, panel }) => {
+  await context.route('https://search-shortcut.test/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<title>Page</title><body>Page</body>' }),
+  );
+  const page = await context.newPage();
+  await page.goto('https://search-shortcut.test/');
+  await expect.poll(async () => (await stripState(worker, windowId)).find((tab) => tab.active)?.url).toContain('search-shortcut');
+  // What Chrome runs on Ctrl+M: the worker's own command listener, on the window's active tab.
+  const pressShortcut = () => worker.evaluate(async (id) => {
+    const [tab] = await chrome.tabs.query({ windowId: id, active: true });
+    (chrome.commands.onCommand as unknown as { dispatch: (name: string, tab: chrome.tabs.Tab) => void }).dispatch('open-palette', tab!);
+  }, windowId);
+  // Headless Chromium doesn't track focus between the panel and the page: say which one has it.
+  const focusPanel = (focused: boolean) => panel.evaluate((value) => { document.hasFocus = () => value; }, focused);
+
+  // The panel has the keyboard: a page next to it would get none of its keys, not even Escape.
+  await focusPanel(true);
+  await pressShortcut();
+  const input = panel.getByRole('combobox');
+  await expect(input).toBeFocused();
+  await expect(page.locator('spaces-palette')).toHaveCount(0);
+  await input.press('Escape');
+  await expect(input).toHaveCount(0);
+
+  // The page has it: Search shows over the page.
+  await focusPanel(false);
+  await pressShortcut();
+  await expect(page.locator('spaces-palette')).toHaveCount(1);
+  await expect(page.getByRole('dialog', { name: 'Search' })).toBeVisible();
+  await expect(panel.getByRole('combobox')).toHaveCount(0);
+});

@@ -28,7 +28,7 @@ A rewrite inspired by [Arcify](https://github.com/nisargkolhe/arcify) (GPL-3.0),
   pin, folder or the Space) or inside a folder, Space colors, reorder and delete Spaces, and more.
 - **Search palette.** Press <kbd>Ctrl</kbd>+<kbd>M</kbd> on any page for an Arc-style palette over it: open tabs (all windows),
   pins, favorites, archived tabs, Spaces, actions, a web address, or a web search. In the sidebar: the search button,
-  <kbd>⌘K</kbd>/<kbd>Ctrl+K</kbd>, or <kbd>/</kbd>.
+  <kbd>⌘K</kbd>/<kbd>Ctrl+K</kbd>, or <kbd>/</kbd>, and <kbd>Ctrl</kbd>+<kbd>M</kbd> too while the sidebar has focus.
 - **Import from Arc.** Settings → Import from Arc reads Arc's `StorableSidebar.json` and brings over your Spaces, their
   colors, pinned tabs, folders and favorites. The file never leaves your computer.
 - **Recent tab switcher.** Hold <kbd>Ctrl</kbd> and press <kbd>Q</kbd> to cycle through your five most recent tabs
